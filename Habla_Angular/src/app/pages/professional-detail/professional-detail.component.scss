@@ -1,0 +1,107 @@
+/* 🔤 TITULOS */
+ion-title {
+  text-align: center;
+  font-weight: 600;
+}
+
+h2 {
+  text-align: center;
+  font-weight: bold;
+  margin-top: 10px;
+  color: #1e293b;
+}
+
+/* 📝 TEXTOS */
+p {
+  text-align: center;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* 📱 CONTENIDO GENERAL */
+ion-content {
+  --overflow: auto;
+  --background: #f8fafc;
+  text-align: center;
+}
+
+/* 📦 CARDS */
+ion-card {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-radius: 16px;
+  margin-top: 16px;
+}
+
+ion-card-header,
+ion-card-title,
+ion-card-content {
+  text-align: center;
+}
+
+/* 📅 CALENDARIO CENTRADO */
+ion-datetime {
+  display: block;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+/* 🎨 HEADER */
+ion-toolbar {
+  --background: #aee9f5;
+  --color: #1e3a5f;
+}
+
+/* 🔘 BOTONES GENERALES */
+ion-button {
+  height: 45px;
+  --border-radius: 12px;
+  font-size: 14px;
+}
+
+/* 🔥 CONTENEDOR HORAS */
+.hours-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+/* 🟢 BOTONES HORAS */
+.hour-btn {
+  min-width: 90px;
+  --background: #e2e8f0; /* gris claro */
+  --color: #1e293b;
+}
+
+/* 🎯 HORA SELECCIONADA */
+.hour-btn[color="primary"] {
+  --background: #3b82f6;
+  --color: #ffffff;
+  transform: scale(1.05);
+  font-weight: 600;
+}
+
+/* 🍋 BOTÓN CONFIRMAR */
+.confirm-btn {
+  --background: #22c55e;
+  --color: white;
+  font-weight: 600;
+  margin-top: 20px;
+}
+.hours-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.hour-btn {
+  min-width: 80px;
+  border-radius: 12px;
+}
+.confirm-btn {
+  --background: #22c55e;
+  --border-radius: 12px;
+  font-weight: 600;
+}

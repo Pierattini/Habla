@@ -1,0 +1,115 @@
+<ion-content class="ion-padding">
+
+  <!-- 🧠 LOGO -->
+  <div class="header-logo">
+    <img src="assets/Habla.png" alt="logo" />
+    <p>Encuentra tu profesional ideal</p>
+  </div>
+
+  <!-- 🔍 BUSCADOR -->
+  <div class="search-box">
+<ion-searchbar
+  [(ngModel)]="search"
+  (ionInput)="onSearch()"
+  placeholder="Buscar psicólogo, nutricionista..."
+  animated="true">
+</ion-searchbar>
+
+  </div>
+
+  <!-- 🧩 FILTROS RÁPIDOS (debajo del buscador) -->
+  <div class="quick-section">
+    <div class="quick-grid">
+
+  <div
+  class="quick-card"
+  *ngFor="let item of quickFilters"
+  [class.active]="search === item"
+  (click)="filterCategory(item)"
+>
+    <div class="icon">
+      {{ getIcon(item) }}
+    </div>
+
+    <div class="label">
+      {{ item }}
+    </div>
+  </div>
+</div>
+</div>
+  <!-- 🔥 HOME (sin búsqueda) -->
+  <div *ngIf="!search">
+
+   <!-- 🔥 CTA PRO -->
+<div class="cta-card-pro">
+
+  <div class="cta-content">
+    
+    <div class="cta-header">
+      <h4>Configura tu cuenta</h4>
+    </div>
+
+    <p>Completa tus datos y mejora tu experiencia en Habla</p>
+
+    <div class="cta-button">
+      <ion-button expand="block" routerLink="/tabs/profile">
+  Ir a mi perfil →
+</ion-button>
+    </div>
+
+  </div>
+
+</div>
+</div>
+  <!-- 🔍 RESULTADOS -->
+  <div *ngIf="search">
+
+    <!-- ⏳ LOADING -->
+    <div *ngIf="loading" class="center">
+      <ion-spinner></ion-spinner>
+      <p>Cargando profesionales...</p>
+    </div>
+
+    <!-- ❌ VACÍO -->
+    <div *ngIf="!loading && filteredProfessionals.length === 0" class="center">
+      <p>No se encontraron profesionales</p>
+    </div>
+
+    <!-- 💼 LISTA -->
+    <ion-card *ngFor="let prof of filteredProfessionals">
+
+      <ion-item lines="none">
+        <ion-avatar slot="start">
+          <img [src]="prof.image || 'https://i.pravatar.cc/150?img=1'" />
+        </ion-avatar>
+
+        <ion-label>
+          <h2>{{ prof.name || 'Profesional' }}</h2>
+
+          <p class="specialty">
+            {{ prof.specialty }}
+          </p>
+
+          <p class="status" *ngIf="prof.isOnline">
+            🟢 Disponible
+          </p>
+        </ion-label>
+      </ion-item>
+
+      <ion-card-content>
+
+        <div class="card-info">
+          <span class="price">${{ prof.price }} CLP</span>
+          <span class="duration">{{ prof.duration }} min</span>
+        </div>
+
+        <ion-button expand="block" (click)="goToDetail(prof.id)">
+          Ver perfil
+        </ion-button>
+
+      </ion-card-content>
+    </ion-card>
+
+  </div>
+
+</ion-content>

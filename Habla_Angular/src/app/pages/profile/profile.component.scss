@@ -1,0 +1,67 @@
+/* 🌿 CONTENEDOR */
+.container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* 👤 TOP */
+.profile-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.avatar {
+  font-size: 90px;
+  color: #3b82f6;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.profile-top h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-top: 10px;   /* 👈 clave */
+  margin-bottom: 4px;
+  display: block; /* 👈 clave */
+}
+
+.subtitle {
+  color: #64748b;
+  font-size: 13px;
+  margin-top: 0px; /* 👈 AGREGAR */
+}
+
+/* 📋 CARD */
+.card {
+  margin-top: 20px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  padding: 10px 0;
+}
+
+/* ITEMS */
+ion-item {
+  --padding-start: 10px;
+  --inner-padding-end: 10px;
+}
+
+/* ✏️ BOTÓN EDITAR (IMPORTANTE) */
+ion-button[fill="clear"] {
+  margin-right: 0;
+}
+
+/* BOTONES */
+.btn-dashboard {
+  margin-top: 20px;
+}
+
+.btn-logout {
+  margin-top: 10px;
+}

@@ -1,0 +1,26 @@
+/* barra inferior */
+ion-tab-bar {
+  --background: #ffffff;
+  border-top: 1px solid #eee;
+}
+
+/* botones */
+ion-tab-button {
+  color: #b0b0b0;
+  font-size: 11px;
+}
+
+/* activo */
+ion-tab-button.tab-selected {
+  color: #7dd3fc;
+}
+ion-card {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 500px; /* 🔥 controla el ancho */
+  width: 100%;
+}
+ion-router-outlet {
+  display: flex;
+  justify-content: center;
+}

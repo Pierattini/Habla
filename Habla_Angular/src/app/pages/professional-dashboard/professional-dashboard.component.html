@@ -1,0 +1,31 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Dashboard Profesional</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+
+  <h2>📅 Citas de hoy</h2>
+
+  <!-- DEBUG -->
+  <p style="color:red">DEBUG: {{ todayAppointments.length }}</p>
+
+  <!-- 🟢 LISTA SIMPLE (PRUEBA) -->
+  <div *ngIf="todayAppointments.length > 0">
+
+    <div *ngFor="let appt of todayAppointments" style="margin-bottom:10px; padding:10px; border:1px solid #ccc">
+
+      <p><b>Hora:</b> {{ appt.date }}</p>
+      <p><b>Estado:</b> {{ appt.status }}</p>
+
+    </div>
+
+  </div>
+
+  <!-- 🔴 SIN CITAS -->
+  <div *ngIf="todayAppointments.length === 0">
+    <p>No tienes citas hoy</p>
+  </div>
+
+</ion-content>

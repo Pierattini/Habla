@@ -1,0 +1,56 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      {{ mode === 'PAYMENT' ? 'Datos de pago' : 'Reembolso' }}
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="close()">Cerrar</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+
+  <!-- 💳 MODO PAGO (lo que ya tenías) -->
+  <ng-container *ngIf="mode === 'PAYMENT'">
+
+     <p><strong>Nombre:</strong> {{ paymentData?.name }}</p>
+     <p><strong>Banco:</strong> {{ paymentData?.bankName }}</p>
+     <p><strong>Número de cuenta:</strong> {{ paymentData?.accountNumber }}</p>
+     <p><strong>Tipo de cuenta:</strong> {{ paymentData?.accountType }}</p>
+     <p><strong>Correo:</strong> {{ paymentData?.accountEmail }}</p>
+
+    <ion-button expand="block" color="success" (click)="confirmarPago()">
+      Ya transferí
+    </ion-button>
+
+  </ng-container>
+
+  <!-- 💸 MODO REEMBOLSO (nuevo) -->
+  <ng-container *ngIf="mode === 'REFUND'">
+
+    <ion-item>
+      <ion-label position="stacked">Banco</ion-label>
+      <ion-input [(ngModel)]="bank"></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="stacked">Número de cuenta</ion-label>
+      <ion-input [(ngModel)]="account"></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="stacked">Tipo de cuenta</ion-label>
+      <ion-select [(ngModel)]="accountType">
+        <ion-select-option value="corriente">Corriente</ion-select-option>
+        <ion-select-option value="ahorro">Ahorro</ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ion-button expand="block" color="danger" (click)="confirmRefund()">
+      Solicitar reembolso
+    </ion-button>
+
+  </ng-container>
+
+</ion-content>

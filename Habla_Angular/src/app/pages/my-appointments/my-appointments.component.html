@@ -1,0 +1,163 @@
+<ion-content>
+  <div class="contenedor">
+
+    <ion-button fill="clear" class="btn-volver" (click)="goHome()">
+      ← Inicio
+    </ion-button>
+
+    <h2 class="titulo">📅 Mis citas</h2>
+
+    <div *ngIf="groupedAppointments.length > 0; else sinCitas">
+
+      <div *ngFor="let group of groupedAppointments" class="contenedor">
+
+        <div class="fecha">
+          {{ getLabel(group.date) }}
+        </div>
+
+        <ion-card 
+  *ngFor="let appt of group.items" 
+  class="card-cita"
+  [class.disabled]="appt.status === 'REFUNDED'">
+          <ion-card-content>
+
+            <div class="header-cita">
+
+              <div class="avatar">
+                <img
+  *ngIf="appt.professional?.professional?.image || appt.professional?.image"
+  [src]="appt.professional?.professional?.image || appt.professional?.image"
+  (error)="onImgError($event)">
+
+                <span *ngIf="!appt.professional?.professional?.image">
+                  {{ getNombre(appt).charAt(0).toUpperCase() }}
+                </span>
+              </div>
+
+              <div class="info">
+                <div class="nombre">
+                  {{ appt.professional?.name || getNombre(appt) }}
+                </div>
+
+                <div class="especialidad">
+                  {{ appt.professional?.professional?.specialty }}
+                </div>
+
+                <div class="extra">
+                  💰 {{ appt.professional?.professional?.price }} CLP ·
+                  ⏱️ {{ appt.professional?.professional?.duration }} min
+                </div>
+              </div>
+
+            </div>
+
+            <div class="estado" [style.color]="getStatusColor(appt.status)">
+
+  {{
+    appt.status === 'CONFIRMED' ? '✔ ' :
+    appt.status === 'CANCELLED' ? '✖ ' :
+    appt.status === 'RESCHEDULED' ? '🔁 ' :
+    appt.status === 'REFUNDED' ? '💸 ' :
+    appt.status === 'PAYMENT_REVIEW' ? '💳 ' :
+    appt.status === 'PENDING_PAYMENT' ? '🕒 ' :
+    '⏳ '
+  }}
+
+  {{ getStatusLabel(appt.status) }}
+
+</div>
+
+<!-- 💰 Penalización -->
+<p *ngIf="shouldShowPenalty(appt)" style="color: orange; font-size: 13px;">
+  ⚠️ Penalización aplicada (50%)
+</p>
+
+<!-- 💳 Estado pago -->
+<p *ngIf="appt.status === 'PAYMENT_REVIEW'" style="color: orange; font-size: 13px;">
+  ⏳ Pago en revisión
+</p>
+
+<div class="botones">
+
+  <!-- 💳 VER DATOS DE PAGO -->
+  <ion-button
+    fill="outline"
+    color="primary"
+    size="small"
+    class="btn-main"
+    *ngIf="canPay(appt)"
+    (click)="openPayment(appt)">
+    💳 Ver datos
+  </ion-button>
+
+  <!-- 📩 YA TRANSFERÍ -->
+  <ion-button
+    fill="solid"
+    color="success"
+    size="small"
+    class="btn-main"
+    *ngIf="canPay(appt)"
+    (click)="markAsPaid(appt.id)">
+    📩 Ya transferí
+  </ion-button>
+
+  <!-- ⏳ ESTADO ESPERA -->
+  <div
+    class="estado-espera"
+    *ngIf="canShowPaymentWaiting(appt)">
+    ⏳ Esperando confirmación del profesional
+  </div>
+
+  <!-- 🟢 PROFESIONAL CONFIRMA -->
+  <ion-button
+    expand="block"
+    color="success"
+    class="btn-principal"
+    *ngIf="canProfessionalConfirm(appt)"
+    (click)="confirmAppointment(appt.id)">
+    ✔ Confirmar pago
+  </ion-button>
+
+  <!-- ⚙️ ACCIONES SECUNDARIAS -->
+ <div class="acciones-secundarias"
+  *ngIf="canReschedule(appt) || canCancel(appt)">
+
+  <ion-button
+  fill="clear"
+  size="small"
+  class="btn-sec"
+  *ngIf="canReschedule(appt)"
+  (click)="reschedule(appt)">
+  🔁 Reagendar
+</ion-button>
+
+<ion-button
+  fill="clear"
+  size="small"
+  class="btn-sec cancel"
+  *ngIf="canCancel(appt)"
+  (click)="cancelAppointment(appt.id)">
+  ✖ Cancelar
+</ion-button>
+
+  </div>
+
+</div>
+
+          </ion-card-content>
+        </ion-card>
+
+      </div>
+
+    </div>
+
+    <ng-template #sinCitas>
+      <p style="text-align:center; margin-top:20px;">
+        No tienes citas
+      </p>
+    </ng-template>
+
+  </div>
+
+</ion-content>
+

@@ -1,0 +1,147 @@
+.chat-content {
+  --background: #f8fafc;
+}
+
+/* =========================
+   TABS
+========================= */
+.chat-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.chat-tabs button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 12px;
+  background: #f1f5f9;
+  font-weight: 500;
+  color: #475569;
+}
+
+.chat-tabs button.active {
+  background: #3b82f6;
+  color: white;
+}
+
+/* =========================
+   MENSAJES
+========================= */
+.messages-container {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message-wrapper {
+  display: flex;
+}
+
+.message-wrapper.mine {
+  justify-content: flex-end;
+}
+
+.message-bubble {
+  max-width: 75%;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  font-size: 14px;
+}
+
+.message-wrapper.mine .message-bubble {
+  background: #3b82f6;
+  color: white;
+}
+
+/* =========================
+   INPUT
+========================= */
+.input-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+/* =========================
+   DOCUMENTOS
+========================= */
+.files-list {
+  padding: 12px;
+}
+
+.files-list ion-item {
+  margin-bottom: 10px;
+  border-radius: 14px;
+  --background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* =========================
+   IMÁGENES
+========================= */
+.images-grid {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.images-grid img {
+  width: 100%;
+  border-radius: 14px;
+  object-fit: cover;
+  aspect-ratio: 1 / 1;
+}
+.chat-image {
+  max-width: 220px;
+  border-radius: 12px;
+  margin-top: 8px;
+  display: block;
+}
+
+.file-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.2);
+}
+.chat-image {
+  max-width: 220px;
+  border-radius: 14px;
+  margin-top: 6px;
+  display: block;
+}
+
+.file-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.12);
+  font-size: 13px;
+}
+
+.message-wrapper:not(.mine) .file-box {
+  background: #eef2f7;
+}
+.image-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

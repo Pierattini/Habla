@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Availability {
+  id             String   @id @default(uuid())
+  professionalId String
+  day            WeekDay
+  startMinute    Int
+  endMinute      Int
+  createdAt      DateTime @default(now())
+  professional   User     @relation(fields: [professionalId], references: [id])
+
+  @@index([professionalId, day])
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  name            String?
+  password        String
+  role            Role
+  createdAt       DateTime @default(now())
+  isActive        Boolean  @default(false)
+  sessionDuration Int?
+
+  country         String?
+  timezone        String? @default("America/Santiago")
+
+  customerAppointments     Appointment[]  @relation("CustomerAppointments")
+  professionalAppointments Appointment[]  @relation("ProfessionalAppointments")
+  availabilities           Availability[]
+  professional             Professional?
+
+  customerConversations     Conversation[] @relation("CustomerConversations")
+  professionalConversations Conversation[] @relation("ProfessionalConversations")
+  sentMessages              Message[]      @relation("SentMessages")
+
+  credit    Float    @default(0)
+}
+
+model Appointment {
+  id             String            @id @default(uuid())
+  date           DateTime
+  status         AppointmentStatus @default(PENDING)
+  customerId     String
+  professionalId String
+  createdAt      DateTime          @default(now())
+  rescheduleCount Int @default(0)
+  paidAt DateTime?
+
+  // 🔥 PENALIZACIÓN
+  penalty          Float?
+  penaltyResolved  Boolean @default(false)
+  penaltyOption    String? // 'REFUND' | 'CREDIT'
+
+  // 🔥 CRÉDITO / PAGO
+  creditUsed       Float? // cuánto crédito se usó
+  remainingToPay   Float? // cuánto falta pagar
+
+  // 🔥 REEMBOLSO
+  refundAccount String?
+  refundBank    String?
+
+  // 🔥 OTROS
+  meetLink String?
+
+  customer     User @relation("CustomerAppointments", fields: [customerId], references: [id])
+  professional User @relation("ProfessionalAppointments", fields: [professionalId], references: [id])
+
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+  conversationId String?
+}
+
+model Professional {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  specialty   String?
+  description String?
+  name        String?
+  price       Int?
+  duration    Int?
+  isOnline    Boolean? @default(true)
+  image       String?
+
+   // Datos Bancarios
+  bankName     String?
+  accountType  String?
+  accountNumber String?
+  accountHolder String?
+  accountEmail String?
+}
+
+model Conversation {
+  id             String @id @default(uuid())
+  customerId     String
+  professionalId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer     User @relation("CustomerConversations", fields: [customerId], references: [id])
+  professional User @relation("ProfessionalConversations", fields: [professionalId], references: [id])
+
+  messages     Message[]
+  appointments Appointment[]
+
+  @@unique([customerId, professionalId])
+  @@index([customerId])
+  @@index([professionalId])
+}
+
+model Message {
+  id             String @id @default(uuid())
+  conversationId String
+  senderId       String
+
+  content String?
+
+  fileUrl  String?
+  fileName String?
+  fileType String?
+  fileSize Int?
+  filePublicId String?
+
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("SentMessages", fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+enum Role {
+  CUSTOMER
+  PROFESSIONAL
+  ADMIN
+}
+
+enum WeekDay {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
+enum AppointmentStatus {
+  PENDING
+  PENDING_PAYMENT
+  PAYMENT_REVIEW
+  CONFIRMED
+  CANCELLED
+  RESCHEDULED
+  REFUNDED
+}

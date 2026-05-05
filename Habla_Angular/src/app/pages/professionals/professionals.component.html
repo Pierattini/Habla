@@ -1,0 +1,29 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Profesionales</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+
+  <ion-card *ngFor="let professional of professionals" (click)="goToDetail(professional.id)">
+
+    <ion-card-content style="text-align:center">
+
+      <ion-avatar style="margin: 0 auto; width: 100px; height: 100px;">
+        <img [src]="professional.image || ('https://i.pravatar.cc/150?u=' + professional.email)" />
+      </ion-avatar>
+
+      <h2>{{ professional.name }}</h2>
+      <p>{{ professional.specialty }}</p>
+      <p>💰 ${{ professional.price }} CLP</p>
+
+      <ion-button expand="block">
+        Ver perfil
+      </ion-button>
+
+    </ion-card-content>
+
+  </ion-card>
+
+</ion-content>

@@ -1,0 +1,229 @@
+/* Ionic base */
+@import "@ionic/angular/css/core.css";
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import "@ionic/angular/css/display.css";
+@import "@ionic/angular/css/padding.css";
+@import "@ionic/angular/css/float-elements.css";
+@import "@ionic/angular/css/text-alignment.css";
+@import "@ionic/angular/css/text-transformation.css";
+@import "@ionic/angular/css/flex-utils.css";
+
+/* ===== RESET TOTAL ===== */
+html, body {
+  height: 100%;
+}
+/* ===== CONTENEDOR ===== */
+ion-content {
+  --background: #ffffff;
+  --padding-bottom: 80px;
+}
+
+/* ===== LOGO ===== */
+.header-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 40px;
+  margin-bottom: 20px;
+}
+
+.header-logo img {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+
+  background: #ffffff;
+  border-radius: 50%;
+  padding: 20px;
+
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+}
+
+/* ===== TEXTO ===== */
+.header-logo p {
+  margin-top: 12px;
+  font-size: 15px;
+  color: #666;
+}
+
+/* ===== CATEGORÍAS ===== */
+.categories {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 0 15px;
+  margin: 15px 0;
+}
+
+/* ===== CENTER ===== */
+.center {
+  text-align: center;
+  margin-top: 40px;
+}
+.custom-search {
+  margin: 16px 0;
+}
+
+.custom-search input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: none;
+  background: #f5f7fa;
+  font-size: 14px;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.custom-search input:focus {
+  background: #fff;
+  box-shadow: 0 0 0 2px #4fc3f7;
+}
+
+.quick-section {
+  padding: 0 10px;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.quick-card {
+  background: #f5f7fa;
+  border-radius: 16px;
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.quick-card:hover {
+  transform: scale(1.05);
+}
+
+.quick-card .icon {
+  font-size: 22px;
+  margin-bottom: 5px;
+}
+
+.quick-card .label {
+  font-size: 12px;
+  color: #333;
+}
+@media (max-width: 480px) {
+  .quick-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.quick-card.active {
+  background: #4fc3f7;
+  color: white;
+}
+.contenedor {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+}
+/* 🔥 MODAL REAGENDAR (FIX REAL) */
+
+ion-modal.reschedule-modal {
+  --border-radius: 20px;
+}
+
+/* POSICIÓN tipo bottom sheet */
+ion-modal.reschedule-modal .ion-overlay-wrapper {
+  display: flex;
+  align-items: flex-end;
+}
+
+/* CAJA DEL MODAL */
+ion-modal.reschedule-modal .modal-wrapper {
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
+  background: white;
+}
+
+/* HEADER */
+ion-modal.reschedule-modal ion-toolbar {
+  --background: white;
+  border-bottom: 1px solid #eee;
+}
+
+/* TÍTULO */
+ion-modal.reschedule-modal ion-title {
+  text-align: center;
+  font-weight: 600;
+}
+
+/* CONTENIDO */
+ion-modal.reschedule-modal ion-content {
+  --background: white;
+}
+
+/* BOTONES HORAS */
+ion-modal.reschedule-modal .slots ion-button {
+  min-width: 70px;
+  border-radius: 12px;
+  --background: #f1f5f9;
+  --color: #0f172a;
+}
+
+/* BOTÓN SELECCIONADO */
+ion-modal.reschedule-modal .slots ion-button[color="primary"] {
+  --background: #2563eb;
+  --color: white;
+}
+/* 🔥 MODAL REAGENDAR (FIX REAL FINAL) */
+
+ion-modal.reschedule-modal {
+  --border-radius: 20px;
+}
+
+/* CONTENEDOR DEL MODAL */
+ion-modal.reschedule-modal::part(content) {
+  border-radius: 20px 20px 0 0;
+  background: #ffffff;
+}
+
+/* HEADER */
+ion-modal.reschedule-modal ion-toolbar {
+  --background: white;
+  border-bottom: 1px solid #eee;
+}
+
+ion-modal.reschedule-modal ion-title {
+  text-align: center;
+  font-weight: 600;
+}
+
+/* CONTENIDO */
+ion-modal.reschedule-modal ion-content {
+  --background: white;
+}
+
+/* HORAS */
+ion-modal.reschedule-modal .slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+ion-modal.reschedule-modal .slots ion-button {
+  min-width: 70px;
+  border-radius: 12px;
+  --background: #f1f5f9;
+  --color: #0f172a;
+}
+
+/* SELECCIONADO */
+ion-modal.reschedule-modal .slots ion-button[color="primary"] {
+  --background: #2563eb;
+  --color: white;
+}

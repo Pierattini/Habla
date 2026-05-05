@@ -1,0 +1,87 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button (click)="close()">←</ion-button>
+    </ion-buttons>
+    <ion-title>Reagendar cita</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+
+  <!-- 📅 FECHA -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Selecciona fecha</ion-card-title>
+    </ion-card-header>
+
+    <ion-card-content>
+      <ion-datetime
+        presentation="date"
+        [(ngModel)]="selectedDate"
+        (ionChange)="loadSlots($event)">
+      </ion-datetime>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- ⏰ HORARIOS -->
+<ion-card>
+  <ion-card-header>
+    <ion-card-title>Horarios</ion-card-title>
+  </ion-card-header>
+
+  <ion-card-content>
+
+    <!-- 🔥 SI HAY HORARIOS -->
+    <div class="slots" *ngIf="!noSlots">
+      <ion-button
+        *ngFor="let slot of availableSlots"
+        size="small"
+        [color]="selectedHour === slot ? 'primary' : 'light'"
+        (click)="toggleHour(slot)">
+        {{ slot }}
+      </ion-button>
+    </div>
+
+    <!-- 🔥 SI NO HAY HORARIOS -->
+    <div *ngIf="noSlots">
+
+  <!-- 🔴 CASO: NO HAY HORARIOS EN BD -->
+  <p *ngIf="!userRejectedSlots" style="color:red; margin-bottom:10px;">
+    ❌ No hay horarios disponibles
+  </p>
+
+  <!-- 🟠 CASO: EL USUARIO NO LE SIRVEN -->
+  <p *ngIf="userRejectedSlots" style="color:orange; margin-bottom:10px;">
+    ⚠️ Ningún horario se ajusta a tu disponibilidad
+  </p>
+
+  <ion-textarea
+    placeholder="Escribe un mensaje al profesional"
+    [(ngModel)]="message">
+  </ion-textarea>
+
+  <ion-button expand="block" (click)="sendMessage()">
+    Enviar mensaje
+  </ion-button>
+
+</div>
+  </ion-card-content>
+</ion-card>
+
+  <!-- 🔁 CONFIRMAR -->
+  <ion-button expand="block" (click)="confirm()" *ngIf="!noSlots">
+  Confirmar reagendamiento
+</ion-button>
+
+  <!-- 🔥 NUEVO BOTÓN -->
+  <ion-button 
+  expand="block" 
+  fill="outline" 
+  color="medium" 
+  (click)="leaveAsCredit()"
+  *ngIf="!noSlots">
+  🕓 No me sirve ningún horario
+</ion-button>
+
+</ion-content>

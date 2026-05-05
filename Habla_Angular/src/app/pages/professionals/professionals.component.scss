@@ -1,0 +1,68 @@
+/* 🔥 FONDO GENERAL */
+ion-content {
+  --background: #f4f5f8;
+}
+
+/* 🔥 CARD */
+.card-prof {
+  border-radius: 18px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  margin-bottom: 16px;
+  padding: 10px;
+}
+
+/* 🔥 CONTENIDO HEADER */
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* 🔥 AVATAR */
+ion-avatar {
+  width: 60px;
+  height: 60px;
+  border: 2px solid #e0e0e0;
+}
+
+/* 🔥 INFO */
+.info {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 🔥 NOMBRE */
+ion-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* 🔥 SUBTEXTO */
+ion-card-subtitle {
+  color: #777;
+  font-size: 13px;
+}
+
+/* 🔥 PRECIO + DURACIÓN */
+.meta {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  margin-top: 6px;
+  color: #444;
+}
+
+/* 🔥 STATUS */
+.status {
+  font-size: 12px;
+  margin-top: 4px;
+  color: green;
+}
+
+/* 🔥 BOTÓN */
+ion-button {
+  margin-top: 12px;
+  --border-radius: 12px;
+  font-weight: 500;
+}

@@ -1,0 +1,338 @@
+/* ===== FONDO LIMPIO ===== */
+:host {
+  display: block;
+  background: #ffffff;
+}
+
+ion-content {
+  --background: #ffffff;
+}
+
+/* ===== LOGO ===== */
+.header-logo {
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+
+.header-logo img {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  object-position: center;
+
+  border-radius: 50%;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.header-logo p {
+  margin-top: 4px;
+}
+
+/* ===== CATEGORÍAS ===== */
+.categories {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 0 15px;
+  margin: 12px 0;
+}
+/* ===== CARD PROFESIONAL ===== */
+ion-card {
+  margin: 12px 15px;
+  border-radius: 16px;
+
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  border: 1px solid #f1f5f9;
+
+  transition: all 0.2s ease;
+}
+
+/* efecto sutil */
+ion-card:active {
+  transform: scale(0.98);
+}
+
+/* header */
+ion-item {
+  --background: transparent;
+  padding-top: 6px;
+}
+
+/* avatar */
+ion-avatar img {
+  width: 100%;
+  border-radius: 50%;
+}
+
+/* nombre */
+ion-label h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* especialidad */
+ion-label p {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* contenido */
+ion-card-content {
+  padding-top: 0;
+}
+
+/* precio */
+ion-card-content p {
+  font-size: 14px;
+  font-weight: 500;
+  color: #059669; /* verde elegante (dinero) */
+  margin-bottom: 10px;
+}
+
+/* botón */
+ion-button {
+  --border-radius: 10px;
+  --background: linear-gradient(135deg, #6366f1, #7dd3fc);
+
+  font-size: 13px;
+  height: 40px;
+
+  text-transform: none;
+}
+/* estilo tipo app */
+.categories ion-chip {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 6px 12px;
+
+  font-size: 13px;
+  color: #555;
+
+  border: 1px solid #e5e7eb;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+
+  transition: all 0.2s ease;
+}
+
+/* efecto al tocar */
+.categories ion-chip.active {
+  background: #e0f7ff;
+  border-color: #7dd3fc;
+  color: #0284c7;
+}
+.categories::-webkit-scrollbar {
+  display: none;
+}
+.categories ion-chip:hover {
+  background: #f8fafc;
+}
+/* ===== CENTRO ===== */
+.center {
+  text-align: center;
+  margin-top: 40px;
+}
+.card-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.price {
+  color: #059669;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.duration {
+  color: #6b7280;
+  font-size: 13px;
+}
+.status {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 500;
+
+  color: #0284c7;
+  background: #e0f7ff;
+
+  padding: 3px 8px;
+  border-radius: 12px;
+
+  margin-top: 4px;
+}
+/* 🔥 GRID */
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 👈 4 por fila */
+  gap: 10px;
+  padding: 0 10px;
+}
+
+/* móvil pequeño */
+@media (max-width: 400px) {
+  .quick-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* 🔥 CARD */
+.quick-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 14px 8px;
+
+  text-align: center;
+
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+
+  transition: all 0.2s ease;
+}
+
+/* 🔥 ICONO */
+.quick-card .icon {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+/* 🔥 TEXTO */
+.quick-card .label {
+  font-size: 12px;
+  color: #555;
+}
+
+/* 🔥 HOVER / CLICK */
+.quick-card:active {
+  transform: scale(0.95);
+  background: #e0f7ff;
+}
+/* 🔥 CARD PRINCIPAL */
+.cta-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 14px;
+
+  margin: 10px 16px;
+
+  box-shadow: 0 6px 15px rgba(0,0,0,0.06);
+
+  transition: all 0.2s ease;
+}
+
+/* icono */
+.cta-icon {
+  font-size: 22px;
+}
+
+/* contenido */
+.cta-content h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.cta-content p {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+/* flecha */
+.cta-arrow {
+  margin-left: auto;
+  font-size: 18px;
+  color: #999;
+}
+
+/* efecto */
+.cta-card:active {
+  transform: scale(0.97);
+  background: #f8fafc;
+}
+/* 🔥 CTA PRO */
+.cta-card-pro {
+  margin: 16px;
+  padding: 18px;
+
+  border-radius: 18px;
+
+  background: linear-gradient(135deg, #f0f9ff, #ffffff);
+
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+
+  border: 1px solid #e0f2fe;
+}
+
+.cta-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cta-icon {
+  font-size: 20px;
+  background: #e0f7ff;
+  padding: 8px;
+  border-radius: 10px;
+}
+
+.cta-content h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cta-content p {
+  margin: 8px 0 12px;
+  font-size: 13px;
+  color: #555;
+}
+
+.cta-card-pro ion-button {
+  --border-radius: 10px;
+  font-size: 13px;
+}
+/* 🔥 quitar icono (por si queda espacio) */
+.cta-header {
+  justify-content: center;
+  text-align: center;
+}
+
+/* título centrado */
+.cta-content h4 {
+  text-align: center;
+}
+
+/* texto centrado */
+.cta-content p {
+  text-align: center;
+}
+
+/* 🔥 botón centrado */
+.cta-button {
+  display: flex;
+  justify-content: center;
+}
+
+/* 🔥 botón celeste PRO */
+.cta-card-pro ion-button {
+  --background: linear-gradient(135deg, #38bdf8, #7dd3fc);
+  --color: white;
+  --border-radius: 12px;
+
+  width: 80%;
+  font-size: 14px;
+
+  box-shadow: 0 6px 15px rgba(56,189,248,0.3);
+}
+.search-box {
+  position: relative;
+  z-index: 1;
+}

@@ -1,0 +1,159 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/messages"></ion-back-button>
+    </ion-buttons>
+
+    <ion-title>{{ professionalName }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="chat-content">
+
+  <!-- TABS -->
+  <div class="chat-tabs">
+    <button
+      [class.active]="activeTab === 'messages'"
+      (click)="changeTab('messages')"
+    >
+      Mensajes
+    </button>
+
+    <button
+      [class.active]="activeTab === 'documents'"
+      (click)="changeTab('documents')"
+    >
+      Documentos
+    </button>
+
+    <button
+      [class.active]="activeTab === 'images'"
+      (click)="changeTab('images')"
+    >
+      Imágenes
+    </button>
+  </div>
+
+  <!-- MENSAJES -->
+<div *ngIf="activeTab === 'messages'" class="messages-container">
+  <div
+    *ngFor="let msg of messages"
+    class="message-wrapper"
+    [class.mine]="msg.senderId === currentUserId"
+  >
+    <div class="message-bubble">
+
+      <small class="sender-label">
+        {{ msg.senderId === currentUserId ? 'Tú' : professionalName }}
+      </small>
+
+      <ng-container *ngIf="msg.content">
+        {{ msg.content }}
+      </ng-container>
+
+      <img
+        *ngIf="msg.fileType?.startsWith('image/')"
+        [src]="msg.fileUrl"
+        class="chat-image"
+      />
+
+      <div
+        *ngIf="msg.fileUrl && !msg.fileType?.startsWith('image/')"
+        class="file-box"
+      >
+        <ion-icon name="document-outline"></ion-icon>
+        <span>{{ msg.fileName }}</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- DOCUMENTOS -->
+<div *ngIf="activeTab === 'documents'" class="files-list">
+  <ng-container *ngFor="let doc of documents">
+    <ion-item *ngIf="doc.fileUrl">
+
+      <ion-icon name="document-outline" slot="start"></ion-icon>
+
+      <ion-label>
+        <h3>{{ doc.fileName }}</h3>
+        <p>{{ doc.createdAt | date:'short' }}</p>
+
+        <p class="uploaded-by">
+          Subido por {{ doc.senderId === currentUserId ? 'Tú' : professionalName }}
+        </p>
+      </ion-label>
+
+      <a
+        [href]="doc.fileUrl"
+        [attr.download]="doc.fileName"
+        target="_blank"
+      >
+        Descargar
+      </a>
+
+    </ion-item>
+  </ng-container>
+</div>
+
+<!-- IMÁGENES -->
+<div *ngIf="activeTab === 'images'" class="images-grid">
+  <ng-container *ngFor="let image of images">
+    <div class="image-card" *ngIf="image.fileUrl">
+
+      <img
+        [src]="image.fileUrl"
+        [alt]="image.fileName"
+      />
+
+      <small class="uploaded-by">
+        Subido por {{ image.senderId === currentUserId ? 'Tú' : professionalName }}
+      </small>
+
+    </div>
+  </ng-container>
+</div>
+
+  <!-- IMÁGENES -->
+  <div *ngIf="activeTab === 'images'" class="images-grid">
+  <div *ngFor="let image of images" class="image-card">
+    <img
+      [src]="image.fileUrl"
+      [alt]="image.fileName"
+    />
+
+    <small class="uploaded-by">
+      Subido por {{ image.senderId === currentUserId ? 'Tú' : professionalName }}
+    </small>
+  </div>
+</div>
+
+</ion-content>
+
+<ion-footer *ngIf="activeTab === 'messages'">
+  <ion-toolbar>
+    <div class="input-container">
+      <ion-input
+        [(ngModel)]="newMessage"
+        placeholder="Escribe un mensaje..."
+      ></ion-input>
+<input
+  type="file"
+  #fileInput
+  hidden
+  (change)="onFileSelected($event)"
+/>
+
+<ion-button
+  fill="clear"
+  (click)="fileInput.click()"
+>
+  📎
+</ion-button>
+      <ion-button fill="clear" (click)="sendMessage()">
+        Enviar
+      </ion-button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

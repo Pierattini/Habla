@@ -1,0 +1,54 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Mensajes</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="messages-page">
+
+  <!-- Estado vacío -->
+  <div class="empty-state" *ngIf="!conversations.length">
+    <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
+    <h3>No tienes conversaciones</h3>
+    <p>Cuando tengas citas activas podrás conversar aquí.</p>
+  </div>
+
+  <!-- Lista -->
+  <ion-list *ngIf="conversations.length" lines="none">
+
+    <ion-item
+      *ngFor="let conv of conversations"
+      [routerLink]="['/tabs/messages', conv.conversationId]"
+      button
+      class="conversation-item"
+    >
+
+      <ion-avatar slot="start">
+        <img [src]="conv.otherUser.professional?.image || 'https://i.pravatar.cc/150'" />
+      </ion-avatar>
+
+      <ion-label>
+        <div class="top-row">
+          <h2>{{ conv.otherUser.name }}</h2>
+          <span class="time">
+            {{ conv.lastMessage?.createdAt | date:'shortTime' }}
+          </span>
+        </div>
+
+        <div class="bottom-row">
+          <p>{{ conv.lastMessage?.content }}</p>
+
+          <ion-badge
+            color="primary"
+            *ngIf="conv.unreadCount > 0"
+          >
+            {{ conv.unreadCount }}
+          </ion-badge>
+        </div>
+      </ion-label>
+
+    </ion-item>
+
+  </ion-list>
+
+</ion-content>
