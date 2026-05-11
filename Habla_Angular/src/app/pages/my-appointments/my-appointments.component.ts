@@ -2,15 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ToastController, IonicModule, ModalController } from '@ionic/angular';
-import { ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { AlertController } from '@ionic/angular';
-
 import { PaymentModalComponent } from '../payment-modal/payment-modal.component';
 import { RescheduleModalComponent } from '../reschedule-modal/reschedule-modal.component';
+import { ChangeDetectorRef } from '@angular/core';
+import { ViewWillEnter } from '@ionic/angular';
 @Component({
   selector: 'app-my-appointments',
   standalone: true,
@@ -22,7 +21,7 @@ import { RescheduleModalComponent } from '../reschedule-modal/reschedule-modal.c
     
   ]
 })
-export class MyAppointmentsComponent implements OnInit {
+export class MyAppointmentsComponent {
 
   appointments: any[] = [];
 
@@ -30,7 +29,7 @@ export class MyAppointmentsComponent implements OnInit {
   private http: HttpClient,
   private toastCtrl: ToastController,
   private alertCtrl: AlertController,
- // private cd: ChangeDetectorRef,
+  private cd: ChangeDetectorRef,
   private router: Router,
   private modalCtrl: ModalController,
   private route: ActivatedRoute 
@@ -47,9 +46,20 @@ getHeaders() {
  role: string | null = null;
  loadingId: string | null = null;
 
-ngOnInit() {
+//ngOnInit() {
+ // this.role = localStorage.getItem('role');
+//}
+
+ionViewDidEnter() {
   this.role = localStorage.getItem('role');
-  this.loadAppointments(); // 🔥 AGREGA ESTO
+
+  // 🔥 fuerza render inicial limpio
+  this.groupedAppointments = [];
+
+  // 🔥 deja que Angular pinte primero
+  setTimeout(() => {
+    this.loadAppointments();
+  }, 0);
 }
 
 async presentToast(message: string, color: string = 'success') {
@@ -69,34 +79,32 @@ async presentToast(message: string, color: string = 'success') {
     Authorization: `Bearer ${token}`
   });
 
-  let url = 'http://localhost:3000/appointments/mine'; // 🔥 default
+  let url = 'http://localhost:3000/appointments/mine';
 
   if (this.role === 'PROFESSIONAL') {
     url = 'http://localhost:3000/appointments/professional';
   }
 
   if (this.role === 'ADMIN') {
-  url = 'http://localhost:3000/appointments/all';
-}
+    url = 'http://localhost:3000/appointments/all';
+  }
 
   this.http.get<any[]>(url, { headers }).subscribe({
-    next: (res) => {
-  console.log('RESPUESTA REAL:', res);
+  next: (res: any[]) => {
+    console.log('RESPUESTA REAL:', res);
 
-  this.appointments = res ?? [];
+    this.appointments = res ?? [];
+this.appointments = [...(res ?? [])];
 
 setTimeout(() => {
   this.groupAppointments();
- // this.cd.detectChanges();
+  this.cd.detectChanges();
+}, 0);
+  },
+  error: (err) => {
+    console.error(err);
+  }
 });
-  this.groupAppointments();
-
-  setTimeout(() => {
- // this.cd.detectChanges();
-}, 50);
-},
-    error: (err) => console.error(err)
-  });
 }
 
   cancelAppointment(id: string) {
@@ -114,8 +122,12 @@ setTimeout(() => {
       this.loadingId = null;
 
       // 🔥 SI ES MENOS DE 48H → MOSTRAR OPCIONES
-      if (res.status === 'PENDING_PAYMENT') {
-  this.showCancelOptions(id); // 👈 SOLO ESTO
+     if (
+  res.status === 'PENDING_PAYMENT' ||
+  res.penalty !== undefined
+) {
+
+  this.showCancelOptions(id);
   return;
 }
       await this.presentToast('Cita cancelada correctamente', 'danger');
@@ -234,27 +246,24 @@ groupAppointments() {
   const groups: any = {};
 
   this.appointments.forEach(appt => {
-    // 🔥 CLAVE: usar ISO (no local time)
-    const key = appt.date.split('T')[0]; // 👉 YYYY-MM-DD
 
-    if (!groups[key]) {
-      groups[key] = [];
+    if (!appt.date) return;
+
+    const dateStr = appt.date.split('T')[0];
+
+    if (!groups[dateStr]) {
+      groups[dateStr] = [];
     }
 
-    groups[key].push(appt);
+    groups[dateStr].push(appt);
   });
 
-  this.groupedAppointments = Object.keys(groups).map(key => ({
-    date: new Date(key + 'T00:00:00'), // 🔥 evita desfase
-    items: groups[key].sort(
-      (a: any, b: any) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-    )
-  }));
+  this.groupedAppointments = [...Object.keys(groups).map(key => ({
+  date: new Date(key + 'T00:00:00'),
+  items: groups[key]
+}))];
 
-  this.groupedAppointments.sort(
-    (a, b) => a.date.getTime() - b.date.getTime()
-  );
+  console.log('GROUPED:', this.groupedAppointments);
 }
 getNombre(appt: any): string {
   if (this.role === 'PROFESSIONAL') {
@@ -317,8 +326,9 @@ shouldShowPenalty(appt: any): boolean {
   if (!appt.penalty || appt.penalty <= 0) return false;
 
   const validStatus =
-    appt.status === 'CANCELLED' ||
-    appt.status === 'RESCHEDULED';
+  appt.status === 'CANCELLED' ||
+  appt.status === 'RESCHEDULED' ||
+  appt.status === 'PENDING_PAYMENT';
 
   const now = new Date();
   const apptDate = new Date(appt.date);
@@ -536,20 +546,24 @@ canProfessionalConfirm(appt: any): boolean {
 }
 
 canReschedule(appt: any): boolean {
+
   if (
     appt.status === 'CANCELLED' ||
-    appt.status === 'PAYMENT_REVIEW' ||
     appt.status === 'REFUNDED'
-  ) return false;
+  ) {
+    return false;
+  }
 
   return true;
 }
 canCancel(appt: any): boolean {
+
   if (
     appt.status === 'CANCELLED' ||
-    appt.status === 'PAYMENT_REVIEW' ||
     appt.status === 'REFUNDED'
-  ) return false;
+  ) {
+    return false;
+  }
 
   return true;
 }

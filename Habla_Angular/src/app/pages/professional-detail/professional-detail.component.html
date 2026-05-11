@@ -21,11 +21,18 @@
   <div *ngIf="professional">
 
     <!-- FOTO -->
-    <div style="text-align:center; margin-top: 10px;">
-      <ion-avatar style="margin: 0 auto; width: 120px; height: 120px;">
-        <img [src]="professional.image || ('https://i.pravatar.cc/150?u=' + professional.email)" />
-      </ion-avatar>
-    </div>
+<div class="photo-wrapper">
+
+  <ion-avatar class="profile-avatar">
+    <img [src]="professional.image || ('https://i.pravatar.cc/150?u=' + professional.email)" />
+  </ion-avatar>
+
+  <!-- BOTÓN CHAT -->
+<div class="message-icon" (click)="goToChat()">
+  💬
+</div>
+
+</div>
 
     <!-- INFO PRINCIPAL -->
     <div style="text-align:center; margin-top: 16px;">

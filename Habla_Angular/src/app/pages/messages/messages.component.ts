@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { RouterLink } from '@angular/router';
 import { MessagesService } from '../../services/messages.service';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-messages',
@@ -11,25 +12,55 @@ import { MessagesService } from '../../services/messages.service';
   templateUrl: './messages.component.html',
   styleUrls: ['./messages.component.scss'],
 })
-export class MessagesComponent implements OnInit {
+export class MessagesComponent {
   conversations: any[] = [];
+  loading = false;
 
-  constructor(private messagesService: MessagesService) {}
+  constructor(
+  private messagesService: MessagesService,
+  private route: ActivatedRoute,
+  private router: Router
+) {}
 
-  ngOnInit() {
-    this.loadConversations();
-  }
+  //ngOnInit() {
+   // this.loadConversations();
+  //}
 ionViewWillEnter() {
-  this.loadConversations();
+
+  const professionalId =
+    this.route.snapshot.queryParamMap.get('professionalId');
+
+  this.loadConversations(professionalId);
 }
-  loadConversations() {
+  loadConversations(professionalId?: string | null) {
+
+     if (this.loading) return;
+    this.loading = true;
     this.messagesService.getConversations().subscribe({
       next: (data) => {
         this.conversations = data;
+        if (professionalId) {
+
+  const existingConversation = data.find(
+    (c: any) => c.otherUser?.id === professionalId
+  );
+
+  if (existingConversation) {
+
+    this.router.navigate([
+      '/tabs/messages',
+      existingConversation.conversationId
+    ]);
+
+  }
+
+}
+        this.loading = false;
         console.log('Conversations:', data);
       },
       error: (err) => {
         console.error(err);
+        this.loading = false;
       }
     });
   }

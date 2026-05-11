@@ -12,6 +12,15 @@
       <ion-label>Citas</ion-label>
     </ion-tab-button>
 
+    <ion-tab-button
+  *ngIf="userRole === 'PROFESSIONAL'"
+  tab="professional-dashboard"
+  href="/tabs/professional-dashboard"
+>
+  <ion-icon name="briefcase-outline"></ion-icon>
+  <ion-label>Panel Pro</ion-label>
+</ion-tab-button>
+
     <ion-tab-button tab="messages" href="/tabs/messages">
       <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
       <ion-label>Mensajes</ion-label>

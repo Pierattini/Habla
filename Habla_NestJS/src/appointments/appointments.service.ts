@@ -87,9 +87,7 @@ export class AppointmentsService {
     const overlappingAppointment = await this.prisma.appointment.findFirst({
       where: {
         professionalId, // ← user id
-        status: {
-          not: AppointmentStatus.CANCELLED,
-        },
+        status: AppointmentStatus.CONFIRMED,
         AND: [
           {
             date: {
@@ -194,7 +192,9 @@ export class AppointmentsService {
     });
   }
 
-  findByCustomer(userId: string) {
+  async findByCustomer(userId: string) {
+    await this.releaseExpiredPayments();
+
     return this.prisma.appointment.findMany({
       where: { customerId: userId },
       include: {
@@ -206,28 +206,6 @@ export class AppointmentsService {
       },
       orderBy: {
         date: 'asc',
-      },
-    });
-  }
-  findAll() {
-    return this.prisma.appointment.findMany({
-      orderBy: {
-        date: 'desc',
-      },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            email: true,
-          },
-        },
-        professional: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
       },
     });
   }
@@ -272,31 +250,44 @@ export class AppointmentsService {
     const diffHours =
       (appointmentDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-    // 🔥 MENOS DE 48 HORAS → PENALIZACIÓN
-    const alreadyPenalized = appointment.penalty && appointment.penalty > 0;
+    const professional = await this.prisma.professional.findUnique({
+      where: { userId: appointment.professionalId },
+    });
 
-    if (!alreadyPenalized && diffHours < 48) {
-      const professional = await this.prisma.professional.findUnique({
-        where: { userId: appointment.professionalId },
-      });
+    const price = professional?.price || 0;
 
-      const price = professional?.price || 0;
-      const penalty = price * 0.5;
+    // 🔥 SI YA PAGÓ
+    if (
+      appointment.status === AppointmentStatus.PAYMENT_REVIEW ||
+      appointment.status === AppointmentStatus.CONFIRMED
+    ) {
+      const penalty = diffHours < 48 ? price * 0.5 : 0;
 
       return this.prisma.appointment.update({
         where: { id },
         data: {
-          status: AppointmentStatus.PENDING_PAYMENT, // 🔥 clave
-          penalty: penalty,
+          status: AppointmentStatus.PENDING_PAYMENT,
+          penalty,
         },
       });
     }
 
-    // 🔥 MÁS DE 48 HORAS → SIN PENALIZACIÓN PERO CON OPCIONES
+    // 🔥 NO PAGADA Y MENOS DE 48H
+    if (diffHours < 48) {
+      return this.prisma.appointment.update({
+        where: { id },
+        data: {
+          status: AppointmentStatus.PENDING_PAYMENT,
+          penalty: price * 0.5,
+        },
+      });
+    }
+
+    // 🔥 MÁS DE 48H
     return this.prisma.appointment.update({
       where: { id },
       data: {
-        status: AppointmentStatus.CANCELLED, // ✅ importante
+        status: AppointmentStatus.CANCELLED,
         penalty: 0,
       },
     });
@@ -360,9 +351,7 @@ export class AppointmentsService {
           gte: startOfDay,
           lte: endOfDay,
         },
-        status: {
-          not: AppointmentStatus.CANCELLED,
-        },
+        status: AppointmentStatus.CONFIRMED,
       },
     });
 
@@ -482,7 +471,7 @@ export class AppointmentsService {
       where: {
         professionalId: appointment.professionalId,
         id: { not: id },
-        status: { not: AppointmentStatus.CANCELLED },
+        status: AppointmentStatus.CONFIRMED,
         AND: [
           { date: { lt: endDate } },
           {
@@ -760,8 +749,15 @@ export class AppointmentsService {
     const price = professional?.price || 0;
     const penalty = appointment.penalty || 0;
 
-    // 🔥 CALCULAR RESTANTE (LO QUE SE DEVUELVE)
-    const refundAmount = price - penalty;
+    let refundAmount = 0;
+
+    // 🔥 MENOS DE 48H
+    if (penalty > 0) {
+      refundAmount = price * 0.5;
+    } else {
+      // 🔥 MÁS DE 48H
+      refundAmount = price;
+    }
 
     // 👉 OPCIÓN CRÉDITO
     if (body.option === 'CREDIT') {
@@ -781,7 +777,9 @@ export class AppointmentsService {
       if (!body.bank || !body.account || !body.accountType) {
         throw new ForbiddenException('Faltan datos bancarios');
       }
-
+      console.log('PRICE:', price);
+      console.log('PENALTY:', penalty);
+      console.log('REFUND AMOUNT:', refundAmount);
       // 🔥 ENVIAR CORREO AL PROFESIONAL
       await this.sendRefundRequestEmail(
         appointment.professional.email,

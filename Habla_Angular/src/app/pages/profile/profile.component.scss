@@ -65,3 +65,21 @@ ion-button[fill="clear"] {
 .btn-logout {
   margin-top: 10px;
 }
+.avatar-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.avatar-image {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #4c8dff;
+}
+
+.avatar {
+  font-size: 110px;
+  color: #4c8dff;
+}

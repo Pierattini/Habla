@@ -14,7 +14,7 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, IonicModule, FormsModule],
 })
-export class ChatDetailComponent implements OnInit {
+export class ChatDetailComponent {
   conversationId!: string;
 
   currentUserId = '';
@@ -37,7 +37,7 @@ export class ChatDetailComponent implements OnInit {
     private authService: AuthService
   ) {}
 
-  ngOnInit() {
+  ionViewWillEnter() {
   this.conversationId =
     this.route.snapshot.paramMap.get('id') || '';
 

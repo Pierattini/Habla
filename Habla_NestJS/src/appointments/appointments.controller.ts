@@ -57,12 +57,12 @@ export class AppointmentsController {
   }
 
   // 🟢 ADMIN → ver TODAS las citas
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
-  @Get('all')
-  getAllAppointments() {
-    return this.appointmentsService.findAll();
-  }
+  //@UseGuards(JwtAuthGuard, RolesGuard)
+  //@Roles(Role.ADMIN)
+  //@Get('all')
+  //getAllAppointments() {
+  // return this.appointmentsService.findAll();
+  //}
 
   // 🟢 PROFESSIONAL → confirmar cita
   @UseGuards(JwtAuthGuard, RolesGuard)

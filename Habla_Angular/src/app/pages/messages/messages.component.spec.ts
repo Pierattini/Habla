@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
-
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessagesComponent } from './messages.component';
 
 describe('MessagesComponent', () => {

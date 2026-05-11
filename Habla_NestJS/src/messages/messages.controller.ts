@@ -79,4 +79,24 @@ export class MessagesController {
   ) {
     return this.messagesService.uploadFileToConversation(id, req.user.id, file);
   }
+  @UseGuards(JwtAuthGuard)
+  @Post('conversations/:id/send')
+  sendMessageToConversation(
+    @Param('id') id: string,
+    @Request() req: { user: { id: string } },
+    @Body()
+    body: {
+      content?: string;
+      fileUrl?: string;
+      fileName?: string;
+    },
+  ) {
+    return this.messagesService.sendMessageToConversation(
+      id,
+      req.user.id,
+      body.content,
+      body.fileUrl,
+      body.fileName,
+    );
+  }
 }

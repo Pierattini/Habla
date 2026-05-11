@@ -59,6 +59,7 @@ export class UsersService {
 
     if (dto.name !== undefined) dataToUpdate.name = dto.name;
     if (dto.email !== undefined) dataToUpdate.email = dto.email;
+
     if (dto.country !== undefined) {
       dataToUpdate.country = dto.country;
 
@@ -73,16 +74,35 @@ export class UsersService {
       }
     }
 
-    return this.prisma.user.update({
+    // ✅ USER
+    await this.prisma.user.update({
       where: { id: userId },
       data: dataToUpdate,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        country: true,
-        timezone: true,
+    });
+
+    // ✅ PROFESSIONAL
+    await this.prisma.professional.updateMany({
+      where: {
+        userId: userId,
+      },
+
+      data: {
+        ...(dto.name !== undefined && {
+          name: dto.name,
+        }),
+
+        ...(dto.image !== undefined && {
+          image: dto.image,
+        }),
+      },
+    });
+
+    return this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      include: {
+        professional: true,
       },
     });
   }
@@ -102,12 +122,59 @@ export class UsersService {
     const data = await this.prisma.professional.findMany();
 
     return data.map((p) => ({
-      id: p.userId, // 👈 ESTE es el cambio clave
+      id: p.userId,
       name: p.name || 'Profesional',
       specialty: p.specialty,
       price: p.price,
       duration: p.duration,
       image: p.image,
     }));
+  }
+
+  // 👇 AGREGA ESTO ABAJO
+  async getMe(userId: string) {
+    return this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+
+      include: {
+        professional: true,
+      },
+    });
+  }
+  async getProfile(userId: string) {
+    return this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        country: true,
+        timezone: true,
+
+        professional: {
+          select: {
+            id: true,
+            name: true,
+            specialty: true,
+            description: true,
+            price: true,
+            duration: true,
+            image: true,
+
+            bankName: true,
+            accountType: true,
+            accountNumber: true,
+            accountHolder: true,
+            accountEmail: true,
+          },
+        },
+      },
+    });
   }
 }

@@ -9,7 +9,21 @@
 
     <!-- PERFIL TOP -->
     <div class="profile-top">
-      <ion-icon name="person-circle-outline" class="avatar"></ion-icon>
+      <div class="avatar-container">
+
+  <img
+    *ngIf="image"
+    [src]="image"
+    class="avatar-image"
+  />
+
+  <ion-icon
+    *ngIf="!image"
+    name="person-circle-outline"
+    class="avatar"
+  ></ion-icon>
+
+</div>
       <h2 *ngIf="name">{{ name }}</h2>
       <p class="subtitle">{{ email }}</p>
     </div>

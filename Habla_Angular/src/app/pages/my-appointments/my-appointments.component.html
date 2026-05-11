@@ -51,7 +51,7 @@
 
             </div>
 
-            <div class="estado" [style.color]="getStatusColor(appt.status)">
+            <div class="estado" [ngClass]="getStatusColor(appt.status)">
 
   {{
     appt.status === 'CONFIRMED' ? '✔ ' :

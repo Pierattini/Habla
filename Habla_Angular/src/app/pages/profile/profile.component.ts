@@ -61,6 +61,7 @@ export class ProfileComponent implements OnInit {
   // 👤 USUARIO
   name = '';
   email = '';
+  image = '';
   role = '';
   country = '';
   timezone = '';
@@ -102,11 +103,16 @@ export class ProfileComponent implements OnInit {
       next: (user: any) => {
   console.log('PROFILE CARGADO:', user);
 
-  this.name = user.name;
-  this.email = user.email;
-  this.role = user.role;
-  this.country = user.country || '';
-  this.timezone = user.timezone || '';
+  this.name = user.professional?.name || user.name;
+
+console.log('IMAGEN:', user.professional?.image);
+
+this.image = user.professional?.image || '';
+
+this.email = user.email;
+this.role = user.role;
+this.country = user.country || '';
+this.timezone = user.timezone || '';
 },
       error: (err) => {
   console.error('ERROR PERFIL:', err);

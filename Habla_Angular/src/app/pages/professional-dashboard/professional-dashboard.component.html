@@ -1,31 +1,225 @@
 <ion-header>
   <ion-toolbar color="primary">
-    <ion-title>Dashboard Profesional</ion-title>
+    <ion-title>
+      Panel Profesional
+    </ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content class="ion-padding">
 
-  <h2>📅 Citas de hoy</h2>
+  <!-- FOTO -->
+  <div class="profile-header">
 
-  <!-- DEBUG -->
-  <p style="color:red">DEBUG: {{ todayAppointments.length }}</p>
+  <img
+  [src]="profile.image"
+  class="profile-image"
+/>
 
-  <!-- 🟢 LISTA SIMPLE (PRUEBA) -->
-  <div *ngIf="todayAppointments.length > 0">
+  <input
+    type="file"
+    #fileInput
+    accept="image/*"
+    (change)="onFileSelected($event)"
+    style="display: none;"
+  />
 
-    <div *ngFor="let appt of todayAppointments" style="margin-bottom:10px; padding:10px; border:1px solid #ccc">
+  <ion-button
+    fill="outline"
+    size="small"
+    (click)="fileInput.click()"
+  >
+    <ion-icon
+      slot="start"
+      name="image-outline">
+    </ion-icon>
 
-      <p><b>Hora:</b> {{ appt.date }}</p>
-      <p><b>Estado:</b> {{ appt.status }}</p>
+    Cambiar foto
+  </ion-button>
 
-    </div>
+  <h2>{{ profile.name }}</h2>
 
-  </div>
+  <p>{{ profile.specialty }}</p>
 
-  <!-- 🔴 SIN CITAS -->
-  <div *ngIf="todayAppointments.length === 0">
-    <p>No tienes citas hoy</p>
-  </div>
+</div>
+
+  <!-- PERFIL -->
+  <ion-card>
+
+    <ion-card-content>
+
+      <h2 class="section-title">
+        Perfil profesional
+      </h2>
+
+      <ion-item>
+        <ion-label position="stacked">
+          Nombre
+        </ion-label>
+
+        <ion-input
+          [(ngModel)]="profile.name">
+        </ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="stacked">
+          Especialidad
+        </ion-label>
+
+        <ion-input
+          [(ngModel)]="profile.specialty">
+        </ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="stacked">
+          Descripción
+        </ion-label>
+
+        <ion-textarea
+          rows="5"
+          [(ngModel)]="profile.description">
+        </ion-textarea>
+      </ion-item>
+
+    </ion-card-content>
+
+  </ion-card>
+
+  <!-- CONFIG SESIÓN -->
+  <ion-card>
+
+    <ion-card-content>
+
+      <h2 class="section-title">
+        Configuración de sesión
+      </h2>
+
+      <ion-item>
+        <ion-label position="stacked">
+          Precio CLP
+        </ion-label>
+
+        <ion-input
+          type="number"
+          [(ngModel)]="profile.price">
+        </ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="stacked">
+          Duración sesión (min)
+        </ion-label>
+
+        <ion-input
+          type="number"
+          [(ngModel)]="profile.duration">
+        </ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="stacked">
+          Intervalo entre horas (min)
+        </ion-label>
+
+        <ion-input
+          type="number"
+          [(ngModel)]="profile.interval">
+        </ion-input>
+      </ion-item>
+
+    </ion-card-content>
+
+  </ion-card>
+
+  <!-- HORARIOS -->
+  <ion-card>
+
+    <ion-card-content>
+
+      <h2 class="section-title">
+        Horarios disponibles
+      </h2>
+
+      <div
+        *ngFor="let item of availability"
+        class="day-card"
+      >
+
+        <h3>{{ item.day }}</h3>
+
+        <ion-item>
+          <ion-label>
+            Disponible
+          </ion-label>
+
+          <input
+            type="checkbox"
+            [(ngModel)]="item.enabled"
+          />
+        </ion-item>
+
+        <div *ngIf="item.enabled">
+
+          <ion-item>
+
+            <ion-label position="stacked">
+              Desde
+            </ion-label>
+
+            <input
+              type="time"
+              [(ngModel)]="item.start"
+            />
+
+          </ion-item>
+
+          <ion-item>
+
+            <ion-label position="stacked">
+              Hasta
+            </ion-label>
+
+            <input
+              type="time"
+              [(ngModel)]="item.end"
+            />
+
+          </ion-item>
+
+        </div>
+
+      </div>
+
+    </ion-card-content>
+
+  </ion-card>
+
+  <!-- REGLAS -->
+  <ion-card>
+
+    <ion-card-content>
+
+      <h2 class="section-title">
+        Reglas y condiciones
+      </h2>
+
+      <ion-textarea
+        rows="5"
+        [(ngModel)]="profile.rules">
+      </ion-textarea>
+
+    </ion-card-content>
+
+  </ion-card>
+
+  <ion-button
+    expand="block"
+    class="save-btn"
+    (click)="saveProfile()"
+  >
+    Guardar cambios
+  </ion-button>
 
 </ion-content>

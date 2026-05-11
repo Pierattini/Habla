@@ -16,4 +16,8 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   timezone?: string;
+
+  @IsOptional()
+  @IsString()
+  image?: string;
 }

@@ -22,12 +22,13 @@ export class RescheduleModalComponent {
   noSlots: boolean = false;
   userRejectedSlots: boolean = false;
   message: string = '';
+  showMessageInput: boolean = false;
 
   constructor(
     private modalCtrl: ModalController,
     private auth: AuthService,
     private alertCtrl: AlertController,
-  //  private cd: ChangeDetectorRef 
+    private cd: ChangeDetectorRef 
   ) {}
 
   // ❌ cerrar
@@ -139,7 +140,7 @@ Para confirmar tu nueva cita.
     this.sendReschedule(false);
   }
   showMessageBox() {
-  this.noSlots = true;
+  this.showMessageInput = true;
 }
   // 🔥 NUEVO: dejar como crédito (sin elegir hora)
   async leaveAsCredit() {
@@ -178,7 +179,7 @@ Se aplicará una penalización del 50%.
         handler: () => {
           this.noSlots = true;
           this.userRejectedSlots = true;
-         // this.cd.detectChanges();
+          this.cd.detectChanges();
         }
       }
     ]

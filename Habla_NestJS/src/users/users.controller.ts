@@ -55,8 +55,8 @@ export class UsersController {
   // 🔹 PERFIL PROPIO
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getProfile(@Request() req: any) {
-    return req.user;
+  getProfile(@Request() req: AuthRequest) {
+    return this.usersService.getProfile(req.user.id);
   }
 
   // 🔹 PROFESIONAL ACTUALIZA SU DURACIÓN

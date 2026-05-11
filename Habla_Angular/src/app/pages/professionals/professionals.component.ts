@@ -30,9 +30,9 @@ import {
   IonButton,
   IonContent,
   IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
+  //IonCardHeader,
+  //IonCardTitle,
+ // IonCardSubtitle,
   IonCardContent,
   IonHeader,
   IonToolbar,
@@ -46,7 +46,7 @@ export class ProfessionalsComponent implements OnInit {
   constructor(
   private http: HttpClient,
   private router: Router,
-  private cd: ChangeDetectorRef
+  //private cd: ChangeDetectorRef
   
 ) {}
 
@@ -61,7 +61,7 @@ getProfessionals() {
         console.log('DATA:', res);
 
         this.professionals = Array.isArray(res) ? res : [res];
-        this.cd.detectChanges();
+       // this.cd.detectChanges();
 
       },
       error: (err) => console.error(err)

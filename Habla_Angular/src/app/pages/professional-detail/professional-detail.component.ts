@@ -4,6 +4,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChangeDetectorRef } from '@angular/core';
+//import { IonicModule } from '@ionic/angular';
 
 
 import {
@@ -25,6 +26,8 @@ import {
   IonCardHeader,
   IonCardTitle,
   IonCardContent,
+  IonIcon,
+  
   
 } from '@ionic/angular/standalone';
 
@@ -36,18 +39,19 @@ import {
   imports: [
     CommonModule,
     FormsModule,
+    //IonicModule,
     IonContent,
     IonHeader,
     IonToolbar,
     IonTitle,
     IonAvatar,
     IonButton,
-    IonItem,
-    IonLabel,
+    //IonItem,
+    //IonLabel,
     IonDatetime,
-    IonGrid,
-    IonRow,
-    IonCol,
+    //IonGrid,
+    //IonRow,
+   // IonCol,
     IonText,
     IonCard,
     IonCardHeader,
@@ -70,7 +74,7 @@ export class ProfessionalDetailComponent implements OnInit {
   constructor(
   private route: ActivatedRoute,
   private http: HttpClient,
-  private cdr: ChangeDetectorRef,
+  //private cdr: ChangeDetectorRef,
   private router: Router 
 ) {}
 
@@ -100,7 +104,7 @@ export class ProfessionalDetailComponent implements OnInit {
         console.log('LISTA:', res);
 
         // 🔥 SOLUCIÓN
-        this.professional = res.find(p => p.id === this.id);
+        this.professional = res.find(p => String(p.id) === String(this.id));
 
         console.log('PROFESIONAL FINAL:', this.professional);
 
@@ -114,19 +118,19 @@ export class ProfessionalDetailComponent implements OnInit {
   if (!this.professional?.id || !this.selectedDate) return;
 
   // 🔥 LIMPIAR FECHA
-  const cleanDate = this.selectedDate.split('T')[0];
-  const date = new Date(cleanDate + 'T12:00:00');
+  //const cleanDate = this.selectedDate.split('T')[0];
+  //const date = new Date(cleanDate + 'T12:00:00');
 
   this.http.get<string[]>(
   `http://localhost:3000/appointments/available-slots?professionalId=${this.professional.id}&date=${this.selectedDate}`
 )
   .subscribe({
-   next: (res) => {
+   next: (res: any[]) => {
   console.log('HORAS REALES:', res);
 
   this.availableHours = res;
 
-  this.cdr.detectChanges();
+  //this.cdr.detectChanges();
 },
     error: (err) => console.error(err)
   });
@@ -215,5 +219,12 @@ toggleHour(hour: string) {
   } else {
     this.selectedHour = hour;
   }
+}
+goToChat() {
+  this.router.navigate(['/tabs/messages'], {
+    queryParams: {
+      professionalId: this.professional.id
+    }
+  });
 }
 }
