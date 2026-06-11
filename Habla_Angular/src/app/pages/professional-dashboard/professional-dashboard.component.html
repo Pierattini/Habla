@@ -44,6 +44,23 @@
 </div>
 
   <!-- DOCUMENTOS -->
+  <section class="documents-summary">
+    <div class="metric-card">
+      <span>Documentos pendientes</span>
+      <strong>{{ $any(this).dashboardView.pendingDocumentsCount }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <span>Documentos enviados</span>
+      <strong>{{ $any(this).dashboardView.sentDocumentsCount }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <span>Emitidos este mes</span>
+      <strong>{{ $any(this).dashboardView.emittedThisMonthCount }}</strong>
+    </div>
+  </section>
+
   <ion-card>
 
     <ion-card-content>
@@ -68,11 +85,11 @@
 
           <div>
             <h3>
-              {{ document.customer.name || document.customer.email }}
+              {{ $any(document).view?.customerName }}
             </h3>
 
             <p>
-              {{ document.appointmentDate | date:'dd/MM/yyyy HH:mm' }}
+              {{ $any(document).view?.appointmentDate | date:'dd/MM/yyyy HH:mm' }}
             </p>
           </div>
 
@@ -91,6 +108,71 @@
           <span>
             Solicitado {{ document.createdAt | date:'dd/MM/yyyy' }}
           </span>
+
+          <span>
+            {{ $any(document).view?.typeLabel }}
+          </span>
+        </div>
+
+        <div class="document-upload">
+          <input
+            type="file"
+            #taxDocumentInput
+            accept=".pdf,image/jpeg,image/jpg,image/png"
+            (change)="$any(this).onTaxDocumentFileSelected(document.id, $event)"
+            style="display: none;"
+          />
+
+          <ion-button
+            fill="outline"
+            size="small"
+            (click)="taxDocumentInput.click()"
+          >
+            Seleccionar archivo
+          </ion-button>
+
+          <span
+            *ngIf="$any(this).getSelectedDocumentFileName(document.id)"
+            class="selected-file-name"
+          >
+            {{ $any(this).getSelectedDocumentFileName(document.id) }}
+          </span>
+
+          <ion-button
+            size="small"
+            [disabled]="!$any(this).getSelectedDocumentFileName(document.id) || $any(this).isUploadingDocument(document.id)"
+            (click)="$any(this).uploadTaxDocument(document.id)"
+          >
+            {{ $any(this).isUploadingDocument(document.id) ? 'Subiendo...' : 'Subir documento' }}
+          </ion-button>
+
+          <a
+            *ngIf="$any(document).pdfUrl"
+            class="document-link"
+            [href]="$any(document).pdfUrl"
+            target="_blank"
+            rel="noopener"
+          >
+            Ver documento
+          </a>
+
+          <ion-button
+            fill="outline"
+            size="small"
+            [disabled]="$any(this).isDocumentActionRunning(document.id)"
+            (click)="$any(this).markDocumentGenerated(document.id)"
+          >
+            Marcar generado
+          </ion-button>
+
+          <ion-button
+            fill="outline"
+            size="small"
+            [disabled]="$any(this).isDocumentActionRunning(document.id)"
+            (click)="$any(this).markDocumentSent(document.id)"
+          >
+            Marcar enviado
+          </ion-button>
         </div>
 
       </div>
@@ -103,26 +185,39 @@
 
     <ion-card-content>
 
-      <h2 class="section-title">
-        Documentos Tributarios
-      </h2>
+      <div class="documents-title-row">
+        <h2 class="section-title">
+          Documentos Emitidos
+        </h2>
+      </div>
 
-      <div
-        *ngIf="taxDocuments.length === 0"
-        class="documents-empty"
-      >
-        No hay documentos tributarios registrados.
+      <div class="documents-filters">
+        <button
+          *ngFor="let filter of $any(this).documentFilters"
+          type="button"
+          [class.active]="$any(this).selectedDocumentFilter === filter.value"
+          (click)="$any(this).setDocumentFilter(filter.value)"
+        >
+          {{ filter.label }}
+        </button>
       </div>
 
       <div
-        *ngFor="let document of taxDocuments"
+        *ngIf="$any(this).dashboardView.filteredTaxDocuments.length === 0"
+        class="documents-empty"
+      >
+        No hay documentos para este filtro.
+      </div>
+
+      <div
+        *ngFor="let document of $any(this).dashboardView.filteredTaxDocuments"
         class="document-card"
       >
 
         <div class="document-main">
           <div>
             <h3>{{ document.fileName || 'Documento sin archivo' }}</h3>
-            <p>{{ getDocumentTypeLabel(document.type) }}</p>
+            <p>{{ $any(document).view?.customerName }}</p>
           </div>
 
           <span class="document-badge">
@@ -132,13 +227,58 @@
 
         <div class="document-meta">
           <span>
-            Subido:
-            {{ document.uploadedAt ? (document.uploadedAt | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}
+            Tipo: {{ $any(document).view?.typeLabel }}
           </span>
 
-          <span *ngIf="document.status === 'DOCUMENT_UPLOADED'">
-            DOCUMENT_UPLOADED
+          <span>
+            Emision:
+            {{ $any(document).view?.issueDate ? ($any(document).view.issueDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}
           </span>
+
+          <span>
+            Envio:
+            {{ $any(document).view?.sentDate ? ($any(document).view.sentDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}
+          </span>
+        </div>
+
+        <div class="document-actions">
+          <a
+            *ngIf="$any(document).pdfUrl"
+            class="document-link"
+            [href]="$any(document).pdfUrl"
+            target="_blank"
+            rel="noopener"
+          >
+            Ver documento
+          </a>
+
+          <ion-button
+            fill="outline"
+            size="small"
+            [disabled]="$any(this).isDocumentActionRunning(document.id)"
+            (click)="$any(this).markDocumentGenerated(document.id)"
+          >
+            Marcar generado
+          </ion-button>
+
+          <ion-button
+            fill="outline"
+            size="small"
+            [disabled]="$any(this).isDocumentActionRunning(document.id)"
+            (click)="$any(this).markDocumentSent(document.id)"
+          >
+            Marcar enviado
+          </ion-button>
+
+          <ion-button
+            *ngIf="document.emailSent"
+            fill="outline"
+            size="small"
+            [disabled]="$any(this).isDocumentActionRunning(document.id)"
+            (click)="$any(this).resendDocumentEmail(document.id)"
+          >
+            Reenviar correo
+          </ion-button>
         </div>
 
       </div>
@@ -327,3 +467,4 @@
   </ion-button>
 
 </ion-content>
+

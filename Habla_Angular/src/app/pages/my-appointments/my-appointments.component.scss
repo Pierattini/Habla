@@ -209,6 +209,166 @@ ion-card {
   font-weight: 800;
 }
 
+.documento-tributario {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-lg);
+  background: color-mix(in srgb, var(--app-primary-light) 8%, var(--app-bg));
+}
+
+.documento-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.documento-header h4 {
+  margin: 0 0 4px;
+  color: var(--app-text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.documento-header p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.documento-badge {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-primary-light) 18%, var(--app-bg));
+  color: var(--app-primary);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.documento-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.documento-grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.documento-grid span {
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.documento-grid strong {
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.documento-correo {
+  padding: 9px 10px;
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-primary) 10%, var(--app-surface));
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.documento-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-primary-light) 10%, var(--app-surface));
+}
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 9px;
+  align-items: flex-start;
+  color: var(--app-muted);
+}
+
+.timeline-dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 3px;
+  border: 2px solid color-mix(in srgb, var(--app-primary) 24%, var(--app-surface));
+  border-radius: 999px;
+  background: var(--app-surface);
+}
+
+.timeline-item.active {
+  color: var(--app-text);
+}
+
+.timeline-item.active .timeline-dot {
+  border-color: var(--app-primary);
+  background: var(--app-primary-light);
+}
+
+.timeline-item.failed .timeline-dot {
+  border-color: var(--app-primary);
+  background: color-mix(in srgb, var(--app-primary) 18%, var(--app-surface));
+}
+
+.timeline-item strong,
+.timeline-item small {
+  display: block;
+}
+
+.timeline-item strong {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.timeline-item small {
+  margin-top: 2px;
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.documento-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.documento-link {
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 9px 14px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 28%, transparent);
+  border-radius: var(--app-radius-md);
+  background: var(--app-bg);
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 18px;
+  text-decoration: none;
+}
+
+.documento-download {
+  background: color-mix(in srgb, var(--app-primary-light) 10%, var(--app-bg));
+}
+
+.documento-link:hover {
+  background: color-mix(in srgb, var(--app-primary-light) 14%, var(--app-bg));
+}
+
 .botones {
   display: flex;
   flex-direction: column;

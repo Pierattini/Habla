@@ -11,6 +11,7 @@ import { RescheduleModalComponent } from '../reschedule-modal/reschedule-modal.c
 import { ChangeDetectorRef } from '@angular/core';
 import { ViewWillEnter } from '@ionic/angular';
 import { AppointmentsService } from '../../services/appointments.service';
+import { TaxDocumentsService } from '../../services/tax-documents.service';
 import {
   canCancel as canCancelHelper,
   canPay as canPayHelper,
@@ -44,7 +45,8 @@ export class MyAppointmentsComponent {
   private router: Router,
   private modalCtrl: ModalController,
   private route: ActivatedRoute,
-  private appointmentsService: AppointmentsService
+  private appointmentsService: AppointmentsService,
+  private taxDocumentsService: TaxDocumentsService
 ) {}
 
 getHeaders() {
@@ -95,10 +97,7 @@ async presentToast(message: string, color: string = 'success') {
     this.appointments = res ?? [];
 this.appointments = [...(res ?? [])];
 
-setTimeout(() => {
-  this.groupAppointments();
-  this.cd.detectChanges();
-}, 0);
+this.loadTaxDocumentsForAppointments();
   },
   error: (err) => {
     console.error(err);
@@ -106,6 +105,46 @@ setTimeout(() => {
 });
 }
 
+loadTaxDocumentsForAppointments() {
+  if (this.role === 'PROFESSIONAL') {
+    this.finishAppointmentsLoad();
+    return;
+  }
+
+  this.taxDocumentsService.getMyDocuments().subscribe({
+    next: (documents: any[]) => {
+      const documentsByAppointment = new Map(
+        documents.map((document: any) => [document.appointmentId, document])
+      );
+
+      this.appointments = this.appointments.map((appointment) => ({
+        ...appointment,
+        taxDocument: documentsByAppointment.get(appointment.id) || appointment.taxDocument,
+        documentView: this.buildDocumentView(
+          appointment,
+          documentsByAppointment.get(appointment.id) || appointment.taxDocument
+        )
+      }));
+
+      this.finishAppointmentsLoad();
+    },
+    error: (err: any) => {
+      console.error('Error cargando documentos tributarios:', err);
+      this.appointments = this.appointments.map((appointment) => ({
+        ...appointment,
+        documentView: this.buildDocumentView(appointment, appointment.taxDocument)
+      }));
+      this.finishAppointmentsLoad();
+    }
+  });
+}
+
+finishAppointmentsLoad() {
+  setTimeout(() => {
+    this.groupAppointments();
+    this.cd.detectChanges();
+  }, 0);
+}
   cancelAppointment(id: string) {
   this.loadingId = id;
 
@@ -282,6 +321,149 @@ getStatusColor(status: string): string {
   return getStatusColorHelper(status);
 }
 
+
+buildDocumentView(appt: any, document: any): any {
+  const status = document?.status || appt?.documentStatus || 'DOCUMENT_NOT_REQUIRED';
+  const issueDate = document?.generatedAt || document?.uploadedAt || document?.createdAt || null;
+  const sentDate = document?.sentAt || document?.emailSentAt || null;
+  const pdfUrl = this.normalizeDocumentUrl(document?.pdfUrl);
+  const requested = appt?.documentRequested === true ||
+    !!document ||
+    status !== 'DOCUMENT_NOT_REQUIRED';
+
+  return {
+    document,
+    status,
+    statusLabel: this.getDocumentStatusLabel(status),
+    typeLabel: this.getDocumentTypeLabel(document?.type),
+    issueDate,
+    sentDate,
+    fileName: document?.fileName || 'Sin archivo',
+    requested,
+    requestedLabel: requested ? 'Si' : 'No',
+    emailSent: document?.emailSent === true,
+    emailSentAt: document?.emailSentAt || null,
+    pdfUrl,
+    timeline: this.getDocumentTimeline(appt, document, status),
+    emptyMessage: requested
+      ? 'Documento pendiente de emisión'
+      : 'No se ha solicitado documento tributario',
+  };
+}
+getTaxDocument(appt: any): any {
+  return appt?.taxDocument || null;
+}
+
+getDocumentStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    DOCUMENT_NOT_REQUIRED: 'No requerido',
+    DOCUMENT_PENDING: 'Pendiente',
+    DOCUMENT_UPLOADED: 'Documento cargado',
+    DOCUMENT_GENERATED: 'Generado',
+    DOCUMENT_SENT: 'Enviado',
+    DOCUMENT_FAILED: 'Falló',
+  };
+
+  return labels[status] || status || 'Sin estado';
+}
+
+getDocumentTypeLabel(type?: string): string {
+  const labels: Record<string, string> = {
+    BOLETA: 'Boleta',
+    FACTURA: 'Factura',
+    INVOICE: 'Invoice',
+    RECEIPT: 'Recibo',
+  };
+
+  return type ? labels[type] || type : 'Documento';
+}
+
+getDocumentIssueDate(document: any): string | null {
+  return document?.generatedAt || document?.uploadedAt || document?.createdAt || null;
+}
+
+getDocumentSentDate(document: any): string | null {
+  return document?.sentAt || document?.emailSentAt || null;
+}
+normalizeDocumentUrl(url?: string | null): string | null {
+  if (!url) return null;
+
+  return url.startsWith('http')
+    ? url
+    : `http://localhost:3000${url}`;
+}
+
+getDocumentTimeline(appt: any, document: any, status: string): any[] {
+  const existingEvents = Array.isArray(document?.events)
+    ? document.events
+    : [];
+
+  if (existingEvents.length > 0) {
+    return existingEvents
+      .slice()
+      .reverse()
+      .map((event: any) => ({
+        type: event.type,
+        label: this.getDocumentEventLabel(event.type),
+        date: event.createdAt,
+        active: true,
+        failed: event.type === 'DOCUMENT_FAILED',
+      }));
+  }
+
+  const order = [
+    'DOCUMENT_CREATED',
+    'DOCUMENT_PENDING',
+    'DOCUMENT_UPLOADED',
+    'DOCUMENT_GENERATED',
+    'DOCUMENT_SENT',
+  ];
+  const statusIndex = order.indexOf(status);
+  const activeUntil = statusIndex >= 0 ? statusIndex : -1;
+  const createdAt = document?.createdAt || appt?.documentRequestedAt || null;
+  const dates: Record<string, string | null> = {
+    DOCUMENT_CREATED: createdAt,
+    DOCUMENT_PENDING: appt?.documentRequestedAt || createdAt,
+    DOCUMENT_UPLOADED: document?.uploadedAt || null,
+    DOCUMENT_GENERATED: document?.generatedAt || null,
+    DOCUMENT_SENT: document?.sentAt || appt?.documentSentAt || document?.emailSentAt || null,
+  };
+  const timeline = order.map((eventType, index) => ({
+    type: eventType,
+    label: this.getDocumentEventLabel(eventType),
+    date: dates[eventType],
+    active: index <= activeUntil,
+    failed: false,
+  }));
+
+  if (status === 'DOCUMENT_FAILED') {
+    timeline.push({
+      type: 'DOCUMENT_FAILED',
+      label: this.getDocumentEventLabel('DOCUMENT_FAILED'),
+      date: document?.updatedAt || null,
+      active: true,
+      failed: true,
+    });
+  }
+
+  return timeline;
+}
+
+getDocumentEventLabel(type: string): string {
+  const labels: Record<string, string> = {
+    DOCUMENT_CREATED: 'Documento creado',
+    DOCUMENT_PENDING: 'Pendiente',
+    DOCUMENT_UPLOADED: 'Documento cargado',
+    DOCUMENT_GENERATED: 'Generado',
+    DOCUMENT_SENT: 'Enviado',
+    DOCUMENT_FAILED: 'Falló',
+    DOCUMENT_EMAIL_SENT: 'Correo enviado',
+    DOCUMENT_EMAIL_FAILED: 'Error de correo',
+    DOCUMENT_EMAIL_RESENT: 'Correo reenviado',
+  };
+
+  return labels[type] || type;
+}
 shouldShowPenalty(appt: any): boolean {
   if (!appt.penalty || appt.penalty <= 0) return false;
 
@@ -490,3 +672,7 @@ openChat(appt: any) {
   );
 }
 }
+
+
+
+

@@ -94,6 +94,80 @@ ion-card-content {
   font-weight: 800;
 }
 
+.documents-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.metric-card {
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-lg);
+  background: color-mix(in srgb, var(--app-primary-light) 8%, var(--app-surface));
+  box-shadow: var(--app-shadow-soft);
+}
+
+.metric-card span {
+  display: block;
+  min-height: 34px;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--app-primary);
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.documents-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.documents-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.documents-filters button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 16%, transparent);
+  border-radius: var(--app-radius-md);
+  background: var(--app-bg);
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.documents-filters button.active {
+  border-color: var(--app-primary);
+  background: color-mix(in srgb, var(--app-primary-light) 18%, var(--app-bg));
+  color: var(--app-primary);
+}
+
+.documents-empty {
+  padding: 14px;
+  border: 1px dashed color-mix(in srgb, var(--app-primary) 18%, transparent);
+  border-radius: var(--app-radius-md);
+  background: var(--app-bg);
+  color: var(--app-muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
 ion-item {
   --background: #fcfaff;
   --border-color: transparent;
@@ -176,21 +250,118 @@ ion-textarea:focus-within {
 .document-card {
   margin-bottom: 12px;
   padding: 16px;
-  border: 1px solid var(--app-secondary);
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
   border-radius: var(--app-radius-lg);
   background: var(--app-surface);
 }
 
 .document-main {
   display: flex;
+  gap: 14px;
   justify-content: space-between;
+  align-items: flex-start;
+}
+
+.document-main h3 {
+  margin: 0 0 6px;
+  color: var(--app-text);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.document-main p,
+.document-meta {
+  color: var(--app-muted);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .document-badge {
+  flex: 0 0 auto;
   padding: 6px 8px;
   border-radius: 999px;
-  background: var(--app-secondary);
+  background: color-mix(in srgb, var(--app-primary-light) 18%, var(--app-bg));
   color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.document-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 12px;
+}
+
+.document-upload,
+.document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.document-upload ion-button,
+.document-actions ion-button {
+  --background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  --background-hover: var(--app-primary-light);
+  --border-color: color-mix(in srgb, var(--app-primary) 28%, transparent);
+  --border-radius: var(--app-radius-md);
+  --color: var(--app-surface);
+  --color-hover: var(--app-surface);
+  --box-shadow: 0 10px 18px color-mix(in srgb, var(--app-primary) 18%, transparent);
+  min-height: 36px;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: none;
+}
+
+.document-upload ion-button[fill="outline"],
+.document-actions ion-button[fill="outline"] {
+  --background: var(--app-bg);
+  --background-hover: color-mix(in srgb, var(--app-primary-light) 14%, var(--app-bg));
+  --color: var(--app-primary);
+  --color-hover: var(--app-primary);
+  --box-shadow: none;
+}
+
+.document-upload ion-button[disabled] {
+  opacity: 0.55;
+}
+
+.document-actions ion-button[disabled] {
+  opacity: 0.55;
+}
+
+.document-link {
+  min-height: 36px;
+  padding: 9px 14px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 28%, transparent);
+  border-radius: var(--app-radius-md);
+  background: var(--app-bg);
+  color: var(--app-primary);
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 18px;
+  text-decoration: none;
+}
+
+.document-link:hover {
+  background: color-mix(in srgb, var(--app-primary-light) 14%, var(--app-bg));
+}
+
+.selected-file-name {
+  max-width: 100%;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-primary-light) 10%, var(--app-bg));
+  color: var(--app-text);
+  font-size: 13px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .save-btn {
@@ -203,4 +374,10 @@ ion-textarea:focus-within {
   font-size: 15px;
   font-weight: 800;
   text-transform: none;
+}
+
+@media (max-width: 640px) {
+  .documents-summary {
+    grid-template-columns: 1fr;
+  }
 }

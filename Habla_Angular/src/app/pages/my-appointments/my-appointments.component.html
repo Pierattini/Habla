@@ -45,17 +45,147 @@
   </div>
 
 </ng-template>
+<ng-template #documentoTributario let-appt>
+  <div
+    class="documento-tributario"
+    *ngIf="role !== 'PROFESSIONAL'"
+  >
+    <div class="documento-header">
+      <div>
+        <h4>Documento tributario</h4>
+        <p>{{ $any(appt).documentView?.emptyMessage }}</p>
+      </div>
+
+      <span class="documento-badge">
+        {{ $any(appt).documentView?.statusLabel || 'Sin estado' }}
+      </span>
+    </div>
+
+    <div class="documento-grid">
+      <div>
+        <span>Documento solicitado</span>
+        <strong>{{ $any(appt).documentView?.requestedLabel || 'No' }}</strong>
+      </div>
+
+      <div>
+        <span>Estado documento</span>
+        <strong>{{ $any(appt).documentView?.statusLabel || 'Sin estado' }}</strong>
+      </div>
+
+      <div>
+        <span>Tipo documento</span>
+        <strong>{{ $any(appt).documentView?.typeLabel || 'Documento' }}</strong>
+      </div>
+
+      <div>
+        <span>Fecha emision</span>
+        <strong>
+          {{
+            $any(appt).documentView?.issueDate
+              ? ($any(appt).documentView.issueDate | date:'dd/MM/yyyy HH:mm')
+              : 'Pendiente'
+          }}
+        </strong>
+      </div>
+
+      <div>
+        <span>Fecha envio</span>
+        <strong>
+          {{
+            $any(appt).documentView?.sentDate
+              ? ($any(appt).documentView.sentDate | date:'dd/MM/yyyy HH:mm')
+              : 'Pendiente'
+          }}
+        </strong>
+      </div>
+
+      <div>
+        <span>Archivo</span>
+        <strong>{{ $any(appt).documentView?.fileName || 'Sin archivo' }}</strong>
+      </div>
+    </div>
+
+    <div class="documento-timeline">
+      <div
+        *ngFor="let item of $any(appt).documentView?.timeline"
+        class="timeline-item"
+        [class.active]="item.active"
+        [class.failed]="item.failed"
+      >
+        <span class="timeline-dot"></span>
+
+        <div>
+          <strong>{{ item.label }}</strong>
+          <small>
+            {{
+              item.date
+                ? (item.date | date:'dd/MM/yyyy HH:mm')
+                : 'Pendiente'
+            }}
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="documento-correo"
+      *ngIf="$any(appt).documentView?.emailSent"
+    >
+      Documento enviado por correo
+      <span *ngIf="$any(appt).documentView?.emailSentAt">
+        - {{ $any(appt).documentView.emailSentAt | date:'dd/MM/yyyy HH:mm' }}
+      </span>
+    </div>
+
+    <div
+      class="documento-actions"
+      *ngIf="$any(appt).documentView?.pdfUrl"
+    >
+      <a
+        class="documento-link"
+        [href]="$any(appt).documentView.pdfUrl"
+        target="_blank"
+        rel="noopener"
+      >
+        Ver Documento
+      </a>
+
+      <a
+        class="documento-link documento-download"
+        [href]="$any(appt).documentView.pdfUrl"
+        [download]="$any(appt).documentView.fileName || 'documento-tributario'"
+        target="_blank"
+        rel="noopener"
+      >
+        Descargar Documento
+      </a>
+    </div>
+  </div>
+</ng-template>
+
 <div class="filtros">
 
-  <ion-button size="small" fill="solid">
+  <ion-button
+    size="small"
+    [fill]="selectedFilter === 'today' ? 'solid' : 'outline'"
+    (click)="setFilter('today')"
+  >
     Hoy
   </ion-button>
 
-  <ion-button size="small" fill="outline">
+  <ion-button
+    size="small"
+    [fill]="selectedFilter === 'upcoming' ? 'solid' : 'outline'"
+    (click)="setFilter('upcoming')"
+  >
     Próximas
   </ion-button>
 
-  <ion-button size="small" fill="outline">
+  <ion-button
+    size="small"
+    [fill]="selectedFilter === 'history' ? 'solid' : 'outline'"
+    (click)="setFilter('history')"
+  >
     Historial
   </ion-button>
 
@@ -161,7 +291,10 @@
   ⚠️ Penalización aplicada (50%)
 </p>
 
-<div class="botones">
+
+<ng-container
+  *ngTemplateOutlet="documentoTributario; context: { $implicit: appt }">
+</ng-container><div class="botones">
 
   <!-- 💳 VER DATOS DE PAGO -->
   <ion-button
@@ -292,6 +425,9 @@
         {{ getStatusLabel(appt.status) }}
       </div>
 <ng-container
+  *ngTemplateOutlet="documentoTributario; context: { $implicit: appt }">
+</ng-container>
+<ng-container
   *ngTemplateOutlet="acciones; context: { $implicit: appt }">
 </ng-container>
     </ion-card-content>
@@ -312,4 +448,6 @@
 </ng-template>
 </div>
 </ion-content>
+
+
 

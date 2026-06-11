@@ -1,7 +1,10 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import {
+  TaxDocumentsService
+} from '../../services/tax-documents.service';
+import { ProfessionalProfileService } from '../../services/professional-profile.service';
 
 import {
   IonContent,
@@ -23,30 +26,6 @@ import { addIcons } from 'ionicons';
 import {
   imageOutline
 } from 'ionicons/icons';
-
-interface PendingTaxDocument {
-  id: string;
-  appointmentId: string;
-  customer: {
-    id: string;
-    email: string;
-    name?: string;
-  };
-  appointmentDate: string;
-  amount?: number;
-  currency: string;
-  status: string;
-  createdAt: string;
-}
-
-interface TaxDocument {
-  id: string;
-  appointmentId: string;
-  fileName?: string;
-  uploadedAt?: string;
-  status: string;
-  type?: string;
-}
 
 @Component({
   selector: 'app-professional-dashboard',
@@ -73,7 +52,27 @@ interface TaxDocument {
 })
 export class ProfessionalDashboardComponent {
   imageVersion = Date.now();
-  constructor(private http: HttpClient) {
+  selectedDocumentFiles: Record<string, File> = {};
+  uploadingDocumentIds: Record<string, boolean> = {};
+  documentActionIds: Record<string, boolean> = {};
+  selectedDocumentFilter = 'ALL';
+  documentFilters = [
+    { label: 'Todos', value: 'ALL' },
+    { label: 'Pendientes', value: 'DOCUMENT_PENDING' },
+    { label: 'Subidos', value: 'DOCUMENT_UPLOADED' },
+    { label: 'Enviados', value: 'DOCUMENT_SENT' },
+    { label: 'Fallidos', value: 'DOCUMENT_FAILED' },
+  ];
+  private readonly allowedTaxDocumentTypes = [
+    'application/pdf',
+    'image/jpeg',
+    'image/png'
+  ];
+
+  constructor(
+    private professionalProfileService: ProfessionalProfileService,
+    private taxDocumentsService: TaxDocumentsService
+  ) {
 
     addIcons({
       'image-outline': imageOutline
@@ -143,18 +142,21 @@ export class ProfessionalDashboardComponent {
 
   ];
 
-  pendingTaxDocuments: PendingTaxDocument[] = [];
-  taxDocuments: TaxDocument[] = [];
+  pendingTaxDocuments: any[] = [];
+  taxDocuments: any[] = [];
+  dashboardView = {
+    pendingDocumentsCount: 0,
+    sentDocumentsCount: 0,
+    emittedThisMonthCount: 0,
+    filteredTaxDocuments: [] as any[],
+  };
 
   saveProfile() {
 
-  this.http.patch(
-    'http://localhost:3000/users/me',
-    {
+  this.professionalProfileService.updateProfile({
       name: this.profile.name,
       image: this.profile.image
-    }
-  ).subscribe({
+    }).subscribe({
     
     next: (res) => {
 
@@ -200,12 +202,10 @@ onFileSelected(event: any) {
 
   reader.readAsDataURL(file);
 
-}
+  }
   loadProfile() {
 
-    this.http.get(
-      'http://localhost:3000/users/me'
-    ).subscribe((res: any) => {
+    this.professionalProfileService.getProfile().subscribe((res: any) => {
 
       console.log('PROFILE:', res);
 
@@ -224,12 +224,13 @@ onFileSelected(event: any) {
 
   }
 
-  loadPendingTaxDocuments() {
-    this.http.get<PendingTaxDocument[]>(
-      'http://localhost:3000/tax-documents/professional/pending'
-    ).subscribe({
+  loadPendingTaxDocuments(): void {
+    this.taxDocumentsService.getPendingDocuments().subscribe({
       next: (documents) => {
-        this.pendingTaxDocuments = documents;
+        this.pendingTaxDocuments = documents.map((document) =>
+          this.prepareDocumentView(document)
+        );
+        this.updateDashboardView();
       },
       error: (err) => {
         console.error('Error cargando documentos pendientes:', err);
@@ -238,12 +239,13 @@ onFileSelected(event: any) {
     });
   }
 
-  loadTaxDocuments() {
-    this.http.get<TaxDocument[]>(
-      'http://localhost:3000/tax-documents/professional'
-    ).subscribe({
+  loadTaxDocuments(): void {
+    this.taxDocumentsService.getProfessionalDocuments().subscribe({
       next: (documents) => {
-        this.taxDocuments = documents;
+        this.taxDocuments = documents.map((document) =>
+          this.prepareDocumentView(document)
+        );
+        this.updateDashboardView();
       },
       error: (err) => {
         console.error('Error cargando documentos tributarios:', err);
@@ -252,19 +254,230 @@ onFileSelected(event: any) {
     });
   }
 
+  get filteredTaxDocuments(): any[] {
+    if (this.selectedDocumentFilter === 'ALL') {
+      return this.taxDocuments;
+    }
+
+    return this.taxDocuments.filter(
+      (document) => document.status === this.selectedDocumentFilter
+    );
+  }
+
+  get pendingDocumentsCount(): number {
+    return this.taxDocuments.filter(
+      (document) => document.status === 'DOCUMENT_PENDING'
+    ).length;
+  }
+
+  get sentDocumentsCount(): number {
+    return this.taxDocuments.filter(
+      (document) => document.status === 'DOCUMENT_SENT'
+    ).length;
+  }
+
+  get emittedThisMonthCount(): number {
+    const now = new Date();
+
+    return this.taxDocuments.filter((document) => {
+      const dateValue = document.generatedAt || document.uploadedAt || document.sentAt;
+
+      if (!dateValue) return false;
+
+      const date = new Date(dateValue);
+
+      return date.getFullYear() === now.getFullYear() &&
+        date.getMonth() === now.getMonth();
+    }).length;
+  }
+
+  setDocumentFilter(filter: string): void {
+    this.selectedDocumentFilter = filter;
+    this.updateDashboardView();
+  }
+
+  updateDashboardView(): void {
+    const filteredTaxDocuments = this.selectedDocumentFilter === 'ALL'
+      ? this.taxDocuments
+      : this.taxDocuments.filter(
+        (document) => document.status === this.selectedDocumentFilter
+      );
+
+    this.dashboardView = {
+      pendingDocumentsCount: this.pendingDocumentsCount,
+      sentDocumentsCount: this.sentDocumentsCount,
+      emittedThisMonthCount: this.emittedThisMonthCount,
+      filteredTaxDocuments,
+    };
+  }
+
+  prepareDocumentView(document: any): any {
+    return {
+      ...document,
+      view: {
+        customerName: this.getDocumentCustomerName(document),
+        appointmentDate: this.getDocumentAppointmentDate(document),
+        issueDate: this.getDocumentIssueDate(document),
+        sentDate: this.getDocumentSentDate(document),
+        statusLabel: this.getDocumentStatusLabel(document.status),
+        typeLabel: this.getDocumentTypeLabel(document.type),
+      },
+    };
+  }
+
+  onTaxDocumentFileSelected(documentId: string, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) return;
+
+    if (!this.allowedTaxDocumentTypes.includes(file.type)) {
+      input.value = '';
+      delete this.selectedDocumentFiles[documentId];
+      alert('Solo puedes subir PDF, JPG, JPEG o PNG');
+      return;
+    }
+
+    this.selectedDocumentFiles[documentId] = file;
+  }
+
+  getSelectedDocumentFileName(documentId: string): string {
+    return this.selectedDocumentFiles[documentId]?.name || '';
+  }
+
+  uploadTaxDocument(documentId: string): void {
+    const file = this.selectedDocumentFiles[documentId];
+
+    if (!file || this.uploadingDocumentIds[documentId]) return;
+
+    this.uploadingDocumentIds[documentId] = true;
+
+    this.taxDocumentsService.uploadDocument(documentId, file).subscribe({
+      next: () => {
+        delete this.selectedDocumentFiles[documentId];
+        this.loadPendingTaxDocuments();
+        this.loadTaxDocuments();
+      },
+      error: (err) => {
+        console.error('Error subiendo documento tributario:', err);
+        this.uploadingDocumentIds[documentId] = false;
+        alert('No se pudo subir el documento');
+      },
+      complete: () => {
+        this.uploadingDocumentIds[documentId] = false;
+      }
+    });
+  }
+
+  markDocumentGenerated(documentId: string): void {
+    this.runDocumentAction(
+      documentId,
+      () => this.taxDocumentsService.markGenerated(documentId),
+      'No se pudo marcar como generado'
+    );
+  }
+
+  markDocumentSent(documentId: string): void {
+    this.runDocumentAction(
+      documentId,
+      () => this.taxDocumentsService.markSent(documentId),
+      'No se pudo marcar como enviado'
+    );
+  }
+
+  resendDocumentEmail(documentId: string): void {
+    this.runDocumentAction(
+      documentId,
+      () => this.taxDocumentsService.resendEmail(documentId),
+      'No se pudo reenviar el correo'
+    );
+  }
+
+  runDocumentAction(
+    documentId: string,
+    action: () => any,
+    errorMessage: string
+  ): void {
+    if (this.documentActionIds[documentId]) return;
+
+    this.documentActionIds[documentId] = true;
+
+    action().subscribe({
+      next: () => {
+        this.loadPendingTaxDocuments();
+        this.loadTaxDocuments();
+      },
+      error: (err: any) => {
+        console.error(errorMessage, err);
+        this.documentActionIds[documentId] = false;
+        alert(errorMessage);
+      },
+      complete: () => {
+        this.documentActionIds[documentId] = false;
+      }
+    });
+  }
+
+  isDocumentActionRunning(documentId: string): boolean {
+    return this.documentActionIds[documentId] === true;
+  }
+
+  isUploadingDocument(documentId: string): boolean {
+    return this.uploadingDocumentIds[documentId] === true;
+  }
+
+  openDocument(document: any): void {
+    if (!document.pdfUrl) return;
+
+    const url = document.pdfUrl.startsWith('http')
+      ? document.pdfUrl
+      : `http://localhost:3000${document.pdfUrl}`;
+
+    window.open(url, '_blank', 'noopener');
+  }
+
+  getDocumentCustomerName(document: any): string {
+    return document?.customer?.name ||
+      document?.customer?.email ||
+      document?.appointment?.customer?.name ||
+      document?.appointment?.customer?.email ||
+      'Cliente';
+  }
+
+  getDocumentAppointmentDate(document: any): string | null {
+    return document?.appointmentDate || document?.appointment?.date || null;
+  }
+
+  getDocumentIssueDate(document: any): string | null {
+    return document?.generatedAt || document?.uploadedAt || document?.createdAt || null;
+  }
+
+  getDocumentSentDate(document: any): string | null {
+    return document?.sentAt || document?.emailSentAt || null;
+  }
+
   getDocumentStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       DOCUMENT_PENDING: 'Pendiente',
-      DOCUMENT_UPLOADED: 'Cargado',
+      DOCUMENT_UPLOADED: 'Documento cargado',
       DOCUMENT_GENERATED: 'Generado',
-      DOCUMENT_SENT: 'Enviado'
+      DOCUMENT_SENT: 'Enviado',
+      DOCUMENT_FAILED: 'Falló',
+      DOCUMENT_NOT_REQUIRED: 'No requerido',
     };
 
-    return labels[status] || status;
+    return labels[status] || status || 'Sin estado';
   }
 
   getDocumentTypeLabel(type?: string): string {
-    return type || 'Sin tipo';
+    const labels: Record<string, string> = {
+      BOLETA: 'Boleta',
+      FACTURA: 'Factura',
+      INVOICE: 'Invoice',
+      RECEIPT: 'Recibo',
+    };
+
+    return type ? labels[type] || type : 'Documento';
   }
 
 }
