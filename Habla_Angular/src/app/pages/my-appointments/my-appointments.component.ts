@@ -10,6 +10,17 @@ import { PaymentModalComponent } from '../payment-modal/payment-modal.component'
 import { RescheduleModalComponent } from '../reschedule-modal/reschedule-modal.component';
 import { ChangeDetectorRef } from '@angular/core';
 import { ViewWillEnter } from '@ionic/angular';
+import { AppointmentsService } from '../../services/appointments.service';
+import {
+  canCancel as canCancelHelper,
+  canPay as canPayHelper,
+  canReschedule as canRescheduleHelper,
+  canShowPaymentWaiting as canShowPaymentWaitingHelper,
+  getLabel as getLabelHelper,
+  getStatusColor as getStatusColorHelper,
+  getStatusLabel as getStatusLabelHelper,
+  groupByDate as groupByDateHelper
+} from './my-appointments.helpers';
 @Component({
   selector: 'app-my-appointments',
   standalone: true,
@@ -32,7 +43,8 @@ export class MyAppointmentsComponent {
   private cd: ChangeDetectorRef,
   private router: Router,
   private modalCtrl: ModalController,
-  private route: ActivatedRoute 
+  private route: ActivatedRoute,
+  private appointmentsService: AppointmentsService
 ) {}
 
 getHeaders() {
@@ -45,7 +57,12 @@ getHeaders() {
 
  role: string | null = null;
  loadingId: string | null = null;
+ selectedFilter = 'today';
 
+
+setFilter(filter: string) {
+  this.selectedFilter = filter;
+}
 //ngOnInit() {
  // this.role = localStorage.getItem('role');
 //}
@@ -53,8 +70,6 @@ getHeaders() {
 ionViewDidEnter() {
   this.role = localStorage.getItem('role');
 
-  // 🔥 fuerza render inicial limpio
-  this.groupedAppointments = [];
 
   // 🔥 deja que Angular pinte primero
   setTimeout(() => {
@@ -73,23 +88,7 @@ async presentToast(message: string, color: string = 'success') {
   await toast.present();
 }
   loadAppointments() {
-  const token = localStorage.getItem('token') || '';
-
-  const headers = new HttpHeaders({
-    Authorization: `Bearer ${token}`
-  });
-
-  let url = 'http://localhost:3000/appointments/mine';
-
-  if (this.role === 'PROFESSIONAL') {
-    url = 'http://localhost:3000/appointments/professional';
-  }
-
-  if (this.role === 'ADMIN') {
-    url = 'http://localhost:3000/appointments/all';
-  }
-
-  this.http.get<any[]>(url, { headers }).subscribe({
+  this.appointmentsService.getAppointmentsByRole(this.role).subscribe({
   next: (res: any[]) => {
     console.log('RESPUESTA REAL:', res);
 
@@ -108,15 +107,9 @@ setTimeout(() => {
 }
 
   cancelAppointment(id: string) {
-  const headers = this.getHeaders();
-
   this.loadingId = id;
 
-  this.http.patch(
-    `http://localhost:3000/appointments/${id}/cancel`,
-    {},
-    { headers }
-  ).subscribe({
+  this.appointmentsService.cancelAppointment(id).subscribe({
     next: async (res: any) => {
 
       this.loadingId = null;
@@ -142,14 +135,7 @@ setTimeout(() => {
 }
 resolvePenalty(id: string, option: 'CREDIT' | 'REFUND', data?: any) {
 
-  this.http.patch(
-    `http://localhost:3000/appointments/${id}/resolve-penalty`,
-    {
-      option,
-      ...data
-    },
-    { headers: this.getHeaders() }
-  ).subscribe({
+  this.appointmentsService.resolvePenalty(id, option, data).subscribe({
     next: async () => {
       await this.presentToast(
         option === 'CREDIT'
@@ -240,86 +226,60 @@ async askRefundData(id: string) {
 
   await alert.present();
 }
-groupedAppointments: any[] = [];
+todayAppointments: any[] = [];
+futureAppointments: any[] = [];
+completedAppointments: any[] = [];
+historyAppointments: any[] = [];
+upcomingAppointments: any[] = [];
+pastAppointments: any[] = [];
 
 groupAppointments() {
-  const groups: any = {};
 
-  this.appointments.forEach(appt => {
+  this.todayAppointments = this.groupByDate(this.appointments);
 
-    if (!appt.date) return;
+  this.futureAppointments = this.groupByDate(this.appointments);
 
-    const dateStr = appt.date.split('T')[0];
+  this.completedAppointments = this.groupByDate(this.appointments);
 
-    if (!groups[dateStr]) {
-      groups[dateStr] = [];
-    }
+  this.historyAppointments = this.groupByDate(this.appointments);
 
-    groups[dateStr].push(appt);
-  });
+  this.upcomingAppointments = this.groupByDate(this.appointments);
 
-  this.groupedAppointments = [...Object.keys(groups).map(key => ({
-  date: new Date(key + 'T00:00:00'),
-  items: groups[key]
-}))];
+  this.pastAppointments = this.groupByDate(this.appointments);
 
-  console.log('GROUPED:', this.groupedAppointments);
+}
+
+groupByDate(list: any[]) {
+  return groupByDateHelper(list);
 }
 getNombre(appt: any): string {
   if (this.role === 'PROFESSIONAL') {
-    return appt.customer?.email?.split('@')[0] || 'Cliente';
+    return (
+      appt.customer?.name ||
+      appt.customer?.email?.split('@')[0] ||
+      'Cliente'
+    );
   }
 
   return (
     appt.professional?.professional?.name ||
+    appt.professional?.name ||
     appt.professional?.email?.split('@')[0] ||
     'Profesional'
   );
 }
 
 getLabel(date: Date): string {
-  const today = new Date();
-  const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1);
-
-  if (date.toDateString() === today.toDateString()) {
-    return 'Hoy';
-  }
-
-  if (date.toDateString() === tomorrow.toDateString()) {
-    return 'Mañana';
-  }
-
-  return date.toLocaleDateString();
+  return getLabelHelper(date);
 }
 goHome() {
   this.router.navigate(['/tabs/home']);
 }
 getStatusLabel(status: string): string {
-  const map: any = {
-  PENDING: 'Pendiente',
-  PENDING_PAYMENT: 'Pendiente de pago',
-  PAYMENT_REVIEW: 'Pago en revisión',
-  CONFIRMED: 'Confirmada',
-  CANCELLED: 'Cancelada',
-  RESCHEDULED: 'Reagendada', 
-  REFUNDED: 'Reembolsado'
-};
-
-  return map[status] || status;
+  return getStatusLabelHelper(status);
 }
 getStatusColor(status: string): string {
-  const map: any = {
-  PENDING: 'warning',
-  PENDING_PAYMENT: 'medium',
-  PAYMENT_REVIEW: 'warning',
-  CONFIRMED: 'success',
-  CANCELLED: 'danger',
-  RESCHEDULED: 'tertiary',
-  REFUNDED: 'medium'
-};
-
-  return map[status] || 'medium';
+  return getStatusColorHelper(status);
 }
 
 shouldShowPenalty(appt: any): boolean {
@@ -341,17 +301,7 @@ shouldShowPenalty(appt: any): boolean {
 
 // 💳 CLIENTE → marca como pagado
 markAsPaid(id: string) {
-  const token = localStorage.getItem('token');
-
-  const headers = new HttpHeaders({
-    Authorization: `Bearer ${token}`
-  });
-
-  this.http.patch(
-    `http://localhost:3000/appointments/${id}/pay`,
-    {},
-    { headers }
-  ).subscribe({
+  this.appointmentsService.markAsPaid(id).subscribe({
     next: async () => {
       await this.presentToast('Pago enviado para revisión', 'warning');
       this.loadAppointments();
@@ -362,15 +312,9 @@ markAsPaid(id: string) {
   });
 }
 confirmAppointment(id: string) {
-  const headers = this.getHeaders();
-
   this.loadingId = id;
 
-  this.http.patch(
-    `http://localhost:3000/appointments/${id}/confirm`,
-    {},
-    { headers }
-  ).subscribe({
+  this.appointmentsService.confirmAppointment(id).subscribe({
     next: async () => {
       this.loadingId = null;
       await this.presentToast('Pago confirmado', 'success');
@@ -425,22 +369,31 @@ async reschedule(appt: any) {
   await modal.present();
 
   const { data } = await modal.onDidDismiss();
-  console.log('📥 data del modal:', data);
+  console.log('?? data del modal:', data);
 
   if (!data) return;
-// 🔥 CASO NUEVO: ENVIAR MENSAJE + CRÉDITO
-if (data?.action === 'SEND_MESSAGE') {
 
-  // 🔥 1. VALIDACIÓN (PUNTO 3)
+  if (data?.action === 'SEND_MESSAGE') {
+    await this.handleRescheduleMessage(appt, data);
+    return;
+  }
+
+  if (data?.action === 'CREDIT_ONLY') {
+    this.handleCreditOnly(appt);
+    return;
+  }
+
+  this.handleNormalReschedule(appt, data);
+}
+
+private async handleRescheduleMessage(appt: any, data: any) {
   if (!data.message || !data.message.trim()) {
     await this.presentToast('Escribe un mensaje', 'warning');
     return;
   }
 
-  // 🔥 2. UX: mensaje previo (PUNTO 4)
   await this.presentToast('Enviando mensaje...', 'medium');
 
-  // 🔥 3. ENVIAR MENSAJE
   this.http.post(
     `http://localhost:3000/messages/send`,
     {
@@ -450,21 +403,13 @@ if (data?.action === 'SEND_MESSAGE') {
     { headers: this.getHeaders() }
   ).subscribe({
     next: async () => {
-
-      // 🔥 4. APLICAR CRÉDITO DESPUÉS
-      this.http.patch(
-        `http://localhost:3000/appointments/${appt.id}/resolve-penalty`,
-        {
-          option: 'CREDIT'
-        },
-        { headers: this.getHeaders() }
-      ).subscribe({
+      this.appointmentsService.resolvePenalty(appt.id, 'CREDIT').subscribe({
         next: async () => {
           await this.presentToast('Mensaje enviado y saldo abonado', 'success');
           this.loadAppointments();
         },
         error: async () => {
-          await this.presentToast('Error aplicando crédito', 'danger');
+          await this.presentToast('Error aplicando cr�dito', 'danger');
         }
       });
 
@@ -473,55 +418,32 @@ if (data?.action === 'SEND_MESSAGE') {
       await this.presentToast('Error enviando mensaje', 'danger');
     }
   });
-
-  return;
 }
-  // 🔥 CASO 1: DEJAR COMO CRÉDITO
-  if (data?.action === 'CREDIT_ONLY') {
 
-    this.http.patch(
-      `http://localhost:3000/appointments/${appt.id}/resolve-penalty`,
-      {
-        option: 'CREDIT'
-      },
-      { headers: this.getHeaders() }
-    ).subscribe({
-      next: async () => {
-        await this.presentToast('Saldo guardado como crédito', 'success');
-        this.loadAppointments();
-      },
-      error: async () => {
-        await this.presentToast('Error al guardar crédito', 'danger');
-      }
-    });
+private handleCreditOnly(appt: any) {
+  this.appointmentsService.resolvePenalty(appt.id, 'CREDIT').subscribe({
+    next: async () => {
+      await this.presentToast('Saldo guardado como cr�dito', 'success');
+      this.loadAppointments();
+    },
+    error: async () => {
+      await this.presentToast('Error al guardar cr�dito', 'danger');
+    }
+  });
+}
 
-    return;
-  }
-
-  // 🔥 CASO 2: REAGENDAR NORMAL
-
+private handleNormalReschedule(appt: any, data: any) {
   const fechaBase = data.date.split('T')[0];
   const nuevaFecha = `${fechaBase}T${data.hour}:00`;
 
-  this.http.patch(
-    `http://localhost:3000/appointments/${appt.id}/reschedule`,
-    {
-      date: nuevaFecha
-    },
-    { headers: this.getHeaders() }
-  ).subscribe({
+  this.appointmentsService.rescheduleAppointment(appt.id, nuevaFecha).subscribe({
     next: async () => {
-
       if (data.payRequired) {
-
-  await this.presentToast('Debes pagar para confirmar la cita', 'warning');
-
-  // 🔥 abrir modal de pago automáticamente
-  this.openPayment(appt);
-
-} else {
-  await this.presentToast('Cita reagendada', 'success');
-}
+        await this.presentToast('Debes pagar para confirmar la cita', 'warning');
+        this.openPayment(appt);
+      } else {
+        await this.presentToast('Cita reagendada', 'success');
+      }
 
       this.loadAppointments();
     },
@@ -531,14 +453,14 @@ if (data?.action === 'SEND_MESSAGE') {
   });
 }
   onImgError(event: any) {
-    event.target.src = 'https://via.placeholder.com/100';
-  }
+  event.target.src = '/default-avatar.png';
+}
  canPay(appt: any): boolean {
-  return appt.status === 'PENDING';
+  return canPayHelper(appt);
 }
 
 canShowPaymentWaiting(appt: any): boolean {
-  return appt.status === 'PAYMENT_REVIEW';
+  return canShowPaymentWaitingHelper(appt);
 }
 
 canProfessionalConfirm(appt: any): boolean {
@@ -546,25 +468,25 @@ canProfessionalConfirm(appt: any): boolean {
 }
 
 canReschedule(appt: any): boolean {
-
-  if (
-    appt.status === 'CANCELLED' ||
-    appt.status === 'REFUNDED'
-  ) {
-    return false;
-  }
-
-  return true;
+  return canRescheduleHelper(appt);
 }
 canCancel(appt: any): boolean {
+  return canCancelHelper(appt);
+}
+openChat(appt: any) {
 
-  if (
-    appt.status === 'CANCELLED' ||
-    appt.status === 'REFUNDED'
-  ) {
-    return false;
-  }
+  const professionalId =
+    this.role === 'PROFESSIONAL'
+      ? appt.customerId
+      : appt.professionalId;
 
-  return true;
+  this.router.navigate(
+    ['/tabs/messages'],
+    {
+      queryParams: {
+        professionalId
+      }
+    }
+  );
 }
 }

@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 
 import {
   IonContent,
@@ -23,6 +23,30 @@ import { addIcons } from 'ionicons';
 import {
   imageOutline
 } from 'ionicons/icons';
+
+interface PendingTaxDocument {
+  id: string;
+  appointmentId: string;
+  customer: {
+    id: string;
+    email: string;
+    name?: string;
+  };
+  appointmentDate: string;
+  amount?: number;
+  currency: string;
+  status: string;
+  createdAt: string;
+}
+
+interface TaxDocument {
+  id: string;
+  appointmentId: string;
+  fileName?: string;
+  uploadedAt?: string;
+  status: string;
+  type?: string;
+}
 
 @Component({
   selector: 'app-professional-dashboard',
@@ -47,7 +71,7 @@ import {
     IonIcon
   ]
 })
-export class ProfessionalDashboardComponent implements OnInit {
+export class ProfessionalDashboardComponent {
   imageVersion = Date.now();
   constructor(private http: HttpClient) {
 
@@ -57,8 +81,10 @@ export class ProfessionalDashboardComponent implements OnInit {
 
   }
 
-  ngOnInit() {
+  ionViewWillEnter() {
     this.loadProfile();
+    this.loadPendingTaxDocuments();
+    this.loadTaxDocuments();
   }
 
   profile = {
@@ -117,21 +143,17 @@ export class ProfessionalDashboardComponent implements OnInit {
 
   ];
 
+  pendingTaxDocuments: PendingTaxDocument[] = [];
+  taxDocuments: TaxDocument[] = [];
+
   saveProfile() {
-
-  const token = localStorage.getItem('token') || '';
-
-  const headers = new HttpHeaders({
-    Authorization: `Bearer ${token}`
-  });
 
   this.http.patch(
     'http://localhost:3000/users/me',
     {
       name: this.profile.name,
       image: this.profile.image
-    },
-    { headers }
+    }
   ).subscribe({
     
     next: (res) => {
@@ -181,15 +203,8 @@ onFileSelected(event: any) {
 }
   loadProfile() {
 
-    const token = localStorage.getItem('token') || '';
-
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-
     this.http.get(
-      'http://localhost:3000/users/me',
-      { headers }
+      'http://localhost:3000/users/me'
     ).subscribe((res: any) => {
 
       console.log('PROFILE:', res);
@@ -207,6 +222,49 @@ onFileSelected(event: any) {
 
     });
 
+  }
+
+  loadPendingTaxDocuments() {
+    this.http.get<PendingTaxDocument[]>(
+      'http://localhost:3000/tax-documents/professional/pending'
+    ).subscribe({
+      next: (documents) => {
+        this.pendingTaxDocuments = documents;
+      },
+      error: (err) => {
+        console.error('Error cargando documentos pendientes:', err);
+        this.pendingTaxDocuments = [];
+      }
+    });
+  }
+
+  loadTaxDocuments() {
+    this.http.get<TaxDocument[]>(
+      'http://localhost:3000/tax-documents/professional'
+    ).subscribe({
+      next: (documents) => {
+        this.taxDocuments = documents;
+      },
+      error: (err) => {
+        console.error('Error cargando documentos tributarios:', err);
+        this.taxDocuments = [];
+      }
+    });
+  }
+
+  getDocumentStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      DOCUMENT_PENDING: 'Pendiente',
+      DOCUMENT_UPLOADED: 'Cargado',
+      DOCUMENT_GENERATED: 'Generado',
+      DOCUMENT_SENT: 'Enviado'
+    };
+
+    return labels[status] || status;
+  }
+
+  getDocumentTypeLabel(type?: string): string {
+    return type || 'Sin tipo';
   }
 
 }

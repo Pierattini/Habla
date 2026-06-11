@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { AlertController } from '@ionic/angular';
@@ -56,7 +56,7 @@ import {
   ]
 })
 
-export class ProfileComponent implements OnInit {
+export class ProfileComponent {
 
   // 👤 USUARIO
   name = '';
@@ -96,7 +96,11 @@ export class ProfileComponent implements OnInit {
 });
   }
 
-  ngOnInit() {
+  ionViewWillEnter() {
+    this.loadProfileData();
+  }
+
+  loadProfileData() {
 
     // 👤 PERFIL
     this.auth.getProfile().subscribe({

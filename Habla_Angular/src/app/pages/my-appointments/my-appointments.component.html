@@ -1,15 +1,90 @@
 <ion-content>
-  <div class="contenedor">
-
+<div class="contenedor">
     <ion-button fill="clear" class="btn-volver" (click)="goHome()">
       ← Inicio
     </ion-button>
 
-    <h2 class="titulo">📅 Mis citas</h2>
+   <h2 class="titulo">📅 Mis citas</h2>
+<ng-template #acciones let-appt>
 
-    <div *ngIf="groupedAppointments.length > 0; else sinCitas">
+ <div class="acciones-secundarias ion-padding-top">
 
-      <div *ngFor="let group of groupedAppointments" class="contenedor">
+    <div class="acciones-secundarias">
+
+  <ion-button
+    fill="outline"
+    color="primary"
+    size="small"
+    class="btn-sec"
+    (click)="openChat(appt)">
+    💬 Mensaje
+  </ion-button>
+
+  <ion-button
+    fill="outline"
+    color="medium"
+    size="small"
+    class="btn-sec"
+    *ngIf="role === 'PROFESSIONAL' || canReschedule(appt)"
+    (click)="reschedule(appt)">
+    🔁 Reagendar
+  </ion-button>
+
+  <ion-button
+    fill="clear"
+    color="danger"
+    size="small"
+    class="btn-sec"
+    *ngIf="role === 'PROFESSIONAL' || canCancel(appt)"
+    (click)="cancelAppointment(appt.id)">
+    ✖ Cancelar
+  </ion-button>
+
+</div>
+
+  </div>
+
+</ng-template>
+<div class="filtros">
+
+  <ion-button size="small" fill="solid">
+    Hoy
+  </ion-button>
+
+  <ion-button size="small" fill="outline">
+    Próximas
+  </ion-button>
+
+  <ion-button size="small" fill="outline">
+    Historial
+  </ion-button>
+
+</div>
+
+  <div
+  *ngIf="
+    todayAppointments.length > 0 ||
+    futureAppointments.length > 0 ||
+    completedAppointments.length > 0 ||
+    historyAppointments.length > 0;
+    else sinCitas
+  ">
+
+  <!-- 🔥 PRÓXIMAS -->
+  <h3
+  class="seccion-title"
+  *ngIf="
+    selectedFilter !== 'history' &&
+    upcomingAppointments.length > 0
+  ">
+    Próximas citas
+  </h3>
+
+ <ng-container *ngIf="selectedFilter !== 'history'">
+
+<div
+*ngFor="let group of todayAppointments"
+  class="contenedor">
 
         <div class="fecha">
           {{ getLabel(group.date) }}
@@ -24,29 +99,43 @@
             <div class="header-cita">
 
               <div class="avatar">
-                <img
-  *ngIf="appt.professional?.professional?.image || appt.professional?.image"
-  [src]="appt.professional?.professional?.image || appt.professional?.image"
-  (error)="onImgError($event)">
 
-                <span *ngIf="!appt.professional?.professional?.image">
-                  {{ getNombre(appt).charAt(0).toUpperCase() }}
-                </span>
-              </div>
+  <!-- 🩺 VISTA PROFESIONAL -->
+  <img
+    *ngIf="role === 'PROFESSIONAL'"
+    [src]="appt.customer?.image || '/default-avatar.png'"
+    (error)="onImgError($event)"
+  >
+
+  <!-- 👤 VISTA CLIENTE -->
+  <img
+    *ngIf="role !== 'PROFESSIONAL'"
+    [src]="appt.professional?.professional?.image || appt.professional?.image || '/default-avatar.png'"
+    (error)="onImgError($event)"
+  >
+
+</div>
 
               <div class="info">
                 <div class="nombre">
-                  {{ appt.professional?.name || getNombre(appt) }}
-                </div>
+  {{ getNombre(appt) }}
+</div>
 
-                <div class="especialidad">
-                  {{ appt.professional?.professional?.specialty }}
-                </div>
+              <div class="especialidad">
 
-                <div class="extra">
-                  💰 {{ appt.professional?.professional?.price }} CLP ·
-                  ⏱️ {{ appt.professional?.professional?.duration }} min
-                </div>
+  {{
+    role === 'PROFESSIONAL'
+      ? ('📧 ' + appt.customer?.email)
+      : appt.professional?.professional?.specialty
+  }}
+</div>
+
+<div
+  class="extra"
+  *ngIf="role !== 'PROFESSIONAL'">
+  💰 {{ appt.professional?.professional?.price }} CLP ·
+  ⏱️ {{ appt.professional?.professional?.duration }} min
+</div>
               </div>
 
             </div>
@@ -72,11 +161,6 @@
   ⚠️ Penalización aplicada (50%)
 </p>
 
-<!-- 💳 Estado pago -->
-<p *ngIf="appt.status === 'PAYMENT_REVIEW'" style="color: orange; font-size: 13px;">
-  ⏳ Pago en revisión
-</p>
-
 <div class="botones">
 
   <!-- 💳 VER DATOS DE PAGO -->
@@ -85,7 +169,7 @@
     color="primary"
     size="small"
     class="btn-main"
-    *ngIf="canPay(appt)"
+    *ngIf="role !== 'PROFESSIONAL' && canPay(appt)"
     (click)="openPayment(appt)">
     💳 Ver datos
   </ion-button>
@@ -96,7 +180,7 @@
     color="success"
     size="small"
     class="btn-main"
-    *ngIf="canPay(appt)"
+    *ngIf="role !== 'PROFESSIONAL' && canPay(appt)"
     (click)="markAsPaid(appt.id)">
     📩 Ya transferí
   </ion-button>
@@ -119,45 +203,113 @@
   </ion-button>
 
   <!-- ⚙️ ACCIONES SECUNDARIAS -->
- <div class="acciones-secundarias"
-  *ngIf="canReschedule(appt) || canCancel(appt)">
+<ng-container
+  *ngTemplateOutlet="acciones; context: { $implicit: appt }">
+</ng-container>
 
-  <ion-button
-  fill="clear"
-  size="small"
-  class="btn-sec"
-  *ngIf="canReschedule(appt)"
-  (click)="reschedule(appt)">
-  🔁 Reagendar
-</ion-button>
+</div> <!-- botones -->
 
-<ion-button
-  fill="clear"
-  size="small"
-  class="btn-sec cancel"
-  *ngIf="canCancel(appt)"
-  (click)="cancelAppointment(appt.id)">
-  ✖ Cancelar
-</ion-button>
-
-  </div>
-
+</ion-card-content>
+</ion-card>
 </div>
 
-          </ion-card-content>
-        </ion-card>
+
+</ng-container>
+<!-- 🕘 HISTORIAL -->
+
+<h3
+  class="seccion-title"
+  *ngIf="
+    selectedFilter !== 'today' &&
+    selectedFilter !== 'upcoming' &&
+    pastAppointments.length > 0
+  ">
+  Historial
+</h3>
+
+<ng-container
+  *ngIf="
+    selectedFilter !== 'today' &&
+    selectedFilter !== 'upcoming'
+  ">
+
+<div
+  *ngFor="let group of historyAppointments"
+  class="contenedor">
+
+  <div class="fecha">
+    {{ getLabel(group.date) }}
+  </div>
+
+  <ion-card
+    *ngFor="let appt of group.items"
+    class="card-cita disabled">
+
+    <ion-card-content>
+
+      <div class="header-cita">
+
+        <div class="avatar">
+
+          <img
+            *ngIf="role === 'PROFESSIONAL'"
+            [src]="appt.customer?.image || '/default-avatar.png'"
+            (error)="onImgError($event)">
+
+          <img
+            *ngIf="role !== 'PROFESSIONAL'"
+            [src]="appt.professional?.professional?.image || appt.professional?.image || '/default-avatar.png'"
+            (error)="onImgError($event)">
+
+        </div>
+
+        <div class="info">
+
+          <div class="nombre">
+            {{ getNombre(appt) }}
+          </div>
+
+          <div class="especialidad">
+            {{
+              role === 'PROFESSIONAL'
+                ? ('📧 ' + appt.customer?.email)
+                : appt.professional?.professional?.specialty
+            }}
+          </div>
+
+          <div
+            class="extra"
+            *ngIf="role !== 'PROFESSIONAL'">
+            💰 {{ appt.professional?.professional?.price }} CLP ·
+            ⏱️ {{ appt.professional?.professional?.duration }} min
+          </div>
+
+        </div>
 
       </div>
 
-    </div>
+      <div class="estado" [ngClass]="getStatusColor(appt.status)">
+        {{ getStatusLabel(appt.status) }}
+      </div>
+<ng-container
+  *ngTemplateOutlet="acciones; context: { $implicit: appt }">
+</ng-container>
+    </ion-card-content>
 
-    <ng-template #sinCitas>
-      <p style="text-align:center; margin-top:20px;">
-        No tienes citas
-      </p>
-    </ng-template>
+  </ion-card>
 
-  </div>
+</div>
 
+</ng-container>
+
+</div>
+
+
+<ng-template #sinCitas>
+  <p style="text-align:center; margin-top:20px;">
+    No tienes citas
+  </p>
+</ng-template>
+</div>
 </ion-content>
 

@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { MessagesModule } from './messages/messages.module';
+import { TaxDocumentsModule } from './tax-documents/tax-documents.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { MessagesModule } from './messages/messages.module';
     AppointmentsModule,
     AvailabilityModule,
     MessagesModule,
+    TaxDocumentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

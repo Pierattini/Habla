@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { RouterLink } from '@angular/router';
@@ -13,51 +13,66 @@ import { ActivatedRoute, Router } from '@angular/router';
   styleUrls: ['./messages.component.scss'],
 })
 export class MessagesComponent {
-  conversations: any[] = [];
-  loading = false;
+  public conversations: any[] = [];
+  public loading: boolean = false;
+  public requestedProfessionalId: string | null = null;
+  public conversationNotFound: boolean = false;
 
   constructor(
-  private messagesService: MessagesService,
-  private route: ActivatedRoute,
-  private router: Router
-) {}
+    private messagesService: MessagesService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
 
-  //ngOnInit() {
-   // this.loadConversations();
-  //}
-ionViewWillEnter() {
+  ionViewWillEnter() {
+    const professionalId =
+      this.route.snapshot.queryParamMap.get('professionalId');
 
-  const professionalId =
-    this.route.snapshot.queryParamMap.get('professionalId');
+    this.requestedProfessionalId = professionalId;
+    this.conversationNotFound = false;
 
-  this.loadConversations(professionalId);
-}
-  loadConversations(professionalId?: string | null) {
+    console.log('Messages professionalId recibido:', professionalId);
 
-     if (this.loading) return;
-    this.loading = true;
-    this.messagesService.getConversations().subscribe({
-      next: (data) => {
-        this.conversations = data;
-        if (professionalId) {
-
-  const existingConversation = data.find(
-    (c: any) => c.otherUser?.id === professionalId
-  );
-
-  if (existingConversation) {
-
-    this.router.navigate([
-      '/tabs/messages',
-      existingConversation.conversationId
-    ]);
-
+    this.loadConversations(professionalId);
   }
 
-}
+  loadConversations(professionalId?: string | null) {
+    if (this.loading) return;
+
+    this.loading = true;
+    this.conversationNotFound = false;
+
+    this.messagesService.getConversations().subscribe({
+      next: (data) => {
+        this.conversations = data ?? [];
+
+        console.log('Messages conversaciones cargadas:', this.conversations);
+
+        if (professionalId) {
+          const existingConversation = this.conversations.find(
+            (c: any) => String(c.otherUser?.id) === String(professionalId)
+          );
+
+          console.log('Messages conversacion encontrada:', existingConversation);
+
+          if (existingConversation) {
+            this.conversationNotFound = false;
+            this.router.navigate(
+              ['/tabs/messages', existingConversation.conversationId],
+              { replaceUrl: true }
+            );
+          } else {
+            this.conversationNotFound = true;
+          }
+        } else {
+          this.conversationNotFound = false;
+        }
+
         this.loading = false;
-        console.log('Conversations:', data);
+
+        console.log('Conversations:', this.conversations);
       },
+
       error: (err) => {
         console.error(err);
         this.loading = false;

@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { professionalGuard } from './core/guards/professional.guard';
 
 export const routes: Routes = [
 
@@ -50,6 +51,7 @@ export const routes: Routes = [
       // 🧑‍⚕️ DASHBOARD PROFESIONAL (separado)
       {
         path: 'professional-dashboard',
+        canActivate: [professionalGuard],
         loadComponent: () =>
           import('./pages/professional-dashboard/professional-dashboard.component')
             .then(m => m.ProfessionalDashboardComponent),

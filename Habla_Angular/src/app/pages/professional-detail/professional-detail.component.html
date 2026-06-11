@@ -1,14 +1,12 @@
 <ion-header>
   <ion-toolbar>
 
-    <!-- 🔙 botón volver -->
     <ion-buttons slot="start">
       <ion-button fill="clear" (click)="goHome()">
-        ←
+        â†
       </ion-button>
     </ion-buttons>
 
-    <!-- 🧠 título -->
     <ion-title>
       {{ professional?.name || 'Perfil profesional' }}
     </ion-title>
@@ -18,55 +16,57 @@
 
 <ion-content class="ion-padding" [fullscreen]="true">
 
-  <div *ngIf="professional">
+  <div *ngIf="professional" class="detail-shell">
 
-    <!-- FOTO -->
-<div class="photo-wrapper">
+    <section class="professional-hero">
+      <div class="photo-wrapper">
 
-  <ion-avatar class="profile-avatar">
-    <img [src]="professional.image || ('https://i.pravatar.cc/150?u=' + professional.email)" />
-  </ion-avatar>
+        <ion-avatar class="profile-avatar">
+          <img [src]="professional.image || ('https://i.pravatar.cc/150?u=' + professional.email)" />
+        </ion-avatar>
 
-  <!-- BOTÓN CHAT -->
-<div class="message-icon" (click)="goToChat()">
-  💬
-</div>
+        <div class="message-icon" (click)="goToChat()">
+          ðŸ’¬
+        </div>
 
-</div>
+      </div>
 
-    <!-- INFO PRINCIPAL -->
-    <div style="text-align:center; margin-top: 16px;">
-      <h2 style="margin-bottom: 6px;">
-        {{ professional.name || professional.email }}
-      </h2>
+      <div class="professional-info">
+        <h2>
+          {{ professional.name || professional.email }}
+        </h2>
 
-      <p style="margin: 4px 0; color: gray;">
-        {{ professional.specialty || 'Profesional' }}
-      </p>
+        <p class="specialty">
+          {{ professional.specialty || 'Profesional' }}
+        </p>
 
-      <p style="margin: 4px 0;">
-        💰 ${{ professional.price || 30000 }} CLP por sesión
-      </p>
+        <div class="meta-grid">
+          <div class="meta-pill">
+            <span>Precio</span>
+            <strong>${{ professional.price || 30000 }} CLP</strong>
+          </div>
 
-      <p style="margin: 4px 0;">
-        ⏱ {{ professional.sessionDuration || 30 }} min
-      </p>
-    </div>
+          <div class="meta-pill">
+            <span>Duracion</span>
+            <strong>{{ professional.sessionDuration || 30 }} min</strong>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <!-- DESCRIPCIÓN SIMPLE -->
-    <ion-card style="margin-top: 20px;">
+    <ion-card>
       <ion-card-header>
-        <ion-card-title>Información</ion-card-title>
+        <ion-card-title>Informacion</ion-card-title>
       </ion-card-header>
 
       <ion-card-content>
         <p>
-          Agenda una sesión con este profesional según la fecha y horario disponible.
+          Agenda una sesion con este profesional segun la fecha y horario disponible.
         </p>
       </ion-card-content>
     </ion-card>
-    <!-- FECHA -->
-    <ion-card style="margin-top: 20px;">
+
+    <ion-card>
       <ion-card-header>
         <ion-card-title>Selecciona una fecha</ion-card-title>
       </ion-card-header>
@@ -80,8 +80,7 @@
       </ion-card-content>
     </ion-card>
 
-    <!-- HORARIOS -->
-    <ion-card style="margin-top: 20px;" *ngIf="availableHours.length > 0">
+    <ion-card *ngIf="availableHours.length > 0">
       <ion-card-header>
         <ion-card-title>Horarios disponibles</ion-card-title>
       </ion-card-header>
@@ -90,39 +89,35 @@
         <div class="hours-container">
 
           <ion-button
-  *ngFor="let hour of availableHours"
-  class="hour-btn"
-  fill="solid"
-  [color]="selectedHour === hour ? 'primary' : 'light'"
-  [disabled]="isHourDisabled(hour)"
-  (click)="toggleHour(hour)">
-  {{ hour }}
-</ion-button>
+            *ngFor="let hour of availableHours"
+            class="hour-btn"
+            fill="solid"
+            [color]="selectedHour === hour ? 'primary' : 'light'"
+            [disabled]="isHourDisabled(hour)"
+            (click)="toggleHour(hour)">
+            {{ hour }}
+          </ion-button>
 
         </div>
       </ion-card-content>
     </ion-card>
 
-    <!-- SIN HORARIOS -->
-    <ion-card style="margin-top: 20px;" *ngIf="availableHours.length === 0">
-      <ion-card-content style="text-align:center;">
+    <ion-card *ngIf="availableHours.length === 0">
+      <ion-card-content class="empty-hours">
         No hay horarios disponibles para la fecha seleccionada
       </ion-card-content>
     </ion-card>
 
-    <!-- MENSAJE -->
     <ion-text
       color="success"
       *ngIf="successMessage"
-      style="display:block; text-align:center; margin-top:10px;">
+      class="success-message">
       {{ successMessage }}
     </ion-text>
 
-    <!-- BOTÓN -->
     <ion-button
-  expand="block"
-  class="confirm-btn"
-      style="margin-top: 20px;"
+      expand="block"
+      class="confirm-btn"
       [disabled]="!selectedHour || isBooking"
       (click)="bookAppointment()">
       {{ isBooking ? 'Reservando...' : 'Confirmar cita' }}

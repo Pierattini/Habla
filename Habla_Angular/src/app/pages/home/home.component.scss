@@ -1,337 +1,280 @@
-/* ===== FONDO LIMPIO ===== */
 :host {
   display: block;
-  background: #ffffff;
+  background: var(--app-bg);
+  color: var(--app-text);
 }
 
 ion-content {
-  --background: #ffffff;
+  --background: var(--app-bg);
 }
 
-/* ===== LOGO ===== */
 .header-logo {
   text-align: center;
-  margin-top: 10px;
-  margin-bottom: 6px;
+  margin: 18px 16px 10px;
 }
 
 .header-logo img {
-  width: 150px;
-  height: 150px;
+  width: 142px;
+  height: 142px;
   object-fit: cover;
   object-position: center;
-
   border-radius: 50%;
-  background: transparent;
-  padding: 0;
-  box-shadow: none;
+  background: var(--app-surface);
+  padding: 4px;
+  box-shadow: var(--app-shadow-soft);
 }
 
 .header-logo p {
-  margin-top: 4px;
+  margin-top: 10px;
+  color: var(--app-muted);
+  font-size: 14px;
 }
 
-/* ===== CATEGORÍAS ===== */
 .categories {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding: 0 15px;
+  padding: 4px 16px 10px;
   margin: 12px 0;
-}
-/* ===== CARD PROFESIONAL ===== */
-ion-card {
-  margin: 12px 15px;
-  border-radius: 16px;
-
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-  border: 1px solid #f1f5f9;
-
-  transition: all 0.2s ease;
+  scrollbar-width: none;
 }
 
-/* efecto sutil */
-ion-card:active {
-  transform: scale(0.98);
-}
-
-/* header */
-ion-item {
-  --background: transparent;
-  padding-top: 6px;
-}
-
-/* avatar */
-ion-avatar img {
-  width: 100%;
-  border-radius: 50%;
-}
-
-/* nombre */
-ion-label h2 {
-  font-size: 15px;
-  font-weight: 600;
-  color: #111827;
-}
-
-/* especialidad */
-ion-label p {
-  font-size: 13px;
-  color: #6b7280;
-}
-
-/* contenido */
-ion-card-content {
-  padding-top: 0;
-}
-
-/* precio */
-ion-card-content p {
-  font-size: 14px;
-  font-weight: 500;
-  color: #059669; /* verde elegante (dinero) */
-  margin-bottom: 10px;
-}
-
-/* botón */
-ion-button {
-  --border-radius: 10px;
-  --background: linear-gradient(135deg, #6366f1, #7dd3fc);
-
-  font-size: 13px;
-  height: 40px;
-
-  text-transform: none;
-}
-/* estilo tipo app */
-.categories ion-chip {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 6px 12px;
-
-  font-size: 13px;
-  color: #555;
-
-  border: 1px solid #e5e7eb;
-
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-
-  transition: all 0.2s ease;
-}
-
-/* efecto al tocar */
-.categories ion-chip.active {
-  background: #e0f7ff;
-  border-color: #7dd3fc;
-  color: #0284c7;
-}
 .categories::-webkit-scrollbar {
   display: none;
 }
-.categories ion-chip:hover {
-  background: #f8fafc;
+
+.categories ion-chip {
+  background: var(--app-surface);
+  border: 1px solid rgba(168, 85, 247, 0.14);
+  border-radius: 999px;
+  padding: 7px 14px;
+  color: var(--app-muted);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 8px 22px rgba(31, 41, 55, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
-/* ===== CENTRO ===== */
+
+.categories ion-chip.active {
+  background: var(--app-secondary);
+  border-color: rgba(168, 85, 247, 0.28);
+  color: var(--app-text);
+}
+
+ion-card {
+  margin: 14px 16px;
+  border-radius: var(--app-radius-xl);
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  box-shadow: var(--app-shadow-soft);
+  background: var(--app-surface);
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+ion-card:active {
+  transform: scale(0.985);
+}
+
+ion-item {
+  --background: transparent;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  padding-top: 8px;
+}
+
+ion-avatar {
+  width: 52px;
+  height: 52px;
+  padding: 3px;
+  border: 1px solid rgba(168, 85, 247, 0.18);
+  background: #ffffff;
+}
+
+ion-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+ion-label h2 {
+  color: var(--app-text);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+ion-label p {
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+ion-card-content {
+  padding: 4px 16px 16px;
+}
+
+ion-card-content p {
+  margin-bottom: 12px;
+  color: var(--app-success);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+ion-button {
+  --background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  --color: #ffffff;
+  --border-radius: var(--app-radius-md);
+  --box-shadow: 0 12px 24px rgba(168, 85, 247, 0.26);
+  height: 42px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: none;
+}
+
 .center {
   text-align: center;
   margin-top: 40px;
+  color: var(--app-muted);
 }
+
 .card-info {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 10px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .price {
-  color: #059669;
-  font-weight: 600;
+  color: var(--app-success);
   font-size: 14px;
+  font-weight: 700;
 }
 
 .duration {
-  color: #6b7280;
+  color: var(--app-muted);
   font-size: 13px;
 }
+
 .status {
   display: inline-block;
+  margin-top: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--app-secondary);
+  color: var(--app-text);
   font-size: 12px;
-  font-weight: 500;
-
-  color: #0284c7;
-  background: #e0f7ff;
-
-  padding: 3px 8px;
-  border-radius: 12px;
-
-  margin-top: 4px;
+  font-weight: 700;
 }
-/* 🔥 GRID */
+
 .quick-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 👈 4 por fila */
-  gap: 10px;
-  padding: 0 10px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 0 16px;
 }
 
-/* móvil pequeño */
 @media (max-width: 400px) {
   .quick-grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
-/* 🔥 CARD */
 .quick-card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 14px 8px;
-
+  background: var(--app-surface);
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  border-radius: var(--app-radius-lg);
+  padding: 16px 8px;
   text-align: center;
-
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-
-  transition: all 0.2s ease;
+  box-shadow: 0 10px 24px rgba(31, 41, 55, 0.07);
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
-/* 🔥 ICONO */
 .quick-card .icon {
-  font-size: 22px;
-  margin-bottom: 6px;
+  margin-bottom: 7px;
+  color: var(--app-primary);
+  font-size: 23px;
 }
 
-/* 🔥 TEXTO */
 .quick-card .label {
+  color: var(--app-text);
   font-size: 12px;
-  color: #555;
+  font-weight: 600;
 }
 
-/* 🔥 HOVER / CLICK */
 .quick-card:active {
-  transform: scale(0.95);
-  background: #e0f7ff;
-}
-/* 🔥 CARD PRINCIPAL */
-.cta-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 14px;
-
-  margin: 10px 16px;
-
-  box-shadow: 0 6px 15px rgba(0,0,0,0.06);
-
-  transition: all 0.2s ease;
+  transform: scale(0.96);
+  background: var(--app-secondary);
 }
 
-/* icono */
-.cta-icon {
-  font-size: 22px;
-}
-
-/* contenido */
-.cta-content h4 {
-  margin: 0;
-  font-size: 14px;
-}
-
-.cta-content p {
-  margin: 0;
-  font-size: 12px;
-  color: #666;
-}
-
-/* flecha */
-.cta-arrow {
-  margin-left: auto;
-  font-size: 18px;
-  color: #999;
-}
-
-/* efecto */
-.cta-card:active {
-  transform: scale(0.97);
-  background: #f8fafc;
-}
-/* 🔥 CTA PRO */
+.cta-card,
 .cta-card-pro {
   margin: 16px;
   padding: 18px;
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+  transition: transform 0.2s ease;
+}
 
-  border-radius: 18px;
+.cta-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 
-  background: linear-gradient(135deg, #f0f9ff, #ffffff);
-
-  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
-
-  border: 1px solid #e0f2fe;
+.cta-card:active,
+.cta-card-pro:active {
+  transform: scale(0.98);
 }
 
 .cta-header {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
+  text-align: center;
 }
 
 .cta-icon {
-  font-size: 20px;
-  background: #e0f7ff;
-  padding: 8px;
-  border-radius: 10px;
+  padding: 9px;
+  border-radius: 14px;
+  background: var(--app-secondary);
+  color: var(--app-primary);
+  font-size: 21px;
 }
 
 .cta-content h4 {
   margin: 0;
+  color: var(--app-text);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 800;
+  text-align: center;
 }
 
 .cta-content p {
   margin: 8px 0 12px;
+  color: var(--app-muted);
   font-size: 13px;
-  color: #555;
-}
-
-.cta-card-pro ion-button {
-  --border-radius: 10px;
-  font-size: 13px;
-}
-/* 🔥 quitar icono (por si queda espacio) */
-.cta-header {
-  justify-content: center;
+  line-height: 1.45;
   text-align: center;
 }
 
-/* título centrado */
-.cta-content h4 {
-  text-align: center;
+.cta-arrow {
+  margin-left: auto;
+  color: var(--app-muted);
+  font-size: 18px;
 }
 
-/* texto centrado */
-.cta-content p {
-  text-align: center;
-}
-
-/* 🔥 botón centrado */
 .cta-button {
   display: flex;
   justify-content: center;
 }
 
-/* 🔥 botón celeste PRO */
 .cta-card-pro ion-button {
-  --background: linear-gradient(135deg, #38bdf8, #7dd3fc);
-  --color: white;
-  --border-radius: 12px;
-
   width: 80%;
-  font-size: 14px;
-
-  box-shadow: 0 6px 15px rgba(56,189,248,0.3);
 }
+
 .search-box {
   position: relative;
   z-index: 1;

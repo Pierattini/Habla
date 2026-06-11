@@ -4,13 +4,26 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AppointmentStatus, WeekDay } from '@prisma/client';
+import {
+  AppointmentStatus,
+  DocumentMode,
+  DocumentStatus,
+  WeekDay,
+} from '@prisma/client';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class AppointmentsService {
   constructor(private prisma: PrismaService) {}
-  async create(customerId: string, professionalId: string, date: Date) {
+  async create(
+    customerId: string,
+    professionalId: string,
+    date: Date,
+    options: {
+      documentRequested?: boolean;
+      documentCurrency?: string;
+    } = {},
+  ) {
     const now = new Date();
 
     if (date <= now) {
@@ -37,6 +50,14 @@ export class AppointmentsService {
 
     if (professional.user.role !== 'PROFESSIONAL') {
       throw new ForbiddenException('Selected user is not a professional');
+    }
+
+    const customer = await this.prisma.user.findUnique({
+      where: { id: customerId },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
     }
 
     const appointmentDurationInMinutes =
@@ -150,18 +171,64 @@ export class AppointmentsService {
     }
 
     // 👇 crear cita con precio final
-    return this.prisma.appointment.create({
+    const documentRequested = options.documentRequested === true;
+    const documentCurrency = options.documentCurrency ?? 'CLP';
+
+    const appointment = await this.prisma.appointment.create({
       data: {
         date,
         customerId,
         professionalId,
         penalty: finalPrice, // opcional (puedes usar otro campo si luego haces pricing formal)
+        documentRequested,
+        documentStatus: documentRequested
+          ? DocumentStatus.DOCUMENT_PENDING
+          : DocumentStatus.DOCUMENT_NOT_REQUIRED,
+        documentRequestedAt: documentRequested ? new Date() : null,
+        documentAmount: finalPrice,
+        documentCurrency,
       },
     });
+
+    if (documentRequested) {
+      await this.prisma.taxDocument.upsert({
+        where: { appointmentId: appointment.id },
+        update: {},
+        create: {
+          appointmentId: appointment.id,
+          status: DocumentStatus.DOCUMENT_PENDING,
+          mode: DocumentMode.MANUAL,
+          amount: finalPrice,
+          currency: documentCurrency,
+          customerTaxId: customer.taxId,
+          customerTaxName: customer.taxName,
+          customerTaxEmail: customer.taxEmail,
+          customerTaxAddress: customer.taxAddress,
+          customerTaxCountry: customer.taxCountry,
+          customerTaxCity: customer.taxCity,
+          professionalTaxId: professional.taxId,
+          professionalTaxName: professional.taxName,
+          professionalTaxEmail: professional.taxEmail,
+          professionalTaxAddress: professional.taxAddress,
+          professionalTaxCountry: professional.taxCountry,
+          professionalTaxCity: professional.taxCity,
+          events: {
+            create: {
+              actorId: customerId,
+              type: 'DOCUMENT_CREATED',
+              message: 'Tax document created from appointment request',
+            },
+          },
+        },
+      });
+    }
+
+    return appointment;
   }
 
   async findByProfessional(userId: string) {
     await this.releaseExpiredPayments();
+
     const professional = await this.prisma.professional.findUnique({
       where: { userId },
     });
@@ -173,21 +240,26 @@ export class AppointmentsService {
     return this.prisma.appointment.findMany({
       where: {
         professionalId: userId,
-        status: AppointmentStatus.PAYMENT_REVIEW, // 🔥 solo pagadas
+        status: {
+          not: AppointmentStatus.REFUNDED,
+        },
       },
       include: {
         customer: {
           select: {
             id: true,
             email: true,
+            name: true,
           },
         },
         professional: {
-          select: {
-            id: true,
-            email: true,
+          include: {
+            professional: true,
           },
         },
+      },
+      orderBy: {
+        date: 'asc',
       },
     });
   }

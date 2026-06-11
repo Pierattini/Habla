@@ -23,14 +23,23 @@ model User {
   id              String   @id @default(uuid())
   email           String   @unique
   name            String?
+  image           String?
   password        String
   role            Role
   createdAt       DateTime @default(now())
   isActive        Boolean  @default(false)
   sessionDuration Int?
 
-  country         String?
-  timezone        String? @default("America/Santiago")
+  country  String?
+  timezone String? @default("America/Santiago")
+
+  taxId                     String?
+  taxName                   String?
+  taxEmail                  String?
+  taxAddress                String?
+  taxCountry                String?
+  taxCity                   String?
+  wantsTaxDocumentByDefault Boolean @default(false)
 
   customerAppointments     Appointment[]  @relation("CustomerAppointments")
   professionalAppointments Appointment[]  @relation("ProfessionalAppointments")
@@ -41,27 +50,27 @@ model User {
   professionalConversations Conversation[] @relation("ProfessionalConversations")
   sentMessages              Message[]      @relation("SentMessages")
 
-  credit    Float    @default(0)
+  credit Float @default(0)
 }
 
 model Appointment {
-  id             String            @id @default(uuid())
-  date           DateTime
-  status         AppointmentStatus @default(PENDING)
-  customerId     String
-  professionalId String
-  createdAt      DateTime          @default(now())
-  rescheduleCount Int @default(0)
-  paidAt DateTime?
+  id              String            @id @default(uuid())
+  date            DateTime
+  status          AppointmentStatus @default(PENDING)
+  customerId      String
+  professionalId  String
+  createdAt       DateTime          @default(now())
+  rescheduleCount Int               @default(0)
+  paidAt          DateTime?
 
   // 🔥 PENALIZACIÓN
-  penalty          Float?
-  penaltyResolved  Boolean @default(false)
-  penaltyOption    String? // 'REFUND' | 'CREDIT'
+  penalty         Float?
+  penaltyResolved Boolean @default(false)
+  penaltyOption   String? // 'REFUND' | 'CREDIT'
 
   // 🔥 CRÉDITO / PAGO
-  creditUsed       Float? // cuánto crédito se usó
-  remainingToPay   Float? // cuánto falta pagar
+  creditUsed     Float? // cuánto crédito se usó
+  remainingToPay Float? // cuánto falta pagar
 
   // 🔥 REEMBOLSO
   refundAccount String?
@@ -70,11 +79,19 @@ model Appointment {
   // 🔥 OTROS
   meetLink String?
 
+  documentRequested   Boolean        @default(false)
+  documentStatus      DocumentStatus @default(DOCUMENT_NOT_REQUIRED)
+  documentRequestedAt DateTime?
+  documentSentAt      DateTime?
+  documentAmount      Int?
+  documentCurrency    String         @default("CLP")
+
   customer     User @relation("CustomerAppointments", fields: [customerId], references: [id])
   professional User @relation("ProfessionalAppointments", fields: [professionalId], references: [id])
 
   conversation   Conversation? @relation(fields: [conversationId], references: [id])
   conversationId String?
+  taxDocument    TaxDocument?
 }
 
 model Professional {
@@ -90,12 +107,22 @@ model Professional {
   isOnline    Boolean? @default(true)
   image       String?
 
-   // Datos Bancarios
-  bankName     String?
-  accountType  String?
+  // Datos Bancarios
+  bankName      String?
+  accountType   String?
   accountNumber String?
   accountHolder String?
-  accountEmail String?
+  accountEmail  String?
+
+  documentAutomationEnabled Boolean      @default(false)
+  manualDocumentMode        Boolean      @default(true)
+  taxProvider               TaxProvider?
+  taxId                     String?
+  taxName                   String?
+  taxEmail                  String?
+  taxAddress                String?
+  taxCountry                String?
+  taxCity                   String?
 }
 
 model Conversation {
@@ -124,10 +151,10 @@ model Message {
 
   content String?
 
-  fileUrl  String?
-  fileName String?
-  fileType String?
-  fileSize Int?
+  fileUrl      String?
+  fileName     String?
+  fileType     String?
+  fileSize     Int?
   filePublicId String?
 
   isRead    Boolean  @default(false)
@@ -138,6 +165,73 @@ model Message {
 
   @@index([conversationId])
   @@index([senderId])
+  @@index([createdAt])
+}
+
+model TaxDocument {
+  id            String @id @default(uuid())
+  appointmentId String @unique
+
+  status DocumentStatus   @default(DOCUMENT_PENDING)
+  mode   DocumentMode     @default(MANUAL)
+  type   TaxDocumentType?
+
+  amount   Int?
+  currency String @default("CLP")
+
+  customerTaxId      String?
+  customerTaxName    String?
+  customerTaxEmail   String?
+  customerTaxAddress String?
+  customerTaxCountry String?
+  customerTaxCity    String?
+
+  professionalTaxId      String?
+  professionalTaxName    String?
+  professionalTaxEmail   String?
+  professionalTaxAddress String?
+  professionalTaxCountry String?
+  professionalTaxCity    String?
+
+  provider           TaxProvider?
+  providerDocumentId String?
+  providerPayload    Json?
+  providerResponse   Json?
+
+  pdfUrl        String?
+  pdfPublicId   String?
+  fileName      String?
+  localFilePath String?
+
+  uploadedById String?
+  generatedAt  DateTime?
+  uploadedAt   DateTime?
+  emailSent    Boolean   @default(false)
+  emailSentAt  DateTime?
+  sentAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  appointment Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  events      TaxDocumentEvent[]
+
+  @@index([status])
+  @@index([provider])
+}
+
+model TaxDocumentEvent {
+  id         String   @id @default(uuid())
+  documentId String
+  actorId    String?
+  type       String
+  message    String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  document TaxDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([actorId])
   @@index([createdAt])
 }
 
@@ -165,4 +259,34 @@ enum AppointmentStatus {
   CANCELLED
   RESCHEDULED
   REFUNDED
+}
+
+enum DocumentStatus {
+  DOCUMENT_NOT_REQUIRED
+  DOCUMENT_PENDING
+  DOCUMENT_UPLOADED
+  DOCUMENT_GENERATED
+  DOCUMENT_SENT
+  DOCUMENT_FAILED
+  DOCUMENT_CANCELLED
+}
+
+enum DocumentMode {
+  MANUAL
+  AUTOMATED
+}
+
+enum TaxProvider {
+  SII
+  AEAT
+  QUIPU
+  HOLDED
+  NUBOX
+}
+
+enum TaxDocumentType {
+  BOLETA
+  FACTURA
+  INVOICE
+  RECEIPT
 }

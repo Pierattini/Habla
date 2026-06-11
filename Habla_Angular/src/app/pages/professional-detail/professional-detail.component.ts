@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChangeDetectorRef } from '@angular/core';
@@ -60,7 +60,7 @@ import {
     IonButtons,
   ]
 })
-export class ProfessionalDetailComponent implements OnInit {
+export class ProfessionalDetailComponent {
 
   id: string | null = null;
   professional: any = null;
@@ -78,8 +78,17 @@ export class ProfessionalDetailComponent implements OnInit {
   private router: Router 
 ) {}
 
-  ngOnInit() {
-    this.id = this.route.snapshot.paramMap.get('id');
+  ionViewWillEnter() {
+    const routeId = this.route.snapshot.paramMap.get('id');
+
+    if (this.id !== routeId) {
+      this.professional = null;
+      this.availableHours = [];
+      this.selectedHour = null;
+      this.successMessage = '';
+    }
+
+    this.id = routeId;
     this.getProfessional();
   }
  onDateChange(event: any) {
@@ -175,18 +184,13 @@ bookAppointment() {
     date: date.toISOString()
   };
 
-  const headers = new HttpHeaders().set(
-  'Authorization',
-  `Bearer ${token}`
-);
 
   console.log('POST → /appointments');
   console.log('PAYLOAD:', payload);
 
   this.http.post(
     'http://localhost:3000/appointments',
-    payload,
-    { headers }
+    payload
   ).subscribe({
     next: () => {
       console.log('✅ CITA OK');

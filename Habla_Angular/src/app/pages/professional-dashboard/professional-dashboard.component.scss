@@ -1,78 +1,206 @@
+:host {
+  display: block;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+ion-content {
+  --background: var(--app-bg);
+}
+
+ion-content::part(scroll) {
+  max-width: 760px;
+  margin: 0 auto;
+  padding-bottom: 112px;
+}
+
+ion-toolbar {
+  --background: var(--app-surface);
+  --color: var(--app-text);
+  border-bottom: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
+}
+
+ion-toolbar[color="primary"] {
+  --background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  --color: var(--app-surface);
+}
+
+ion-title {
+  font-weight: 800;
+}
+
 .profile-header {
-  text-align: center;
   margin-bottom: 24px;
+  padding: 30px 22px 26px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+  text-align: center;
 }
 
 .profile-image {
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 4px solid #3880ff;
-  margin-bottom: 14px;
-}
-
-.upload-btn {
+  width: 136px;
+  height: 136px;
   margin-bottom: 16px;
+  border: 4px solid var(--app-surface);
+  border-radius: 34px;
+  object-fit: cover;
+  box-shadow: 0 18px 36px color-mix(in srgb, var(--app-primary) 20%, transparent);
 }
 
-.section-title {
-  font-size: 22px;
-  font-weight: bold;
-  margin-bottom: 20px;
+.profile-header ion-button {
+  --border-color: color-mix(in srgb, var(--app-primary) 28%, transparent);
+  --color: var(--app-primary);
+  --background-hover: var(--app-secondary);
+  --border-radius: var(--app-radius-md);
+  height: 38px;
+  margin-bottom: 18px;
+  font-weight: 800;
+  text-transform: none;
+}
+
+.profile-header h2 {
+  margin: 0 0 6px;
+  color: var(--app-text);
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.profile-header p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 14px;
+  font-weight: 700;
 }
 
 ion-card {
-  border-radius: 24px;
-  margin-bottom: 22px;
+  margin: 0 0 22px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+  overflow: hidden;
+}
+
+ion-card-content {
+  padding: 22px;
+}
+
+.section-title {
+  margin: 0 0 18px;
+  color: var(--app-text);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+ion-item {
+  --background: #fcfaff;
+  --border-color: transparent;
+  --border-radius: var(--app-radius-md);
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --min-height: 62px;
+  margin-bottom: 12px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-md);
+}
+
+ion-label {
+  color: var(--app-text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+ion-input,
+ion-textarea {
+  --color: var(--app-text);
+  --placeholder-color: var(--app-muted);
+  --highlight-color-focused: var(--app-primary);
+  font-size: 15px;
+}
+
+ion-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-md);
+  background: #fcfaff;
+}
+
+ion-item:focus-within,
+ion-textarea:focus-within {
+  border-color: var(--app-primary-light);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--app-primary) 12%, transparent);
 }
 
 .day-card {
-  background: #f8f8f8;
-  border-radius: 18px;
+  margin-bottom: 16px;
   padding: 16px;
-  margin-bottom: 18px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-lg);
+  background: color-mix(in srgb, var(--app-secondary) 22%, var(--app-surface));
 }
 
-.day-header {
+.day-card h3 {
+  margin: 0 0 12px;
+  color: var(--app-text);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.day-card input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--app-primary);
+}
+
+.day-card input[type="time"] {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: var(--app-radius-md);
+  outline: none;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.day-card input[type="time"]:focus {
+  border-color: var(--app-primary-light);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--app-primary) 12%, transparent);
+}
+
+.document-card {
+  margin-bottom: 12px;
+  padding: 16px;
+  border: 1px solid var(--app-secondary);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-surface);
+}
+
+.document-main {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
 }
 
-.day-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-.time-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.time-row input {
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  font-size: 16px;
-}
-
-.duration-preview {
-  flex: 1;
-  font-size: 14px;
-  color: #666;
-}
-
-.empty-text {
-  color: #888;
-  font-size: 14px;
+.document-badge {
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: var(--app-secondary);
+  color: var(--app-primary);
 }
 
 .save-btn {
-  margin-top: 24px;
-  margin-bottom: 50px;
+  --background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  --color: var(--app-surface);
+  --border-radius: var(--app-radius-md);
+  --box-shadow: 0 16px 30px color-mix(in srgb, var(--app-primary) 28%, transparent);
+  height: 52px;
+  margin: 24px 0 50px;
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: none;
 }

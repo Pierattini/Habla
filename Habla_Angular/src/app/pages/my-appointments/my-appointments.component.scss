@@ -1,71 +1,136 @@
-/* 🌿 FONDO */
+:host {
+  display: block;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
 ion-content {
-  --background: #f8fafc;
+  --background: var(--app-bg);
   --padding-start: 0;
   --padding-end: 0;
 }
 
-/* 🔥 CENTRADO */
 ion-content::part(scroll) {
-  max-width: 500px;
+  max-width: 540px;
   margin: 0 auto;
   width: 100%;
 }
 
-/* 📦 CONTENEDOR */
 .contenedor {
-  max-width: 500px;
+  max-width: 540px;
+  width: 100%;
   margin: 0 auto;
-  width: 100%;
-  padding: 0 10px;
+  padding: 0 14px;
 }
 
-/* 🧾 TITULO */
+.btn-volver {
+  --color: var(--app-muted);
+  --background-hover: var(--app-secondary);
+  margin-top: 14px;
+  font-weight: 700;
+  text-transform: none;
+}
+
 .titulo {
+  margin: 10px 0 22px;
+  color: var(--app-text);
   text-align: center;
-  font-weight: 600;
-  margin-bottom: 20px;
-  color: #0f172a;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0;
 }
 
-/* 📦 CARD */
+.filtros {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.filtros ion-button {
+  --border-radius: var(--app-radius-md);
+  --box-shadow: none;
+  min-width: 92px;
+  height: 36px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: none;
+}
+
+.filtros ion-button[fill="solid"] {
+  --background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  --color: var(--app-surface);
+}
+
+.filtros ion-button[fill="outline"] {
+  --border-color: color-mix(in srgb, var(--app-primary) 18%, transparent);
+  --color: var(--app-muted);
+}
+
+.seccion-title {
+  margin: 24px 4px 12px;
+  color: var(--app-text);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.fecha {
+  display: inline-flex;
+  margin: 10px 0 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--app-secondary);
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 ion-card {
-  margin: 12px auto;
-  max-width: 500px;
   width: 100%;
+  max-width: 540px;
+  margin: 12px auto 16px;
 }
 
 .card-cita {
-  border-radius: 18px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.05);
-  border: 1px solid #eef2f7;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+  overflow: hidden;
 }
 
 .card-cita ion-card-content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+  padding: 18px;
 }
 
-/* 👤 HEADER */
 .header-cita {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
-/* 👤 AVATAR */
 .avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: #dbeafe;
-  color: #1d4ed8;
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
   overflow: hidden;
+  border: 3px solid var(--app-surface);
+  border-radius: 18px;
+  background: var(--app-secondary);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--app-primary) 16%, transparent);
 }
 
 .avatar img {
@@ -74,114 +139,141 @@ ion-card {
   object-fit: cover;
 }
 
-/* INFO */
 .info {
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 3px;
 }
 
-/* NOMBRE */
 .nombre {
-  font-weight: 600;
-  font-size: 14px;
-  color: #1e293b;
+  color: var(--app-text);
+  font-size: 15px;
+  font-weight: 800;
 }
 
-/* ESPECIALIDAD */
-.especialidad {
+.especialidad,
+.extra {
+  color: var(--app-muted);
   font-size: 12px;
-  color: #64748b;
+  line-height: 1.35;
 }
 
-/* ESTADO */
+.extra {
+  font-weight: 700;
+}
+
 .estado {
-  margin-top: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 2px;
+  padding: 6px 12px;
   border-radius: 999px;
-  display: inline-block;
-}
-
-/* 💳 MENSAJE PAGO */
-.estado-pago {
   font-size: 12px;
-  color: #f59e0b;
-  margin-top: 4px;
-}
-
-/* 🔘 BOTONES */
-.botones {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* BOTÓN PRINCIPAL (pago / confirmar) */
-.btn-principal {
-  height: 36px;
-  font-size: 13px;
-  border-radius: 10px;
-}
-
-/* BOTONES GENERALES */
-ion-button {
-  border-radius: 10px;
-}
-
-ion-button[size="small"] {
-  height: 34px;
-  font-size: 12px;
-}
-
-/* ⚙️ SECUNDARIOS */
-.acciones-secundarias {
-  display: flex;
-  gap: 6px;
-}
-
-.btn-sec {
-  flex: 1;
-  font-size: 12px;
-}
-
-/* CANCELAR */
-.btn-sec[color="danger"] {
-  color: #ef4444;
-}
-.slots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 20px;
-}
-.slots ion-button {
-  min-width: 70px;
-  border-radius: 10px;
-  font-weight: 500;
-}
-.disabled {
-  opacity: 0.5;
-  pointer-events: none;
-}
-.warning {
-  color: orange;
+  font-weight: 800;
 }
 
 .success {
-  color: #16a34a;
+  background: color-mix(in srgb, var(--app-success) 14%, var(--app-surface));
+  color: var(--app-success);
 }
 
 .danger {
-  color: #dc2626;
+  background: color-mix(in srgb, var(--app-primary) 12%, var(--app-surface));
+  color: var(--app-primary);
+}
+
+.warning {
+  background: color-mix(in srgb, #f59e0b 16%, var(--app-surface));
+  color: #b45309;
 }
 
 .medium {
-  color: #64748b;
+  background: color-mix(in srgb, var(--app-muted) 12%, var(--app-surface));
+  color: var(--app-muted);
 }
 
 .tertiary {
-  color: #7c3aed;
+  background: var(--app-secondary);
+  color: var(--app-primary);
+}
+
+.estado-espera,
+.estado-pago {
+  padding: 10px 12px;
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, #f59e0b 12%, var(--app-surface));
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.botones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.acciones-secundarias {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+ion-button {
+  --border-radius: var(--app-radius-md);
+  text-transform: none;
+  font-weight: 800;
+}
+
+ion-button[size="small"] {
+  min-height: 36px;
+  font-size: 12px;
+}
+
+.btn-main,
+.btn-principal {
+  --box-shadow: none;
+  min-height: 40px;
+  font-size: 13px;
+}
+
+.btn-main[color="primary"],
+.btn-sec[color="primary"] {
+  --border-color: color-mix(in srgb, var(--app-primary) 28%, transparent);
+  --color: var(--app-primary);
+}
+
+.btn-main[color="success"],
+.btn-principal[color="success"] {
+  --background: var(--app-success);
+  --color: var(--app-surface);
+}
+
+.btn-sec {
+  --border-radius: var(--app-radius-md);
+  --box-shadow: none;
+  min-width: fit-content;
+}
+
+.btn-sec[color="medium"] {
+  --border-color: color-mix(in srgb, var(--app-muted) 18%, transparent);
+  --color: var(--app-muted);
+}
+
+.btn-sec[color="danger"] {
+  --color: var(--app-primary);
+  --background-hover: var(--app-secondary);
+}
+
+.btn-sec::part(native) {
+  padding: 0 12px;
+}
+
+.disabled {
+  opacity: 0.58;
 }

@@ -7,14 +7,20 @@
 <ion-content class="messages-page">
 
   <!-- Estado vacío -->
-  <div class="empty-state" *ngIf="!conversations.length">
+  <div class="empty-state" *ngIf="!loading && conversations.length === 0 && !conversationNotFound">
     <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
     <h3>No tienes conversaciones</h3>
     <p>Cuando tengas citas activas podrás conversar aquí.</p>
   </div>
 
+  <div class="empty-state" *ngIf="!loading && conversationNotFound">
+    <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
+    <h3>No existe una conversacion previa</h3>
+    <p>Cuando se envie el primer mensaje, la conversacion aparecera aqui.</p>
+  </div>
+
   <!-- Lista -->
-  <ion-list *ngIf="conversations.length" lines="none">
+  <ion-list lines="none">
 
     <ion-item
       *ngFor="let conv of conversations"
@@ -24,12 +30,14 @@
     >
 
       <ion-avatar slot="start">
-        <img [src]="conv.otherUser.professional?.image || 'https://i.pravatar.cc/150'" />
+        <img [src]="conv.otherUser?.professional?.image || '/default-avatar.png'" />
       </ion-avatar>
 
       <ion-label>
         <div class="top-row">
-          <h2>{{ conv.otherUser.name }}</h2>
+          <h2>
+  {{ conv.otherUser?.name || conv.otherUser?.email || 'Usuario' }}
+</h2>
           <span class="time">
             {{ conv.lastMessage?.createdAt | date:'shortTime' }}
           </span>

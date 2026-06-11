@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-
+import { Router } from '@angular/router';
 import { MessagesService } from '../../services/messages.service';
 import { AuthService } from '../../services/auth.service';
 
@@ -32,12 +32,15 @@ export class ChatDetailComponent {
   intervalId: any;
 
   constructor(
-    private route: ActivatedRoute,
-    private messagesService: MessagesService,
-    private authService: AuthService
-  ) {}
+  private route: ActivatedRoute,
+  private router: Router,
+  private messagesService: MessagesService,
+  private authService: AuthService
+) {}
 
   ionViewWillEnter() {
+  this.clearRefreshInterval();
+
   this.conversationId =
     this.route.snapshot.paramMap.get('id') || '';
 
@@ -60,6 +63,10 @@ export class ChatDetailComponent {
       console.error(err);
     },
   });
+}
+
+ionViewWillLeave() {
+  this.clearRefreshInterval();
 }
 
   loadMessages() {
@@ -155,8 +162,16 @@ export class ChatDetailComponent {
   input.value = '';
 }
 ngOnDestroy() {
+  this.clearRefreshInterval();
+}
+
+private clearRefreshInterval() {
   if (this.intervalId) {
     clearInterval(this.intervalId);
+    this.intervalId = null;
   }
+}
+goBack() {
+  window.history.back();
 }
 }

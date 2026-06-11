@@ -58,7 +58,7 @@ export class UsersService {
     const dataToUpdate: any = {};
 
     if (dto.name !== undefined) dataToUpdate.name = dto.name;
-    if (dto.email !== undefined) dataToUpdate.email = dto.email;
+    if (dto.image !== undefined) dataToUpdate.image = dto.image;
 
     if (dto.country !== undefined) {
       dataToUpdate.country = dto.country;

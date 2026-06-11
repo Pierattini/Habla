@@ -1,143 +1,213 @@
-/* 🔤 TITULOS */
+:host {
+  display: block;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+ion-content {
+  --background: var(--app-bg);
+  --overflow: auto;
+}
+
+ion-toolbar {
+  --background: var(--app-surface);
+  --color: var(--app-text);
+  border-bottom: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
+}
+
 ion-title {
   text-align: center;
-  font-weight: 600;
+  font-weight: 800;
+  letter-spacing: 0;
 }
 
-h2 {
-  text-align: center;
-  font-weight: bold;
-  margin-top: 10px;
-  color: #1e293b;
+.detail-shell {
+  max-width: 540px;
+  margin: 0 auto;
+  padding-bottom: 112px;
 }
 
-/* 📝 TEXTOS */
-p {
-  text-align: center;
-  color: #64748b;
-  font-size: 13px;
-}
-
-/* 📱 CONTENIDO GENERAL */
-ion-content {
-  --overflow: auto;
-  --background: #f8fafc;
+.professional-hero {
+  margin: 8px 0 18px;
+  padding: 28px 20px 22px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
   text-align: center;
 }
 
-/* 📦 CARDS */
+.photo-wrapper {
+  position: relative;
+  width: 136px;
+  margin: 0 auto 18px;
+}
+
+.profile-avatar {
+  width: 136px;
+  height: 136px;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 18%, transparent);
+  border-radius: 34px;
+  background: var(--app-surface);
+  box-shadow: 0 18px 36px color-mix(in srgb, var(--app-primary) 20%, transparent);
+}
+
+.profile-avatar img {
+  border-radius: 28px;
+  object-fit: cover;
+}
+
+.message-icon {
+  position: absolute;
+  top: 4px;
+  right: -8px;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: 50%;
+  background: var(--app-surface);
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--app-primary) 18%, transparent);
+  cursor: pointer;
+  font-size: 18px;
+  z-index: 2;
+}
+
+.professional-info h2 {
+  margin: 0 0 6px;
+  color: var(--app-text);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.specialty {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.meta-pill {
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-surface);
+  text-align: left;
+}
+
+.meta-pill span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.meta-pill strong {
+  color: var(--app-text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
 ion-card {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  border-radius: 16px;
-  margin-top: 16px;
+  margin: 16px 0;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
 }
 
 ion-card-header,
-ion-card-title,
 ion-card-content {
   text-align: center;
 }
 
-/* 📅 CALENDARIO CENTRADO */
+ion-card-title {
+  color: var(--app-text);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+ion-card-content p,
+.empty-hours {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 ion-datetime {
   display: block;
-  max-width: 320px;
+  max-width: 330px;
   margin: 0 auto;
+  border-radius: var(--app-radius-lg);
+  --background: var(--app-surface);
+  --ion-color-primary: var(--app-primary);
 }
 
-/* 🎨 HEADER */
-ion-toolbar {
-  --background: #aee9f5;
-  --color: #1e3a5f;
-}
-
-/* 🔘 BOTONES GENERALES */
-ion-button {
-  height: 45px;
-  --border-radius: 12px;
-  font-size: 14px;
-}
-
-/* 🔥 CONTENEDOR HORAS */
 .hours-container {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
-  margin-top: 10px;
 }
 
-/* 🟢 BOTONES HORAS */
 .hour-btn {
-  min-width: 90px;
-  --background: #e2e8f0; /* gris claro */
-  --color: #1e293b;
+  min-width: 86px;
+  height: 42px;
+  --border-radius: var(--app-radius-md);
+  --box-shadow: none;
+  --background: var(--app-secondary);
+  --color: var(--app-text);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: none;
 }
 
-/* 🎯 HORA SELECCIONADA */
 .hour-btn[color="primary"] {
-  --background: #3b82f6;
-  --color: #ffffff;
-  transform: scale(1.05);
-  font-weight: 600;
+  --background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  --color: var(--app-surface);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--app-primary) 24%, transparent);
+  transform: translateY(-1px);
 }
 
-/* 🍋 BOTÓN CONFIRMAR */
+.hour-btn[disabled] {
+  opacity: 0.42;
+}
+
+.success-message {
+  display: block;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-success) 12%, var(--app-surface));
+  color: var(--app-success);
+  text-align: center;
+  font-weight: 800;
+}
+
+ion-button {
+  --border-radius: var(--app-radius-md);
+  text-transform: none;
+  font-weight: 800;
+}
+
 .confirm-btn {
-  --background: #22c55e;
-  --color: white;
-  font-weight: 600;
+  --background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  --color: var(--app-surface);
+  --box-shadow: 0 16px 30px color-mix(in srgb, var(--app-primary) 28%, transparent);
+  height: 52px;
   margin-top: 20px;
-}
-.hours-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-}
-
-.hour-btn {
-  min-width: 80px;
-  border-radius: 12px;
-}
-.confirm-btn {
-  --background: #22c55e;
-  --border-radius: 12px;
-  font-weight: 600;
-}
-.photo-wrapper {
-  position: relative;
-  width: 120px;
-  margin: 0 auto;
-  margin-top: 10px;
-}
-
-.profile-avatar {
-  width: 120px;
-  height: 120px;
-}
-.message-icon {
-  position: absolute;
-
-  top: 5px;
-  right: -5px;
-
-  width: 38px;
-  height: 38px;
-
-  border-radius: 50%;
-
-  background: white;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 18px;
-
-  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-
-  cursor: pointer;
-
-  z-index: 999;
+  font-size: 15px;
 }

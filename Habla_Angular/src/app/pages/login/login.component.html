@@ -1,25 +1,37 @@
-<div style="max-width:400px;margin:auto;margin-top:120px">
+<main class="login-page">
+  <section class="login-card" aria-label="Login">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <p>Habla</p>
+    </div>
 
-  <h2>Login</h2>
+    <div class="login-heading">
+      <h1>Iniciar sesion</h1>
+      <p>Accede a tu espacio de atencion y bienestar.</p>
+    </div>
 
-  <input
-    placeholder="Email"
-    [(ngModel)]="email"
-    style="width:100%;padding:10px;margin-top:10px"
-  />
+    <label class="field">
+      <span>Email</span>
+      <input
+        placeholder="Email"
+        [(ngModel)]="email"
+      />
+    </label>
 
-  <input
-    type="password"
-    placeholder="Password"
-    [(ngModel)]="password"
-    style="width:100%;padding:10px;margin-top:10px"
-  />
+    <label class="field">
+      <span>Password</span>
+      <input
+        type="password"
+        placeholder="Password"
+        [(ngModel)]="password"
+      />
+    </label>
 
-  <button
-    (click)="login()"
-    style="width:100%;padding:10px;margin-top:20px"
-  >
-    Iniciar sesión
-  </button>
-
-</div>
+    <button
+      class="login-button"
+      (click)="login()"
+    >
+      Iniciar sesion
+    </button>
+  </section>
+</main>

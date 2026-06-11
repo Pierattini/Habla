@@ -38,6 +38,10 @@ export class AppointmentsController {
       req.user.id,
       body.professionalId,
       new Date(body.date),
+      {
+        documentRequested: body.documentRequested ?? false,
+        documentCurrency: body.documentCurrency,
+      },
     );
   }
 

@@ -43,6 +43,110 @@
 
 </div>
 
+  <!-- DOCUMENTOS -->
+  <ion-card>
+
+    <ion-card-content>
+
+      <h2 class="section-title">
+        Documentos Pendientes
+      </h2>
+
+      <div
+        *ngIf="pendingTaxDocuments.length === 0"
+        class="documents-empty"
+      >
+        No tienes documentos pendientes.
+      </div>
+
+      <div
+        *ngFor="let document of pendingTaxDocuments"
+        class="document-card"
+      >
+
+        <div class="document-main">
+
+          <div>
+            <h3>
+              {{ document.customer.name || document.customer.email }}
+            </h3>
+
+            <p>
+              {{ document.appointmentDate | date:'dd/MM/yyyy HH:mm' }}
+            </p>
+          </div>
+
+          <span class="document-badge">
+            {{ getDocumentStatusLabel(document.status) }}
+          </span>
+
+        </div>
+
+        <div class="document-meta">
+          <span>
+            {{ document.currency }}
+            {{ (document.amount || 0) | number:'1.0-0' }}
+          </span>
+
+          <span>
+            Solicitado {{ document.createdAt | date:'dd/MM/yyyy' }}
+          </span>
+        </div>
+
+      </div>
+
+    </ion-card-content>
+
+  </ion-card>
+
+  <ion-card>
+
+    <ion-card-content>
+
+      <h2 class="section-title">
+        Documentos Tributarios
+      </h2>
+
+      <div
+        *ngIf="taxDocuments.length === 0"
+        class="documents-empty"
+      >
+        No hay documentos tributarios registrados.
+      </div>
+
+      <div
+        *ngFor="let document of taxDocuments"
+        class="document-card"
+      >
+
+        <div class="document-main">
+          <div>
+            <h3>{{ document.fileName || 'Documento sin archivo' }}</h3>
+            <p>{{ getDocumentTypeLabel(document.type) }}</p>
+          </div>
+
+          <span class="document-badge">
+            {{ getDocumentStatusLabel(document.status) }}
+          </span>
+        </div>
+
+        <div class="document-meta">
+          <span>
+            Subido:
+            {{ document.uploadedAt ? (document.uploadedAt | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}
+          </span>
+
+          <span *ngIf="document.status === 'DOCUMENT_UPLOADED'">
+            DOCUMENT_UPLOADED
+          </span>
+        </div>
+
+      </div>
+
+    </ion-card-content>
+
+  </ion-card>
+
   <!-- PERFIL -->
   <ion-card>
 
