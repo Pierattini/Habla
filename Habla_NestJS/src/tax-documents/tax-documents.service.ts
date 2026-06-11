@@ -5,8 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DocumentMode, DocumentStatus, Role } from '@prisma/client';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { EmailService } from '../email/email.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { StorageService } from '../storage/storage.service';
 import { CreateTaxDocumentDto } from './dto/create-tax-document.dto';
 import { TaxDocumentUser } from './interfaces/tax-document-user.interface';
 
@@ -20,7 +21,8 @@ export class TaxDocumentsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly storageService: StorageService,
+    private readonly cloudinaryService: CloudinaryService,
+    private readonly emailService: EmailService,
   ) {}
 
   async createDocument(user: TaxDocumentUser, dto: CreateTaxDocumentDto) {
@@ -42,7 +44,7 @@ export class TaxDocumentsService {
 
     this.ensureAppointmentAccess(appointment, user.id);
 
-    return this.prisma.taxDocument.upsert({
+    const taxDocument = await this.prisma.taxDocument.upsert({
       where: { appointmentId: appointment.id },
       update: {},
       create: {
@@ -66,8 +68,22 @@ export class TaxDocumentsService {
         professionalTaxCountry:
           appointment.professional.professional?.taxCountry,
         professionalTaxCity: appointment.professional.professional?.taxCity,
+        events: {
+          create: {
+            actorId: user.id,
+            type: 'DOCUMENT_CREATED',
+            message: 'Tax document created from document request',
+          },
+        },
       },
     });
+
+    await this.syncAppointmentDocumentStatus(
+      taxDocument.appointmentId,
+      taxDocument.status,
+    );
+
+    return taxDocument;
   }
 
   async getDocumentById(id: string, user: TaxDocumentUser) {
@@ -228,17 +244,19 @@ export class TaxDocumentsService {
 
     this.ensureProfessionalAccess(document.appointment, user);
 
-    const uploaded = await this.storageService.uploadDocument(id, file);
+    const uploaded = await this.cloudinaryService.uploadTaxDocument(id, file);
 
-    return this.prisma.taxDocument.update({
+    const uploadedAt = new Date();
+
+    const uploadedDocument = await this.prisma.taxDocument.update({
       where: { id },
       data: {
         status: DocumentStatus.DOCUMENT_UPLOADED,
-        fileName: uploaded.fileName,
-        localFilePath: uploaded.localFilePath,
-        pdfUrl: uploaded.url,
-        pdfPublicId: uploaded.publicId,
-        uploadedAt: new Date(),
+        fileName: file.originalname,
+        localFilePath: null,
+        pdfUrl: uploaded.secure_url,
+        pdfPublicId: uploaded.public_id,
+        uploadedAt,
         uploadedById: user.id,
         emailSent: false,
         emailSentAt: null,
@@ -267,6 +285,13 @@ export class TaxDocumentsService {
         },
       },
     });
+
+    await this.syncAppointmentDocumentStatus(
+      uploadedDocument.appointmentId,
+      DocumentStatus.DOCUMENT_UPLOADED,
+    );
+
+    return this.sendUploadedDocumentEmail(uploadedDocument, user.id);
   }
 
   markAsGenerated(id: string, user: TaxDocumentUser, message?: string) {
@@ -291,6 +316,103 @@ export class TaxDocumentsService {
     );
   }
 
+  markAsFailed(id: string, user: TaxDocumentUser, message?: string) {
+    return this.updateStatus(
+      id,
+      user,
+      DocumentStatus.DOCUMENT_FAILED,
+      'DOCUMENT_FAILED',
+      message,
+    );
+  }
+
+  markAsCancelled(id: string, user: TaxDocumentUser, message?: string) {
+    return this.updateStatus(
+      id,
+      user,
+      DocumentStatus.DOCUMENT_CANCELLED,
+      'DOCUMENT_CANCELLED',
+      message,
+    );
+  }
+
+  async resendTaxDocumentEmail(id: string, user: TaxDocumentUser) {
+    const document = await this.prisma.taxDocument.findUnique({
+      where: { id },
+      include: {
+        appointment: {
+          include: {
+            customer: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Tax document not found');
+    }
+
+    this.ensureProfessionalAccess(document.appointment, user);
+
+    if (!document.pdfUrl) {
+      throw new BadRequestException('Document file is not available');
+    }
+
+    const customer = document.appointment.customer;
+    const customerEmail = document.customerTaxEmail || customer.email;
+    const customerName =
+      document.customerTaxName || customer.name || customer.email;
+    const emailSentAt = new Date();
+
+    await this.emailService.sendTaxDocumentEmail({
+      customerName,
+      customerEmail,
+      fileName: document.fileName || 'Documento',
+      pdfUrl: document.pdfUrl,
+      uploadedAt: document.uploadedAt || document.generatedAt || emailSentAt,
+    });
+
+    return this.prisma.taxDocument.update({
+      where: { id: document.id },
+      data: {
+        emailSent: true,
+        emailSentAt,
+        events: {
+          create: {
+            actorId: user.id,
+            type: 'DOCUMENT_EMAIL_RESENT',
+            message: 'Correo de documento reenviado al cliente',
+            metadata: {
+              customerEmail,
+            },
+          },
+        },
+      },
+      include: {
+        appointment: {
+          include: {
+            customer: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+              },
+            },
+          },
+        },
+        events: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+  }
+
   private async updateStatus(
     id: string,
     user: TaxDocumentUser,
@@ -312,7 +434,7 @@ export class TaxDocumentsService {
 
     this.ensureAppointmentAccess(document.appointment, user.id);
 
-    return this.prisma.taxDocument.update({
+    const updatedDocument = await this.prisma.taxDocument.update({
       where: { id },
       data: {
         status,
@@ -331,6 +453,47 @@ export class TaxDocumentsService {
         },
       },
     });
+
+    await this.syncAppointmentDocumentStatus(
+      updatedDocument.appointmentId,
+      status,
+    );
+
+    return updatedDocument;
+  }
+
+  private async syncAppointmentDocumentStatus(
+    appointmentId: string,
+    status: DocumentStatus,
+  ) {
+    try {
+      const appointment = await this.prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        select: { id: true },
+      });
+
+      if (!appointment) {
+        console.warn(
+          `Appointment ${appointmentId} not found while syncing tax document status ${status}`,
+        );
+        return;
+      }
+
+      await this.prisma.appointment.update({
+        where: { id: appointmentId },
+        data: {
+          documentStatus: status,
+          ...(status === DocumentStatus.DOCUMENT_SENT
+            ? { documentSentAt: new Date() }
+            : {}),
+        },
+      });
+    } catch (error) {
+      console.warn(
+        `Could not sync appointment ${appointmentId} document status ${status}:`,
+        error,
+      );
+    }
   }
 
   private ensureAppointmentAccess(
@@ -351,6 +514,93 @@ export class TaxDocumentsService {
   ) {
     if (user.role !== Role.PROFESSIONAL || appointment.professionalId !== user.id) {
       throw new ForbiddenException('Only the professional can upload this document');
+    }
+  }
+
+  private async sendUploadedDocumentEmail(document: any, actorId: string) {
+    const customer = document.appointment.customer;
+    const customerEmail = document.customerTaxEmail || customer.email;
+    const customerName =
+      document.customerTaxName || customer.name || customer.email;
+
+    try {
+      await this.emailService.sendTaxDocumentEmail({
+        customerName,
+        customerEmail,
+        fileName: document.fileName || 'Documento',
+        pdfUrl: document.pdfUrl,
+        uploadedAt: document.uploadedAt,
+      });
+
+      return this.prisma.taxDocument.update({
+        where: { id: document.id },
+        data: {
+          emailSent: true,
+          emailSentAt: new Date(),
+          events: {
+            create: {
+              actorId,
+              type: 'DOCUMENT_EMAIL_SENT',
+              message: 'Correo de documento enviado al cliente',
+              metadata: {
+                customerEmail,
+              },
+            },
+          },
+        },
+        include: {
+          appointment: {
+            include: {
+              customer: {
+                select: {
+                  id: true,
+                  email: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          events: {
+            orderBy: { createdAt: 'desc' },
+          },
+        },
+      });
+    } catch (error) {
+      await this.prisma.taxDocumentEvent.create({
+        data: {
+          documentId: document.id,
+          actorId,
+          type: 'DOCUMENT_EMAIL_FAILED',
+          message: 'No se pudo enviar el correo de documento al cliente',
+          metadata: {
+            customerEmail,
+            error:
+              error instanceof Error
+                ? error.message
+                : String(error),
+          },
+        },
+      });
+
+      return this.prisma.taxDocument.findUnique({
+        where: { id: document.id },
+        include: {
+          appointment: {
+            include: {
+              customer: {
+                select: {
+                  id: true,
+                  email: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          events: {
+            orderBy: { createdAt: 'desc' },
+          },
+        },
+      });
     }
   }
 }

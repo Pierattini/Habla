@@ -103,4 +103,9 @@ export class TaxDocumentsController {
   ) {
     return this.taxDocumentsService.markAsSent(id, req.user, body.message);
   }
+
+  @Post(':id/resend-email')
+  resendEmail(@Param('id') id: string, @Request() req: AuthRequest) {
+    return this.taxDocumentsService.resendTaxDocumentEmail(id, req.user);
+  }
 }

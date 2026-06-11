@@ -30,4 +30,26 @@ export class CloudinaryService {
         .end(file.buffer);
     });
   }
+
+  async uploadTaxDocument(documentId: string, file: any) {
+    return new Promise<any>((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          {
+            resource_type: 'auto',
+            folder: `habla-tax-documents/${documentId}`,
+            use_filename: true,
+            unique_filename: true,
+          },
+          (error, result) => {
+            if (error) {
+              return reject(new Error(String(error.message)));
+            }
+
+            resolve(result);
+          },
+        )
+        .end(file.buffer);
+    });
+  }
 }
