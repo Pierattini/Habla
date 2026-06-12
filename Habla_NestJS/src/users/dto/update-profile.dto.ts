@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEmail } from 'class-validator';
+import { IsEmail, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -20,4 +20,23 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   image?: string;
+
+  @IsOptional()
+  @IsString()
+  specialty?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  price?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(15)
+  @Max(240)
+  duration?: number;
 }

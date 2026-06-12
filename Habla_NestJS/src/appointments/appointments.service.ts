@@ -8,9 +8,24 @@ import {
   AppointmentStatus,
   DocumentMode,
   DocumentStatus,
+  ScheduleMode,
   WeekDay,
 } from '@prisma/client';
 import * as nodemailer from 'nodemailer';
+
+type AvailabilityConfig = {
+  scheduleMode: ScheduleMode;
+  startMinute: number;
+  endMinute: number;
+  breakMinute: number;
+  specificSlots: unknown;
+  blockedRanges: unknown;
+};
+
+type TimeRange = {
+  startMinute: number;
+  endMinute: number;
+};
 
 @Injectable()
 export class AppointmentsService {
@@ -105,10 +120,24 @@ export class AppointmentsService {
         'Professional is not available at this time',
       );
     }
+
+    const matchesScheduleConfig = await this.isDateAvailableForProfessional(
+      professionalId,
+      date,
+      appointmentDurationInMinutes,
+    );
+
+    if (!matchesScheduleConfig) {
+      throw new ForbiddenException(
+        'Professional is not available at this time',
+      );
+    }
     const overlappingAppointment = await this.prisma.appointment.findFirst({
       where: {
         professionalId, // ← user id
-        status: AppointmentStatus.CONFIRMED,
+        status: {
+          notIn: [AppointmentStatus.CANCELLED, AppointmentStatus.REFUNDED],
+        },
         AND: [
           {
             date: {
@@ -135,7 +164,7 @@ export class AppointmentsService {
         professionalId, // ← user id
         date,
         status: {
-          not: AppointmentStatus.CANCELLED,
+          notIn: [AppointmentStatus.CANCELLED, AppointmentStatus.REFUNDED],
         },
       },
     });
@@ -366,8 +395,8 @@ export class AppointmentsService {
   }
   async getAvailableSlots(professionalId: string, date: Date) {
     const professional = await this.prisma.professional.findUnique({
-    where: { userId: professionalId },
-    include: { user: true },
+      where: { userId: professionalId },
+      include: { user: true },
     });
 
     if (!professional) {
@@ -423,40 +452,178 @@ export class AppointmentsService {
           gte: startOfDay,
           lte: endOfDay,
         },
-        status: AppointmentStatus.CONFIRMED,
+        status: {
+          notIn: [AppointmentStatus.CANCELLED, AppointmentStatus.REFUNDED],
+        },
       },
     });
 
-    const slots: string[] = [];
+    const now = new Date();
+    const slots = new Set<string>();
 
     for (const block of availability) {
-      for (
-        let minute = block.startMinute;
-        minute + duration <= block.endMinute;
-        minute += duration
-      ) {
-        const hour = Math.floor(minute / 60)
-          .toString()
-          .padStart(2, '0');
-        const min = (minute % 60).toString().padStart(2, '0');
+      const candidates =
+        block.scheduleMode === ScheduleMode.SPECIFIC
+          ? this.getSpecificSlots(block.specificSlots)
+          : this.buildContinuousSlots(block, duration);
 
-        const slotTime = `${hour}:${min}`;
-
+      for (const minute of candidates) {
         const slotDate = new Date(cleanDate);
         slotDate.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
 
-        const isBooked = appointments.some(
-          (appt) => appt.date.getTime() === slotDate.getTime(),
-        );
+        if (slotDate <= now) continue;
+
+        const slotEnd = new Date(slotDate.getTime() + duration * 60000);
+        const isBooked = appointments.some((appt) => {
+          const appointmentEnd = new Date(appt.date.getTime() + duration * 60000);
+
+          return this.rangesOverlap(slotDate, slotEnd, appt.date, appointmentEnd);
+        });
 
         if (!isBooked) {
-          slots.push(slotTime);
+          slots.add(this.minuteToTime(minute));
         }
       }
     }
 
-    return [...new Set(slots)];
+    return [...slots].sort();
   }
+  private async isDateAvailableForProfessional(
+    professionalId: string,
+    date: Date,
+    duration: number,
+  ) {
+    const minute = date.getHours() * 60 + date.getMinutes();
+    const availability = await this.prisma.availability.findMany({
+      where: {
+        professionalId,
+        day: this.getWeekDay(date),
+      },
+    });
+
+    return availability.some((block) =>
+      this.isMinuteAllowedByAvailability(block, minute, duration),
+    );
+  }
+
+  private isMinuteAllowedByAvailability(
+    block: AvailabilityConfig,
+    minute: number,
+    duration: number,
+  ) {
+    if (block.scheduleMode === ScheduleMode.SPECIFIC) {
+      return this.getSpecificSlots(block.specificSlots).includes(minute);
+    }
+
+    if (minute < block.startMinute || minute + duration > block.endMinute) {
+      return false;
+    }
+
+    return !this.getBlockedRanges(block.blockedRanges).some((range) =>
+      this.minuteRangesOverlap(
+        minute,
+        minute + duration,
+        range.startMinute,
+        range.endMinute,
+      ),
+    );
+  }
+
+  private buildContinuousSlots(block: AvailabilityConfig, duration: number) {
+    const step = duration + (block.breakMinute ?? 0);
+    const ranges = this.getBlockedRanges(block.blockedRanges);
+    const slots: number[] = [];
+
+    for (
+      let minute = block.startMinute;
+      minute + duration <= block.endMinute;
+      minute += step
+    ) {
+      const blocked = ranges.some((range) =>
+        this.minuteRangesOverlap(
+          minute,
+          minute + duration,
+          range.startMinute,
+          range.endMinute,
+        ),
+      );
+
+      if (!blocked) slots.push(minute);
+    }
+
+    return slots;
+  }
+
+  private getSpecificSlots(value: unknown) {
+    if (!Array.isArray(value)) return [];
+
+    return value
+      .filter((minute): minute is number => Number.isInteger(minute))
+      .filter((minute) => minute >= 0 && minute < 1440)
+      .sort((a, b) => a - b);
+  }
+
+  private getBlockedRanges(value: unknown): TimeRange[] {
+    if (!Array.isArray(value)) return [];
+
+    return value
+      .filter((range): range is TimeRange => {
+        if (!range || typeof range !== 'object') return false;
+
+        const candidate = range as TimeRange;
+
+        return (
+          Number.isInteger(candidate.startMinute) &&
+          Number.isInteger(candidate.endMinute) &&
+          candidate.startMinute >= 0 &&
+          candidate.endMinute <= 1440 &&
+          candidate.startMinute < candidate.endMinute
+        );
+      })
+      .sort((a, b) => a.startMinute - b.startMinute);
+  }
+
+  private getWeekDay(date: Date) {
+    const dayMap = [
+      WeekDay.SUN,
+      WeekDay.MON,
+      WeekDay.TUE,
+      WeekDay.WED,
+      WeekDay.THU,
+      WeekDay.FRI,
+      WeekDay.SAT,
+    ];
+
+    return dayMap[date.getDay()] as WeekDay;
+  }
+
+  private minuteToTime(minute: number) {
+    const hour = Math.floor(minute / 60)
+      .toString()
+      .padStart(2, '0');
+    const min = (minute % 60).toString().padStart(2, '0');
+
+    return `${hour}:${min}`;
+  }
+
+  private minuteRangesOverlap(
+    startA: number,
+    endA: number,
+    startB: number,
+    endB: number,
+  ) {
+    return startA < endB && endA > startB;
+  }
+
+  private rangesOverlap(
+    startA: Date,
+    endA: Date,
+    startB: Date,
+    endB: Date,
+  ) {
+    return startA < endB && endA > startB;
+  }
+
   async rescheduleAppointment(
     id: string,
     userId: string,
@@ -538,12 +705,24 @@ export class AppointmentsService {
       throw new ForbiddenException('Profesional no disponible');
     }
 
+    const matchesScheduleConfig = await this.isDateAvailableForProfessional(
+      appointment.professionalId,
+      newDate,
+      duration,
+    );
+
+    if (!matchesScheduleConfig) {
+      throw new ForbiddenException('Profesional no disponible');
+    }
+
     // 🔎 EVITAR SOLAPAMIENTO
     const overlapping = await this.prisma.appointment.findFirst({
       where: {
         professionalId: appointment.professionalId,
         id: { not: id },
-        status: AppointmentStatus.CONFIRMED,
+        status: {
+          notIn: [AppointmentStatus.CANCELLED, AppointmentStatus.REFUNDED],
+        },
         AND: [
           { date: { lt: endDate } },
           {

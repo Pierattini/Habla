@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Request,
   UploadedFile,
   UseInterceptors,
@@ -13,9 +14,20 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { AuthRequest } from '../auth/auth-request.interface';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 import { CreateTaxDocumentDto } from './dto/create-tax-document.dto';
 import { MarkTaxDocumentDto } from './dto/mark-tax-document.dto';
 import { TaxDocumentsService } from './tax-documents.service';
+import { Role } from '@prisma/client';
+
+type AdminTaxDocumentQuery = {
+  status?: string;
+  professionalId?: string;
+  customerId?: string;
+  fromDate?: string;
+  toDate?: string;
+};
 
 @Controller('tax-documents')
 @UseGuards(JwtAuthGuard)
@@ -54,6 +66,20 @@ export class TaxDocumentsController {
   @Get('professional/pending')
   getPendingDocumentsByProfessional(@Request() req: AuthRequest) {
     return this.taxDocumentsService.getPendingDocumentsByProfessional(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('admin/summary')
+  getAdminSummary() {
+    return this.taxDocumentsService.getAdminSummary();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('admin')
+  getAdminDocuments(@Query() query: AdminTaxDocumentQuery) {
+    return this.taxDocumentsService.getAdminDocuments(query);
   }
 
   @Get(':id')

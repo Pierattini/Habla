@@ -7,6 +7,7 @@ import {
   UseGuards,
   Request,
   ForbiddenException,
+  Delete,
 } from '@nestjs/common';
 import { AvailabilityService } from './availability.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -28,17 +29,24 @@ export class AvailabilityController {
       );
     }
 
-    return this.availabilityService.create(
-      req.user.id,
-      body.day,
-      body.startMinute,
-      body.endMinute,
-    );
+    return this.availabilityService.create(req.user.id, body);
   }
 
   // 📅 Obtener disponibilidad de un profesional
   @Get(':professionalId')
   getByProfessional(@Param('professionalId') id: string) {
     return this.availabilityService.getByProfessional(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':day')
+  removeDay(@Param('day') day: string, @Request() req: AuthRequest) {
+    if (req.user.role !== Role.PROFESSIONAL) {
+      throw new ForbiddenException(
+        'Only professionals can define availability',
+      );
+    }
+
+    return this.availabilityService.removeDay(req.user.id, day);
   }
 }

@@ -11,8 +11,12 @@ model Availability {
   id             String   @id @default(uuid())
   professionalId String
   day            WeekDay
+  scheduleMode   ScheduleMode @default(CONTINUOUS)
   startMinute    Int
   endMinute      Int
+  breakMinute    Int      @default(0)
+  specificSlots  Json?
+  blockedRanges  Json?
   createdAt      DateTime @default(now())
   professional   User     @relation(fields: [professionalId], references: [id])
 
@@ -249,6 +253,11 @@ enum WeekDay {
   FRI
   SAT
   SUN
+}
+
+enum ScheduleMode {
+  CONTINUOUS
+  SPECIFIC
 }
 
 enum AppointmentStatus {

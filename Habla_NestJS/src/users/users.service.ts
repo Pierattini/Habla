@@ -94,6 +94,22 @@ export class UsersService {
         ...(dto.image !== undefined && {
           image: dto.image,
         }),
+
+        ...(dto.specialty !== undefined && {
+          specialty: dto.specialty,
+        }),
+
+        ...(dto.description !== undefined && {
+          description: dto.description,
+        }),
+
+        ...(dto.price !== undefined && {
+          price: dto.price,
+        }),
+
+        ...(dto.duration !== undefined && {
+          duration: dto.duration,
+        }),
       },
     });
 

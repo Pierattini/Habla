@@ -4,12 +4,20 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DocumentMode, DocumentStatus, Role } from '@prisma/client';
+import { DocumentMode, DocumentStatus, Prisma, Role } from '@prisma/client';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { EmailService } from '../email/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaxDocumentDto } from './dto/create-tax-document.dto';
 import { TaxDocumentUser } from './interfaces/tax-document-user.interface';
+
+type AdminTaxDocumentFilters = {
+  status?: string;
+  professionalId?: string;
+  customerId?: string;
+  fromDate?: string;
+  toDate?: string;
+};
 
 @Injectable()
 export class TaxDocumentsService {
@@ -204,6 +212,139 @@ export class TaxDocumentsService {
       currency: document.currency,
       status: document.status,
       createdAt: document.createdAt,
+    }));
+  }
+
+  async getAdminSummary() {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    const [
+      totalDocuments,
+      pendingDocuments,
+      uploadedDocuments,
+      sentDocuments,
+      failedDocuments,
+      generatedDocuments,
+      monthDocuments,
+      emailSentDocuments,
+      emailNotSentDocuments,
+    ] = await this.prisma.$transaction([
+      this.prisma.taxDocument.count(),
+      this.prisma.taxDocument.count({
+        where: { status: DocumentStatus.DOCUMENT_PENDING },
+      }),
+      this.prisma.taxDocument.count({
+        where: { status: DocumentStatus.DOCUMENT_UPLOADED },
+      }),
+      this.prisma.taxDocument.count({
+        where: { status: DocumentStatus.DOCUMENT_SENT },
+      }),
+      this.prisma.taxDocument.count({
+        where: { status: DocumentStatus.DOCUMENT_FAILED },
+      }),
+      this.prisma.taxDocument.count({
+        where: { status: DocumentStatus.DOCUMENT_GENERATED },
+      }),
+      this.prisma.taxDocument.count({
+        where: {
+          createdAt: {
+            gte: monthStart,
+            lt: nextMonthStart,
+          },
+        },
+      }),
+      this.prisma.taxDocument.count({
+        where: { emailSent: true },
+      }),
+      this.prisma.taxDocument.count({
+        where: { emailSent: false },
+      }),
+    ]);
+
+    return {
+      totalDocuments,
+      pendingDocuments,
+      uploadedDocuments,
+      sentDocuments,
+      failedDocuments,
+      generatedDocuments,
+      monthDocuments,
+      emailSentDocuments,
+      emailNotSentDocuments,
+    };
+  }
+
+  async getAdminDocuments(filters: AdminTaxDocumentFilters) {
+    const where = this.buildAdminDocumentWhere(filters);
+
+    const documents = await this.prisma.taxDocument.findMany({
+      where,
+      include: {
+        appointment: {
+          include: {
+            customer: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+              },
+            },
+            professional: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+                professional: {
+                  select: {
+                    name: true,
+                    specialty: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return documents.map((document) => ({
+      document: {
+        id: document.id,
+        appointmentId: document.appointmentId,
+        type: document.type,
+        mode: document.mode,
+        fileName: document.fileName,
+        createdAt: document.createdAt,
+        generatedAt: document.generatedAt,
+      },
+      customer: document.appointment.customer,
+      professional: {
+        id: document.appointment.professional.id,
+        email: document.appointment.professional.email,
+        name:
+          document.appointment.professional.professional?.name ||
+          document.appointment.professional.name ||
+          document.appointment.professional.email,
+        specialty: document.appointment.professional.professional?.specialty,
+      },
+      appointment: {
+        id: document.appointment.id,
+        date: document.appointment.date,
+        status: document.appointment.status,
+      },
+      amount: document.amount,
+      currency: document.currency,
+      status: document.status,
+      uploadedAt: document.uploadedAt,
+      sentAt: document.sentAt,
+      emailSentAt: document.emailSentAt,
+      emailSent: document.emailSent,
+      pdfUrl: document.pdfUrl,
     }));
   }
 
@@ -460,6 +601,59 @@ export class TaxDocumentsService {
     );
 
     return updatedDocument;
+  }
+
+  private buildAdminDocumentWhere(
+    filters: AdminTaxDocumentFilters,
+  ): Prisma.TaxDocumentWhereInput {
+    const where: Prisma.TaxDocumentWhereInput = {};
+    const appointment: Prisma.AppointmentWhereInput = {};
+
+    if (filters.status) {
+      if (!Object.values(DocumentStatus).includes(filters.status as DocumentStatus)) {
+        throw new BadRequestException('Invalid document status filter');
+      }
+
+      where.status = filters.status as DocumentStatus;
+    }
+
+    if (filters.professionalId) {
+      appointment.professionalId = filters.professionalId;
+    }
+
+    if (filters.customerId) {
+      appointment.customerId = filters.customerId;
+    }
+
+    const createdAt: Prisma.DateTimeFilter = {};
+
+    if (filters.fromDate) {
+      createdAt.gte = this.parseAdminDate(filters.fromDate, 'fromDate');
+    }
+
+    if (filters.toDate) {
+      createdAt.lte = this.parseAdminDate(filters.toDate, 'toDate');
+    }
+
+    if (createdAt.gte || createdAt.lte) {
+      where.createdAt = createdAt;
+    }
+
+    if (appointment.professionalId || appointment.customerId) {
+      where.appointment = appointment;
+    }
+
+    return where;
+  }
+
+  private parseAdminDate(value: string, field: string) {
+    const date = new Date(value);
+
+    if (isNaN(date.getTime())) {
+      throw new BadRequestException(`Invalid ${field} filter`);
+    }
+
+    return date;
   }
 
   private async syncAppointmentDocumentStatus(
