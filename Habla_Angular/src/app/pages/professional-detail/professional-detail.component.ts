@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChangeDetectorRef } from '@angular/core';
+import { API_URL } from '../../core/config/api.config';
 //import { IonicModule } from '@ionic/angular';
 
 
@@ -64,6 +65,8 @@ export class ProfessionalDetailComponent {
 
   id: string | null = null;
   professional: any = null;
+  loading = true;
+  loaded = false;
 
   selectedDate: string = new Date().toISOString().split('T')[0];
   availableHours: string[] = [];
@@ -86,8 +89,10 @@ export class ProfessionalDetailComponent {
       this.availableHours = [];
       this.selectedHour = null;
       this.successMessage = '';
+      this.loaded = false;
     }
 
+    this.loading = true;
     this.id = routeId;
     this.getProfessional();
   }
@@ -98,14 +103,19 @@ export class ProfessionalDetailComponent {
 
   this.selectedDate = value.split('T')[0];
   this.successMessage = '';
+  this.loaded = false;
   console.log('FECHA CAMBIADA:', this.selectedDate);
 
   this.loadAvailability();
 }
   getProfessional() {
-  if (!this.id) return;
+  if (!this.id) {
+    this.loading = false;
+    this.loaded = true;
+    return;
+  }
 
-  this.http.get<any[]>('http://localhost:3000/users/professionals')
+  this.http.get<any[]>(`${API_URL}/users/professionals`)
     .subscribe({
       next: (res) => {
 
@@ -119,29 +129,47 @@ export class ProfessionalDetailComponent {
 
         this.loadAvailability();
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        console.error(err);
+        this.loading = false;
+        this.loaded = true;
+      }
     });
 }
 
   loadAvailability() {
-  if (!this.professional?.id || !this.selectedDate) return;
+  if (!this.professional?.id || !this.selectedDate) {
+    this.loading = false;
+    this.loaded = true;
+    return;
+  }
+
+  this.loading = true;
+  this.loaded = false;
 
   // 🔥 LIMPIAR FECHA
   //const cleanDate = this.selectedDate.split('T')[0];
   //const date = new Date(cleanDate + 'T12:00:00');
 
   this.http.get<string[]>(
-  `http://localhost:3000/appointments/available-slots?professionalId=${this.professional.id}&date=${this.selectedDate}`
+  `${API_URL}/appointments/available-slots?professionalId=${this.professional.id}&date=${this.selectedDate}`
 )
   .subscribe({
    next: (res: any[]) => {
   console.log('HORAS REALES:', res);
 
   this.availableHours = res;
+  this.loading = false;
+  this.loaded = true;
 
   //this.cdr.detectChanges();
 },
-    error: (err) => console.error(err)
+    error: (err) => {
+      console.error(err);
+      this.availableHours = [];
+      this.loading = false;
+      this.loaded = true;
+    }
   });
 }
 isHourDisabled(hour: string): boolean {
@@ -189,7 +217,7 @@ bookAppointment() {
   console.log('PAYLOAD:', payload);
 
   this.http.post(
-    'http://localhost:3000/appointments',
+    `${API_URL}/appointments`,
     payload
   ).subscribe({
     next: () => {

@@ -1,10 +1,20 @@
 <ion-content>
 <div class="contenedor">
-    <ion-button fill="clear" class="btn-volver" (click)="goHome()">
-      ← Inicio
-    </ion-button>
+  <div class="page-hero">
 
-   <h2 class="titulo">📅 Mis citas</h2>
+  <span class="page-greeting">
+    📅 Tu agenda
+  </span>
+
+  <h1>
+    Mis citas
+  </h1>
+
+  <p>
+    Gestiona tus próximas citas, pagos e historial.
+  </p>
+
+</div>
 <ng-template #acciones let-appt>
 
  <div class="acciones-secundarias ion-padding-top">
@@ -193,10 +203,12 @@
 
   <div
   *ngIf="
-    todayAppointments.length > 0 ||
-    futureAppointments.length > 0 ||
-    completedAppointments.length > 0 ||
-    historyAppointments.length > 0;
+    $any(this).loaded && (
+      todayAppointments.length > 0 ||
+      futureAppointments.length > 0 ||
+      completedAppointments.length > 0 ||
+      historyAppointments.length > 0
+    );
     else sinCitas
   ">
 
@@ -442,7 +454,10 @@
 
 
 <ng-template #sinCitas>
-  <p style="text-align:center; margin-top:20px;">
+  <p
+    *ngIf="$any(this).loaded"
+    style="text-align:center; margin-top:20px;"
+  >
     No tienes citas
   </p>
 </ng-template>

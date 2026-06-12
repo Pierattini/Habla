@@ -1,10 +1,19 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-title>Mi Perfil</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content>
+  <div class="page-hero">
+
+  <span class="page-greeting">
+    👤 Tu espacio personal
+  </span>
+
+  <h1>
+    Mi perfil
+  </h1>
+
+  <p>
+    Administra tu información, citas y preferencias.
+  </p>
+
+</div>
   <div class="container">
 
     <!-- PERFIL TOP -->
@@ -90,7 +99,7 @@
             </p>
           </div>
 
-          <p *ngIf="!nextAppointment">
+          <p *ngIf="$any(this).loaded && !nextAppointment">
             No tienes citas próximas
           </p>
         </ion-label>

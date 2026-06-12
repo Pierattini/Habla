@@ -14,21 +14,6 @@ ion-content::part(scroll) {
   padding-bottom: 112px;
 }
 
-ion-toolbar {
-  --background: var(--app-surface);
-  --color: var(--app-text);
-  border-bottom: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
-}
-
-ion-toolbar[color="primary"] {
-  --background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
-  --color: var(--app-surface);
-}
-
-ion-title {
-  font-weight: 800;
-}
-
 .profile-header {
   margin-bottom: 24px;
   padding: 30px 22px 26px;
@@ -223,13 +208,94 @@ ion-textarea:focus-within {
   font-weight: 800;
 }
 
-.day-card input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
+.schedule-help {
+  margin: -6px 0 16px;
+  color: var(--app-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.day-card-header,
+.availability-toggle,
+.mode-selector,
+.specific-slot-row {
+  display: flex;
+  align-items: center;
+}
+
+.day-card-header {
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.day-card-header h3 {
+  margin: 0;
+}
+
+.availability-toggle,
+.mode-selector label {
+  gap: 8px;
+  color: var(--app-text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.availability-toggle input,
+.mode-selector input {
+  width: 18px;
+  height: 18px;
   accent-color: var(--app-primary);
 }
 
-.day-card input[type="time"] {
+.mode-selector {
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.mode-selector label {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: var(--app-radius-md);
+  background: var(--app-surface);
+}
+
+.subsection-title {
+  margin: 14px 0 10px;
+  color: var(--app-text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.schedule-row,
+.specific-slot-row {
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.schedule-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.block-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+}
+
+.schedule-field label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.specific-slot-row input[type="time"],
+.schedule-field input[type="time"] {
   width: 100%;
   min-height: 42px;
   padding: 10px 12px;
@@ -242,7 +308,12 @@ ion-textarea:focus-within {
   font-weight: 700;
 }
 
-.day-card input[type="time"]:focus {
+.specific-slot-row input[type="time"] {
+  max-width: 180px;
+}
+
+.specific-slot-row input[type="time"]:focus,
+.schedule-field input[type="time"]:focus {
   border-color: var(--app-primary-light);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--app-primary) 12%, transparent);
 }
@@ -379,6 +450,21 @@ ion-textarea:focus-within {
 @media (max-width: 640px) {
   .documents-summary {
     grid-template-columns: 1fr;
+  }
+
+  .day-card-header,
+  .specific-slot-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .schedule-row,
+  .block-row {
+    grid-template-columns: 1fr;
+  }
+
+  .specific-slot-row input[type="time"] {
+    max-width: none;
   }
 }
 .dashboard-hero {

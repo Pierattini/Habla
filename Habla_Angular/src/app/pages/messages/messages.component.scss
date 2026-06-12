@@ -4,17 +4,6 @@
   color: var(--app-text);
 }
 
-ion-toolbar {
-  --background: var(--app-surface);
-  --color: var(--app-text);
-  border-bottom: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
-}
-
-ion-title {
-  font-weight: 800;
-  letter-spacing: 0;
-}
-
 .messages-page {
   --background: var(--app-bg);
 }
@@ -159,6 +148,32 @@ ion-badge {
 .empty-state p {
   max-width: 300px;
   margin: 0;
+  color: var(--app-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.page-hero {
+  margin-bottom: 22px;
+}
+
+.page-greeting {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--app-primary);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.page-hero h1 {
+  margin: 0;
+  color: #374151;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.page-hero p {
+  margin-top: 6px;
   color: var(--app-muted);
   font-size: 14px;
   line-height: 1.5;

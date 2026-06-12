@@ -18,7 +18,7 @@
   <div class="profile-header">
 
   <img
-  [src]="profile.image"
+  [src]="profile.image || '/default-avatar.png'"
   class="profile-image"
 />
 
@@ -76,7 +76,7 @@
       </h2>
 
       <div
-        *ngIf="pendingTaxDocuments.length === 0"
+        *ngIf="loaded && pendingTaxDocuments.length === 0"
         class="documents-empty"
       >
         No tienes documentos pendientes.
@@ -209,7 +209,7 @@
       </div>
 
       <div
-        *ngIf="$any(this).dashboardView.filteredTaxDocuments.length === 0"
+        *ngIf="loaded && $any(this).dashboardView.filteredTaxDocuments.length === 0"
         class="documents-empty"
       >
         No hay documentos para este filtro.
@@ -384,7 +384,7 @@
   </ion-card>
 
   <!-- HORARIOS -->
-  <ion-card>
+  <ion-card *ngIf="false">
 
     <ion-card-content>
 
@@ -461,6 +461,157 @@
 
   </ion-card>
 
+  <ion-card>
+    <ion-card-content>
+      <h2 class="section-title">
+        Horarios disponibles
+      </h2>
+
+      <p class="schedule-help">
+        La duracion y el descanso entre sesiones se configuran en Configuracion de Sesion.
+      </p>
+
+      <div
+        *ngFor="let item of availability"
+        class="day-card"
+      >
+        <div class="day-card-header">
+          <h3>{{ item.day }}</h3>
+
+          <label class="availability-toggle">
+            <input
+              type="checkbox"
+              [(ngModel)]="item.enabled"
+            />
+            <span>Disponible</span>
+          </label>
+        </div>
+
+        <div *ngIf="item.enabled">
+          <div class="mode-selector">
+            <label>
+              <input
+                type="radio"
+                value="CONTINUOUS"
+                [(ngModel)]="item.scheduleMode"
+              />
+              Horario continuo
+            </label>
+
+            <label>
+              <input
+                type="radio"
+                value="SPECIFIC"
+                [(ngModel)]="item.scheduleMode"
+              />
+              Horarios especificos
+            </label>
+          </div>
+
+          <ng-container *ngIf="item.scheduleMode === 'CONTINUOUS'">
+            <div class="schedule-row">
+              <div class="schedule-field">
+                <label>Inicio</label>
+
+                <input
+                  type="time"
+                  [(ngModel)]="item.start"
+                />
+              </div>
+
+              <div class="schedule-field">
+                <label>Termino</label>
+
+                <input
+                  type="time"
+                  [(ngModel)]="item.end"
+                />
+              </div>
+            </div>
+
+            <div class="subsection-title">
+              Bloques no disponibles
+            </div>
+
+            <div
+              *ngFor="let block of item.blockedRanges; let i = index"
+              class="schedule-row block-row"
+            >
+              <div class="schedule-field">
+                <label>Inicio</label>
+
+                <input
+                  type="time"
+                  [(ngModel)]="block.start"
+                />
+              </div>
+
+              <div class="schedule-field">
+                <label>Termino</label>
+
+                <input
+                  type="time"
+                  [(ngModel)]="block.end"
+                />
+              </div>
+
+              <ion-button
+                fill="outline"
+                size="small"
+                color="danger"
+                (click)="removeBlockedRange(item, i)"
+              >
+                Eliminar
+              </ion-button>
+            </div>
+
+            <ion-button
+              fill="outline"
+              size="small"
+              (click)="addBlockedRange(item)"
+            >
+              + Agregar bloqueo
+            </ion-button>
+          </ng-container>
+
+          <ng-container *ngIf="item.scheduleMode === 'SPECIFIC'">
+            <div class="subsection-title">
+              Horarios especificos
+            </div>
+
+            <div
+              *ngFor="let slot of item.specificSlots; let i = index"
+              class="specific-slot-row"
+            >
+              <input
+                type="time"
+                [(ngModel)]="slot.time"
+                (change)="sortSpecificSlots(item)"
+              />
+
+              <ion-button
+                fill="outline"
+                size="small"
+                color="danger"
+                (click)="removeSpecificSlot(item, i)"
+              >
+                Eliminar
+              </ion-button>
+            </div>
+
+            <ion-button
+              fill="outline"
+              size="small"
+              (click)="addSpecificSlot(item)"
+            >
+              + Agregar horario
+            </ion-button>
+          </ng-container>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
   <!-- REGLAS -->
   <ion-card>
 
@@ -482,10 +633,10 @@
   <ion-button
     expand="block"
     class="save-btn"
+    [disabled]="isSaving"
     (click)="saveProfile()"
   >
-    Guardar cambios
+    {{ isSaving ? 'Guardando...' : 'Guardar cambios' }}
   </ion-button>
 
 </ion-content>
-

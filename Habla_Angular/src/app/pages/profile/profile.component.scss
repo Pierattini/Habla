@@ -8,17 +8,6 @@ ion-content {
   --background: var(--app-bg);
 }
 
-ion-toolbar {
-  --background: var(--app-surface);
-  --color: var(--app-text);
-  border-bottom: 1px solid rgba(168, 85, 247, 0.1);
-}
-
-ion-title {
-  font-weight: 800;
-  letter-spacing: 0;
-}
-
 .container {
   max-width: 520px;
   margin: 0 auto;
@@ -152,4 +141,32 @@ ion-button[color="tertiary"] {
   --color: var(--app-primary);
   height: 48px;
   margin-top: 10px;
+}
+.page-hero {
+  max-width: 520px;
+  margin: 0 auto 18px;
+  padding: 22px 18px 0;
+}
+
+.page-greeting {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--app-primary);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.page-hero h1 {
+  margin: 0;
+  color: #374151;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.page-hero p {
+  margin-top: 6px;
+  color: var(--app-muted);
+  font-size: 14px;
+  line-height: 1.5;
 }

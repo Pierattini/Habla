@@ -57,6 +57,9 @@ import {
 })
 
 export class ProfileComponent {
+  loading = true;
+  loaded = false;
+  private profileRequestsPending = 0;
 
   // 👤 USUARIO
   name = '';
@@ -101,6 +104,9 @@ export class ProfileComponent {
   }
 
   loadProfileData() {
+    this.loading = true;
+    this.loaded = false;
+    this.profileRequestsPending = 2;
 
     // 👤 PERFIL
     this.auth.getProfile().subscribe({
@@ -117,9 +123,11 @@ this.email = user.email;
 this.role = user.role;
 this.country = user.country || '';
 this.timezone = user.timezone || '';
+this.finishProfileRequest();
 },
       error: (err) => {
   console.error('ERROR PERFIL:', err);
+  this.finishProfileRequest();
 }
     });
 
@@ -138,12 +146,25 @@ this.timezone = user.timezone || '';
     this.nextAppointment = sorted.find((a: Appointment) =>
       new Date(a.date) > now
     ) || null;
+    this.finishProfileRequest();
   },
   error: (err) => {
     console.error('Error citas:', err);
+    this.totalAppointments = 0;
+    this.nextAppointment = null;
+    this.finishProfileRequest();
   }
 });
   }
+
+finishProfileRequest() {
+  this.profileRequestsPending = Math.max(0, this.profileRequestsPending - 1);
+
+  if (this.profileRequestsPending === 0) {
+    this.loading = false;
+    this.loaded = true;
+  }
+}
 async editName() {
   const alert = await this.alertCtrl.create({
     header: 'Editar nombre',

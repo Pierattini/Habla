@@ -102,7 +102,7 @@
       </ion-card-content>
     </ion-card>
 
-    <ion-card *ngIf="availableHours.length === 0">
+    <ion-card *ngIf="loaded && availableHours.length === 0">
       <ion-card-content class="empty-hours">
         No hay horarios disponibles para la fecha seleccionada
       </ion-card-content>

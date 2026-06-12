@@ -1,10 +1,16 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import {
   TaxDocumentsService
 } from '../../services/tax-documents.service';
-import { ProfessionalProfileService } from '../../services/professional-profile.service';
+import {
+  AvailabilityPayload,
+  ProfessionalProfileService,
+  ScheduleMode
+} from '../../services/professional-profile.service';
+import { API_URL } from '../../core/config/api.config';
 
 import {
   IonContent,
@@ -26,6 +32,26 @@ import { addIcons } from 'ionicons';
 import {
   imageOutline
 } from 'ionicons/icons';
+
+type AgendaTime = {
+  time: string;
+};
+
+type AgendaBlock = {
+  start: string;
+  end: string;
+};
+
+type AgendaDay = {
+  day: string;
+  code: string;
+  enabled: boolean;
+  scheduleMode: ScheduleMode;
+  start: string;
+  end: string;
+  specificSlots: AgendaTime[];
+  blockedRanges: AgendaBlock[];
+};
 
 @Component({
   selector: 'app-professional-dashboard',
@@ -51,12 +77,17 @@ import {
   ]
 })
 export class ProfessionalDashboardComponent {
+  loading = true;
+  loaded = false;
   imageVersion = Date.now();
   selectedDocumentFiles: Record<string, File> = {};
   uploadingDocumentIds: Record<string, boolean> = {};
   documentActionIds: Record<string, boolean> = {};
   selectedDocumentFilter = 'ALL';
   scheduleMode = 'automatic';
+  isSaving = false;
+  private professionalUserId = '';
+  private dashboardRequestsPending = 0;
   documentFilters = [
     { label: 'Todos', value: 'ALL' },
     { label: 'Pendientes', value: 'DOCUMENT_PENDING' },
@@ -82,6 +113,10 @@ export class ProfessionalDashboardComponent {
   }
 
   ionViewWillEnter() {
+    this.loading = true;
+    this.loaded = false;
+    this.dashboardRequestsPending = 3;
+
     this.loadProfile();
     this.loadPendingTaxDocuments();
     this.loadTaxDocuments();
@@ -104,7 +139,7 @@ export class ProfessionalDashboardComponent {
   };
 
   // 🔥 BLOQUES HORARIOS
-  availability = [
+  availability: any[] = [
 
     {
       day: 'Lunes',
@@ -153,33 +188,49 @@ export class ProfessionalDashboardComponent {
   };
 
   saveProfile() {
+    const validationErrors = this.validateAgenda();
 
-  this.professionalProfileService.updateProfile({
-      name: this.profile.name,
-      image: this.profile.image
-    }).subscribe({
-    
-    next: (res) => {
-
-      console.log('GUARDADO:', res);
-      //this.imageVersion = Date.now();
-      alert('Perfil actualizado');
-
-      this.loadProfile();
-
-    },
-
-    error: (err) => {
-
-      console.error(err);
-
-      alert('Error actualizando perfil');
-
+    if (validationErrors.length > 0) {
+      alert(validationErrors[0]);
+      return;
     }
 
-  });
+    this.isSaving = true;
 
-}
+    const availabilityRequests = this.availability.map((item: any) => {
+      if (!item.enabled) {
+        return this.professionalProfileService.deleteAvailability(item.code);
+      }
+
+      return this.professionalProfileService.saveAvailability(
+        this.toAvailabilityPayload(item)
+      );
+    });
+
+    forkJoin([
+      this.professionalProfileService.updateProfile({
+        name: this.profile.name,
+        image: this.profile.image,
+        specialty: this.profile.specialty,
+        description: this.profile.description,
+        price: Number(this.profile.price),
+        duration: Number(this.profile.duration),
+      }),
+      ...availabilityRequests,
+    ]).subscribe({
+      next: () => {
+        alert('Perfil y agenda actualizados');
+        this.loadProfile();
+      },
+      error: (err) => {
+        console.error(err);
+        alert(err?.error?.message || 'Error actualizando perfil');
+      },
+      complete: () => {
+        this.isSaving = false;
+      }
+    });
+  }
 onFileSelected(event: any) {
 
   console.log('INPUT OK');
@@ -206,9 +257,12 @@ onFileSelected(event: any) {
   }
   loadProfile() {
 
-    this.professionalProfileService.getProfile().subscribe((res: any) => {
+    this.professionalProfileService.getProfile().subscribe({
+      next: (res: any) => {
 
       console.log('PROFILE:', res);
+      this.professionalUserId = res.id;
+      this.ensureAgendaDefaults();
 
       this.profile = {
         name: res.professional?.name || '',
@@ -221,8 +275,249 @@ onFileSelected(event: any) {
         image: res.professional?.image || ''
       };
 
+      this.loadAvailability(() => this.finishDashboardRequest());
+
+    },
+      error: (err) => {
+        console.error('Error cargando perfil:', err);
+        this.finishDashboardRequest();
+      }
     });
 
+  }
+
+  loadAvailability(onDone?: () => void): void {
+    if (!this.professionalUserId) {
+      onDone?.();
+      return;
+    }
+
+    this.professionalProfileService
+      .getAvailability(this.professionalUserId)
+      .subscribe({
+        next: (items) => {
+          this.ensureAgendaDefaults();
+
+          for (const item of this.availability as any[]) {
+            item.enabled = false;
+          }
+
+          for (const item of items) {
+            const agendaDay = (this.availability as any[]).find(
+              (day) => day.code === item.day
+            );
+
+            if (!agendaDay) continue;
+
+            agendaDay.enabled = true;
+            agendaDay.scheduleMode = item.scheduleMode || 'CONTINUOUS';
+            agendaDay.start = this.minutesToTime(item.startMinute ?? 540);
+            agendaDay.end = this.minutesToTime(item.endMinute ?? 1080);
+            agendaDay.specificSlots = Array.isArray(item.specificSlots)
+              ? item.specificSlots.map((minute: number) => ({
+                time: this.minutesToTime(minute),
+              }))
+              : [];
+            agendaDay.blockedRanges = Array.isArray(item.blockedRanges)
+              ? item.blockedRanges.map((range: any) => ({
+                start: this.minutesToTime(range.startMinute),
+                end: this.minutesToTime(range.endMinute),
+              }))
+              : [];
+
+            if (Number.isInteger(item.breakMinute)) {
+              this.profile.interval = item.breakMinute;
+            }
+          }
+        },
+        error: (err) => {
+          console.error('Error cargando disponibilidad:', err);
+          onDone?.();
+        },
+        complete: () => {
+          onDone?.();
+        }
+      });
+  }
+
+  ensureAgendaDefaults(): void {
+    const defaults = [
+      this.createAgendaDay('Lunes', 'MON', true),
+      this.createAgendaDay('Martes', 'TUE', true),
+      this.createAgendaDay('Miercoles', 'WED', false),
+      this.createAgendaDay('Jueves', 'THU', false),
+      this.createAgendaDay('Viernes', 'FRI', false),
+      this.createAgendaDay('Sabado', 'SAT', false),
+      this.createAgendaDay('Domingo', 'SUN', false),
+    ];
+
+    this.availability = defaults.map((defaultDay) => {
+      const current = (this.availability as any[]).find((item) =>
+        item.code === defaultDay.code || item.day === defaultDay.day
+      );
+
+      return {
+        ...defaultDay,
+        ...current,
+        code: current?.code || defaultDay.code,
+        scheduleMode: current?.scheduleMode || 'CONTINUOUS',
+        specificSlots: current?.specificSlots || [],
+        blockedRanges: current?.blockedRanges || [],
+      };
+    });
+  }
+
+  createAgendaDay(day: string, code: string, enabled: boolean): AgendaDay {
+    return {
+      day,
+      code,
+      enabled,
+      scheduleMode: 'CONTINUOUS',
+      start: '09:00',
+      end: '18:00',
+      specificSlots: [],
+      blockedRanges: [],
+    };
+  }
+
+  addBlockedRange(item: AgendaDay): void {
+    const start = this.timeToMinutes(item.start);
+    const end = Math.min(start + Number(this.profile.duration || 60), 1440);
+
+    item.blockedRanges.push({
+      start: item.start,
+      end: this.minutesToTime(end),
+    });
+  }
+
+  removeBlockedRange(item: AgendaDay, index: number): void {
+    item.blockedRanges.splice(index, 1);
+  }
+
+  addSpecificSlot(item: AgendaDay): void {
+    item.specificSlots.push({ time: '' });
+  }
+
+  removeSpecificSlot(item: AgendaDay, index: number): void {
+    item.specificSlots.splice(index, 1);
+    this.sortSpecificSlots(item);
+  }
+
+  sortSpecificSlots(item: AgendaDay): void {
+    item.specificSlots = item.specificSlots
+      .filter((slot) => slot.time)
+      .sort((a, b) => this.timeToMinutes(a.time) - this.timeToMinutes(b.time));
+  }
+
+  toAvailabilityPayload(item: AgendaDay): AvailabilityPayload {
+    const specificSlots = item.specificSlots
+      .map((slot) => this.timeToMinutes(slot.time))
+      .sort((a, b) => a - b);
+
+    const blockedRanges = item.blockedRanges
+      .map((range) => ({
+        startMinute: this.timeToMinutes(range.start),
+        endMinute: this.timeToMinutes(range.end),
+      }))
+      .sort((a, b) => a.startMinute - b.startMinute);
+
+    return {
+      day: item.code,
+      scheduleMode: item.scheduleMode,
+      startMinute: item.scheduleMode === 'SPECIFIC'
+        ? 0
+        : this.timeToMinutes(item.start),
+      endMinute: item.scheduleMode === 'SPECIFIC'
+        ? 1440
+        : this.timeToMinutes(item.end),
+      breakMinute: Number(this.profile.interval) || 0,
+      specificSlots,
+      blockedRanges,
+    };
+  }
+
+  validateAgenda(): string[] {
+    const errors: string[] = [];
+    const duration = Number(this.profile.duration);
+    const breakMinute = Number(this.profile.interval);
+
+    if (!Number.isInteger(duration) || duration < 15 || duration > 240) {
+      errors.push('La duracion de sesion debe estar entre 15 y 240 minutos.');
+    }
+
+    if (!Number.isInteger(breakMinute) || breakMinute < 0 || breakMinute > 240) {
+      errors.push('El descanso debe estar entre 0 y 240 minutos.');
+    }
+
+    for (const item of this.availability as AgendaDay[]) {
+      if (!item.enabled) continue;
+
+      if (item.scheduleMode === 'CONTINUOUS') {
+        const start = this.timeToMinutes(item.start);
+        const end = this.timeToMinutes(item.end);
+
+        if (start >= end) {
+          errors.push(`${item.day}: la hora de inicio debe ser menor al termino.`);
+        }
+
+        const ranges = item.blockedRanges
+          .map((range) => ({
+            startMinute: this.timeToMinutes(range.start),
+            endMinute: this.timeToMinutes(range.end),
+          }))
+          .sort((a, b) => a.startMinute - b.startMinute);
+
+        for (const range of ranges) {
+          if (range.startMinute >= range.endMinute) {
+            errors.push(`${item.day}: hay un bloqueo con rango invalido.`);
+          }
+
+          if (range.startMinute < start || range.endMinute > end) {
+            errors.push(`${item.day}: hay bloqueos fuera del rango definido.`);
+          }
+        }
+
+        for (let i = 1; i < ranges.length; i += 1) {
+          if (ranges[i].startMinute < ranges[i - 1].endMinute) {
+            errors.push(`${item.day}: los bloqueos no pueden solaparse.`);
+          }
+        }
+      }
+
+      if (item.scheduleMode === 'SPECIFIC') {
+        const slots = item.specificSlots.map((slot) => slot.time);
+
+        if (slots.length === 0 || slots.some((slot) => !this.isValidTime(slot))) {
+          errors.push(`${item.day}: agrega al menos un horario especifico valido.`);
+        }
+
+        if (new Set(slots).size !== slots.length) {
+          errors.push(`${item.day}: no se permiten horarios duplicados.`);
+        }
+      }
+    }
+
+    return errors;
+  }
+
+  isValidTime(value: string): boolean {
+    return /^([01]\d|2[0-3]):[0-5]\d$/.test(value || '');
+  }
+
+  timeToMinutes(value: string): number {
+    if (!this.isValidTime(value)) return -1;
+
+    const [hour, minute] = value.split(':').map(Number);
+
+    return hour * 60 + minute;
+  }
+
+  minutesToTime(value: number): string {
+    const safeValue = Math.max(0, Math.min(1439, Number(value) || 0));
+    const hour = Math.floor(safeValue / 60).toString().padStart(2, '0');
+    const minute = (safeValue % 60).toString().padStart(2, '0');
+
+    return `${hour}:${minute}`;
   }
 
   loadPendingTaxDocuments(): void {
@@ -236,6 +531,10 @@ onFileSelected(event: any) {
       error: (err) => {
         console.error('Error cargando documentos pendientes:', err);
         this.pendingTaxDocuments = [];
+        this.finishDashboardRequest();
+      },
+      complete: () => {
+        this.finishDashboardRequest();
       }
     });
   }
@@ -251,8 +550,21 @@ onFileSelected(event: any) {
       error: (err) => {
         console.error('Error cargando documentos tributarios:', err);
         this.taxDocuments = [];
+        this.finishDashboardRequest();
+      },
+      complete: () => {
+        this.finishDashboardRequest();
       }
     });
+  }
+
+  finishDashboardRequest(): void {
+    this.dashboardRequestsPending = Math.max(0, this.dashboardRequestsPending - 1);
+
+    if (this.dashboardRequestsPending === 0) {
+      this.loading = false;
+      this.loaded = true;
+    }
   }
 
   get filteredTaxDocuments(): any[] {
@@ -432,7 +744,7 @@ onFileSelected(event: any) {
 
     const url = document.pdfUrl.startsWith('http')
       ? document.pdfUrl
-      : `http://localhost:3000${document.pdfUrl}`;
+      : `${API_URL}${document.pdfUrl}`;
 
     window.open(url, '_blank', 'noopener');
   }

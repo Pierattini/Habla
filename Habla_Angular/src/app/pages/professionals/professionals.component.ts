@@ -5,6 +5,7 @@ import { IonAvatar } from '@ionic/angular/standalone';
 import { IonButton } from '@ionic/angular/standalone';
 import { Router } from '@angular/router';
 import { ChangeDetectorRef } from '@angular/core';
+import { API_URL } from '../../core/config/api.config';
 
 import {
   IonContent,
@@ -55,7 +56,7 @@ export class ProfessionalsComponent implements OnInit {
 }
 
 getProfessionals() {
-  this.http.get<any>('http://localhost:3000/users/professionals')
+  this.http.get<any>(`${API_URL}/users/professionals`)
     .subscribe({
       next: (res) => {
         console.log('DATA:', res);

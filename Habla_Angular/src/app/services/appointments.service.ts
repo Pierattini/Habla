@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { API_URL } from '../core/config/api.config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AppointmentsService {
 
-  private api = 'http://localhost:3000';
+  private api = API_URL;
 
   constructor(
     private http: HttpClient

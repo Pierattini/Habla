@@ -14,7 +14,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 })
 export class MessagesComponent {
   public conversations: any[] = [];
-  public loading: boolean = false;
+  public loading: boolean = true;
+  public loaded: boolean = false;
   public requestedProfessionalId: string | null = null;
   public conversationNotFound: boolean = false;
 
@@ -30,6 +31,7 @@ export class MessagesComponent {
 
     this.requestedProfessionalId = professionalId;
     this.conversationNotFound = false;
+    this.loaded = false;
 
     console.log('Messages professionalId recibido:', professionalId);
 
@@ -69,6 +71,7 @@ export class MessagesComponent {
         }
 
         this.loading = false;
+        this.loaded = true;
 
         console.log('Conversations:', this.conversations);
       },
@@ -76,6 +79,7 @@ export class MessagesComponent {
       error: (err) => {
         console.error(err);
         this.loading = false;
+        this.loaded = true;
       }
     });
   }

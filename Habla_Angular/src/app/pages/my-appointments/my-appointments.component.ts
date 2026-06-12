@@ -8,10 +8,10 @@ import { ActivatedRoute } from '@angular/router';
 import { AlertController } from '@ionic/angular';
 import { PaymentModalComponent } from '../payment-modal/payment-modal.component';
 import { RescheduleModalComponent } from '../reschedule-modal/reschedule-modal.component';
-import { ChangeDetectorRef } from '@angular/core';
 import { ViewWillEnter } from '@ionic/angular';
 import { AppointmentsService } from '../../services/appointments.service';
 import { TaxDocumentsService } from '../../services/tax-documents.service';
+import { API_URL } from '../../core/config/api.config';
 import {
   canCancel as canCancelHelper,
   canPay as canPayHelper,
@@ -36,12 +36,13 @@ import {
 export class MyAppointmentsComponent {
 
   appointments: any[] = [];
+  loading = true;
+  loaded = false;
 
   constructor(
   private http: HttpClient,
   private toastCtrl: ToastController,
   private alertCtrl: AlertController,
-  private cd: ChangeDetectorRef,
   private router: Router,
   private modalCtrl: ModalController,
   private route: ActivatedRoute,
@@ -69,14 +70,9 @@ setFilter(filter: string) {
  // this.role = localStorage.getItem('role');
 //}
 
-ionViewDidEnter() {
+ionViewWillEnter() {
   this.role = localStorage.getItem('role');
-
-
-  // 🔥 deja que Angular pinte primero
-  setTimeout(() => {
-    this.loadAppointments();
-  }, 0);
+  this.loadAppointments();
 }
 
 async presentToast(message: string, color: string = 'success') {
@@ -90,6 +86,9 @@ async presentToast(message: string, color: string = 'success') {
   await toast.present();
 }
   loadAppointments() {
+  this.loading = true;
+  this.loaded = false;
+
   this.appointmentsService.getAppointmentsByRole(this.role).subscribe({
   next: (res: any[]) => {
     console.log('RESPUESTA REAL:', res);
@@ -101,6 +100,10 @@ this.loadTaxDocumentsForAppointments();
   },
   error: (err) => {
     console.error(err);
+    this.appointments = [];
+    this.groupAppointments();
+    this.loading = false;
+    this.loaded = true;
   }
 });
 }
@@ -140,10 +143,9 @@ loadTaxDocumentsForAppointments() {
 }
 
 finishAppointmentsLoad() {
-  setTimeout(() => {
-    this.groupAppointments();
-    this.cd.detectChanges();
-  }, 0);
+  this.groupAppointments();
+  this.loading = false;
+  this.loaded = true;
 }
   cancelAppointment(id: string) {
   this.loadingId = id;
@@ -390,7 +392,7 @@ normalizeDocumentUrl(url?: string | null): string | null {
 
   return url.startsWith('http')
     ? url
-    : `http://localhost:3000${url}`;
+    : `${API_URL}${url}`;
 }
 
 getDocumentTimeline(appt: any, document: any, status: string): any[] {
@@ -577,7 +579,7 @@ private async handleRescheduleMessage(appt: any, data: any) {
   await this.presentToast('Enviando mensaje...', 'medium');
 
   this.http.post(
-    `http://localhost:3000/messages/send`,
+    `${API_URL}/messages/send`,
     {
       receiverId: appt.professionalId,
       content: data.message
@@ -672,6 +674,9 @@ openChat(appt: any) {
   );
 }
 }
+
+
+
 
 
 

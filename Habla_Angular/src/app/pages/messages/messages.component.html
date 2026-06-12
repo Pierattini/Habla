@@ -1,19 +1,27 @@
-<ion-header>
-  <ion-toolbar>
-    <ion-title>Mensajes</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content class="messages-page">
+<div class="page-hero">
 
+  <span class="page-greeting">
+    💬 Centro de mensajes
+  </span>
+
+  <h1>
+    Mensajes
+  </h1>
+
+  <p>
+    Conversa con profesionales y clientes desde un solo lugar.
+  </p>
+
+</div>
   <!-- Estado vacío -->
-  <div class="empty-state" *ngIf="!loading && conversations.length === 0 && !conversationNotFound">
+  <div class="empty-state" *ngIf="$any(this).loaded && !loading && conversations.length === 0 && !conversationNotFound">
     <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
     <h3>No tienes conversaciones</h3>
     <p>Cuando tengas citas activas podrás conversar aquí.</p>
   </div>
 
-  <div class="empty-state" *ngIf="!loading && conversationNotFound">
+  <div class="empty-state" *ngIf="$any(this).loaded && !loading && conversationNotFound">
     <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
     <h3>No existe una conversacion previa</h3>
     <p>Cuando se envie el primer mensaje, la conversacion aparecera aqui.</p>
