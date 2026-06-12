@@ -1,12 +1,18 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-title>
-      Panel Profesional
-    </ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content class="ion-padding">
+
+  <div class="dashboard-hero">
+    <span class="dashboard-greeting">
+      👋 Hola {{ profile.name || 'Profesional' }}
+    </span>
+
+    <h1>
+      Bienvenido
+    </h1>
+
+    <p>
+      Gestiona tus citas, documentos y actividad profesional.
+    </p>
+  </div>
 
   <!-- FOTO -->
   <div class="profile-header">
@@ -337,7 +343,7 @@
     <ion-card-content>
 
       <h2 class="section-title">
-        Configuración de sesión
+        Configuración de Sesión
       </h2>
 
       <ion-item>
@@ -352,26 +358,26 @@
       </ion-item>
 
       <ion-item>
-        <ion-label position="stacked">
-          Duración sesión (min)
-        </ion-label>
+  <ion-label position="stacked">
+    Duración de la sesión (min)
+  </ion-label>
 
-        <ion-input
-          type="number"
-          [(ngModel)]="profile.duration">
-        </ion-input>
-      </ion-item>
+  <ion-input
+    type="number"
+    [(ngModel)]="profile.duration">
+  </ion-input>
+</ion-item>
 
-      <ion-item>
-        <ion-label position="stacked">
-          Intervalo entre horas (min)
-        </ion-label>
+<ion-item>
+  <ion-label position="stacked">
+    Descanso entre sesiones (min)
+  </ion-label>
 
-        <ion-input
-          type="number"
-          [(ngModel)]="profile.interval">
-        </ion-input>
-      </ion-item>
+  <ion-input
+    type="number"
+    [(ngModel)]="profile.interval">
+  </ion-input>
+</ion-item>
 
     </ion-card-content>
 
@@ -385,57 +391,72 @@
       <h2 class="section-title">
         Horarios disponibles
       </h2>
+    <p style="margin-bottom:16px;color:#6B7280;font-size:13px;">
+  La duración y el descanso entre sesiones se configuran en "Configuración de Sesión".
+</p>
+<ion-item>
+  <ion-label>
+    Modo de agenda
+  </ion-label>
 
-      <div
-        *ngFor="let item of availability"
-        class="day-card"
-      >
+  <select [(ngModel)]="scheduleMode">
+    <option value="automatic">
+      Automático
+    </option>
+
+    <option value="custom">
+      Personalizado
+    </option>
+  </select>
+</ion-item>
+      <ng-container *ngIf="scheduleMode === 'automatic'">
+
+<div
+  *ngFor="let item of availability"
+  class="day-card"
+>
 
         <h3>{{ item.day }}</h3>
 
-        <ion-item>
-          <ion-label>
-            Disponible
-          </ion-label>
+<ion-item>
+  <ion-label>
+    Disponible
+  </ion-label>
 
-          <input
-            type="checkbox"
-            [(ngModel)]="item.enabled"
-          />
-        </ion-item>
+  <input
+    type="checkbox"
+    [(ngModel)]="item.enabled"
+  />
+</ion-item>
 
-        <div *ngIf="item.enabled">
+<div *ngIf="item.enabled">
 
-          <ion-item>
+  <div class="schedule-row">
 
-            <ion-label position="stacked">
-              Desde
-            </ion-label>
+    <div class="schedule-field">
+      <label>Inicio</label>
 
-            <input
-              type="time"
-              [(ngModel)]="item.start"
-            />
+      <input
+        type="time"
+        [(ngModel)]="item.start"
+      />
+    </div>
 
-          </ion-item>
+    <div class="schedule-field">
+      <label>Término</label>
 
-          <ion-item>
+      <input
+        type="time"
+        [(ngModel)]="item.end"
+      />
+    </div>
 
-            <ion-label position="stacked">
-              Hasta
-            </ion-label>
+  </div>
 
-            <input
-              type="time"
-              [(ngModel)]="item.end"
-            />
+</div>
 
-          </ion-item>
-
-        </div>
-
-      </div>
-
+</div>
+</ng-container>
     </ion-card-content>
 
   </ion-card>

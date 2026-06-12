@@ -381,3 +381,29 @@ ion-textarea:focus-within {
     grid-template-columns: 1fr;
   }
 }
+.dashboard-hero {
+  margin-bottom: 24px;
+}
+
+.dashboard-greeting {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--app-primary);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.dashboard-hero h1 {
+  margin: 0;
+  color: #374151;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.dashboard-hero p {
+  margin-top: 6px;
+  color: #6B7280;
+  font-size: 14px;
+  font-weight: 400;
+}

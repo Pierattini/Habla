@@ -56,6 +56,7 @@ export class ProfessionalDashboardComponent {
   uploadingDocumentIds: Record<string, boolean> = {};
   documentActionIds: Record<string, boolean> = {};
   selectedDocumentFilter = 'ALL';
+  scheduleMode = 'automatic';
   documentFilters = [
     { label: 'Todos', value: 'ALL' },
     { label: 'Pendientes', value: 'DOCUMENT_PENDING' },
@@ -479,5 +480,6 @@ onFileSelected(event: any) {
 
     return type ? labels[type] || type : 'Documento';
   }
+  
 
 }
