@@ -79,6 +79,34 @@
 
     </div>
 
+    <!-- DATOS TRIBUTARIOS -->
+    <div class="card">
+
+      <ion-item lines="none">
+        <ion-label>
+          <h3>{{ $any(this).role === 'PROFESSIONAL' ? 'Datos tributarios emisor' : 'Datos para boleta' }}</h3>
+          <p>{{ $any(this).taxName || 'No definido' }}</p>
+          <p>{{ $any(this).taxId || 'RUT no definido' }}</p>
+          <p>{{ $any(this).taxEmail || 'Email tributario no definido' }}</p>
+          <p>{{ $any(this).taxCity || 'Ciudad no definida' }}{{ $any(this).taxAddress ? ' - ' + $any(this).taxAddress : '' }}</p>
+        </ion-label>
+        <ion-button fill="clear" slot="end" (click)="$any(this).editTaxInfo()">
+          <ion-icon name="create-outline"></ion-icon>
+        </ion-button>
+      </ion-item>
+
+      <ion-item lines="none">
+        <ion-label>
+          <h3>{{ $any(this).role === 'PROFESSIONAL' ? 'Gestion documental' : 'Preferencia de boleta' }}</h3>
+          <p>{{ $any(this).getDocumentPreferenceLabel() }}</p>
+        </ion-label>
+        <ion-button fill="clear" slot="end" (click)="$any(this).editDocumentPreference()">
+          <ion-icon name="create-outline"></ion-icon>
+        </ion-button>
+      </ion-item>
+
+    </div>
+
     <!-- RESUMEN CITAS -->
     <div class="card">
 

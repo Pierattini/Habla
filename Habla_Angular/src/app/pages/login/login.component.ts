@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, RouterModule } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 type OnboardingMode = 'intro' | 'login' | 'register';
@@ -13,12 +12,8 @@ type AccountRole = 'CUSTOMER' | 'PROFESSIONAL';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
   imports: [
-    CommonModule,
-    NgIf,
-    NgFor,
     FormsModule,
     RouterLink,
-    RouterModule,
   ]
 })
 export class LoginComponent implements OnInit {
@@ -41,6 +36,14 @@ export class LoginComponent implements OnInit {
     description: '',
     price: 30000,
     duration: 45,
+    taxId: '',
+    taxName: '',
+    taxEmail: '',
+    taxAddress: '',
+    taxCity: '',
+    wantsTaxDocumentByDefault: false,
+    documentAutomationEnabled: false,
+    manualDocumentMode: true,
     acceptedTerms: false,
   };
 
@@ -147,6 +150,13 @@ export class LoginComponent implements OnInit {
       name: this.registerForm.name.trim(),
       country: this.registerForm.country,
       timezone: this.registerForm.timezone,
+      taxId: this.cleanOptional(this.registerForm.taxId),
+      taxName: this.cleanOptional(this.registerForm.taxName),
+      taxEmail: this.cleanOptional(this.registerForm.taxEmail),
+      taxAddress: this.cleanOptional(this.registerForm.taxAddress),
+      taxCountry: this.registerForm.country,
+      taxCity: this.cleanOptional(this.registerForm.taxCity),
+      wantsTaxDocumentByDefault: this.registerForm.wantsTaxDocumentByDefault,
     };
 
     if (this.selectedRole === 'PROFESSIONAL') {
@@ -154,6 +164,8 @@ export class LoginComponent implements OnInit {
       profilePayload.description = this.registerForm.description.trim();
       profilePayload.price = Number(this.registerForm.price);
       profilePayload.duration = Number(this.registerForm.duration);
+      profilePayload.documentAutomationEnabled = this.registerForm.documentAutomationEnabled;
+      profilePayload.manualDocumentMode = this.registerForm.manualDocumentMode;
     }
 
     this.auth.updateProfile(profilePayload).subscribe({
@@ -214,5 +226,10 @@ export class LoginComponent implements OnInit {
     localStorage.setItem('role', res.user.role);
     localStorage.setItem('email', res.user.email);
     localStorage.setItem('name', res.user.name || 'Usuario');
+  }
+
+  private cleanOptional(value: string): string | undefined {
+    const cleaned = value?.trim();
+    return cleaned ? cleaned : undefined;
   }
 }

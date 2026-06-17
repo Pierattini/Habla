@@ -31,6 +31,26 @@
   </ion-button>
 
   <ion-button
+    fill="solid"
+    color="primary"
+    size="small"
+    class="btn-sec btn-video"
+    *ngIf="$any(this).canJoinVideoCall(appt)"
+    (click)="$any(this).openVideoCall(appt)">
+    Videollamada
+  </ion-button>
+
+  <ion-button
+    fill="outline"
+    color="primary"
+    size="small"
+    class="btn-sec"
+    *ngIf="$any(this).canAddToCalendar(appt)"
+    (click)="$any(this).addToCalendar(appt)">
+    Calendario
+  </ion-button>
+
+  <ion-button
     fill="outline"
     color="medium"
     size="small"

@@ -438,6 +438,11 @@ ion-button[size="small"] {
   --background-hover: var(--app-secondary);
 }
 
+.btn-video {
+  --background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  --color: var(--app-surface);
+}
+
 .btn-sec::part(native) {
   padding: 0 12px;
 }

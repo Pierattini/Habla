@@ -4,6 +4,8 @@ import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { API_URL } from '../../core/config/api.config';
+import { AlertController } from '@ionic/angular';
+import { AuthService } from '../../services/auth.service';
 //import { IonicModule } from '@ionic/angular';
 
 
@@ -72,13 +74,18 @@ export class ProfessionalDetailComponent {
   selectedHour: string | null = null;
   isBooking: boolean = false;
   successMessage: string = '';
+  selectedDocumentMode: 'NONE' | 'MANUAL' | 'AUTOMATED' = 'NONE';
+  wantsTaxDocumentByDefault = false;
+  customerTaxReady = false;
+  professionalTaxReady = false;
 
   constructor(
   private route: ActivatedRoute,
   private http: HttpClient,
+  private auth: AuthService,
   private cdr: ChangeDetectorRef,
-  private router: Router 
-) {}
+  private router: Router,
+  private alertCtrl: AlertController ) {}
 
   ionViewWillEnter() {
     const routeId = this.route.snapshot.paramMap.get('id');
@@ -88,11 +95,13 @@ export class ProfessionalDetailComponent {
       this.availableHours = [];
       this.selectedHour = null;
       this.successMessage = '';
+      this.selectedDocumentMode = 'NONE';
       this.loaded = false;
     }
 
     this.loading = true;
     this.id = routeId;
+    this.loadCustomerDocumentPreference();
     this.getProfessional();
   }
  onDateChange(event: any) {
@@ -124,9 +133,17 @@ export class ProfessionalDetailComponent {
 
         // 🔥 SOLUCIÓN
         this.professional = res.find(p => String(p.id) === String(this.id));
+        this.professionalTaxReady = !!(
+          this.professional?.taxId &&
+          this.professional?.taxName &&
+          (this.professional?.taxEmail || this.professional?.email) &&
+          this.professional?.taxAddress &&
+          this.professional?.taxCity
+        );
 
         console.log('PROFESIONAL FINAL:', this.professional);
 
+        this.applyDefaultDocumentMode();
         this.loadAvailability();
       },
       error: (err) => {
@@ -192,7 +209,7 @@ getHourColor(hour: string): string {
   return 'success';
 }
   
-bookAppointment() {
+async bookAppointment() {
   if (!this.selectedHour || this.isBooking) return;
 
   const token = localStorage.getItem('token');
@@ -201,6 +218,25 @@ bookAppointment() {
     alert('Debes iniciar sesión');
     return;
   }
+  if (this.selectedDocumentMode !== 'NONE') {
+    if (!this.customerTaxReady) {
+      const shouldContinue = await this.confirmBookingWithoutDocument(
+        'Completa tus datos tributarios en Perfil antes de solicitar documento.'
+      );
+
+      if (!shouldContinue) return;
+    }
+
+    if (!this.professionalTaxReady) {
+      const shouldContinue = await this.confirmBookingWithoutDocument(
+        'Este profesional debe completar sus datos tributarios antes de emitir documentos.'
+      );
+
+      if (!shouldContinue) return;
+    }
+  }
+
+
 
   this.isBooking = true;
   this.successMessage = '';
@@ -212,7 +248,12 @@ bookAppointment() {
 
   const payload = {
     professionalId: this.professional.id,
-    date: date.toISOString()
+    date: date.toISOString(),
+    documentRequested: this.selectedDocumentMode !== 'NONE',
+    documentMode: this.selectedDocumentMode !== 'NONE'
+      ? this.selectedDocumentMode
+      : undefined,
+    documentCurrency: 'CLP'
   };
 
 
@@ -261,5 +302,89 @@ goToChat() {
       professionalId: this.professional.id
     }
   });
+}
+
+async confirmBookingWithoutDocument(message: string): Promise<boolean> {
+  return new Promise(async (resolve) => {
+    const alert = await this.alertCtrl.create({
+      header: 'Datos tributarios incompletos',
+      message,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel',
+          handler: () => resolve(false),
+        },
+        {
+          text: 'Ir a perfil',
+          handler: () => {
+            this.router.navigate(['/tabs/profile']);
+            resolve(false);
+          },
+        },
+        {
+          text: 'Reservar sin documento',
+          handler: () => {
+            this.selectedDocumentMode = 'NONE';
+            resolve(true);
+          },
+        },
+      ],
+    });
+
+    await alert.present();
+  });
+}
+loadCustomerDocumentPreference() {
+  const token = localStorage.getItem('token');
+
+  if (!token) return;
+
+  this.auth.getProfile().subscribe({
+    next: (user: any) => {
+      this.wantsTaxDocumentByDefault = user?.wantsTaxDocumentByDefault === true;
+      this.customerTaxReady = !!(
+        user?.taxId &&
+        user?.taxName &&
+        (user?.taxEmail || user?.email) &&
+        user?.taxAddress &&
+        user?.taxCity
+      );
+      this.applyDefaultDocumentMode();
+    },
+    error: () => {
+      this.wantsTaxDocumentByDefault = false;
+      this.customerTaxReady = false;
+    }
+  });
+}
+
+applyDefaultDocumentMode() {
+  if (!this.wantsTaxDocumentByDefault || !this.professional) return;
+
+  this.selectedDocumentMode = this.professional.documentAutomationEnabled
+    ? 'AUTOMATED'
+    : 'MANUAL';
+}
+
+onDocumentModeChange(mode: 'NONE' | 'MANUAL' | 'AUTOMATED') {
+  if (mode === 'AUTOMATED' && !this.professional?.documentAutomationEnabled) {
+    this.selectedDocumentMode = 'MANUAL';
+    return;
+  }
+
+  this.selectedDocumentMode = mode;
+}
+
+getDocumentModeLabel(): string {
+  if (this.selectedDocumentMode === 'AUTOMATED') {
+    return 'Habla gestionara el documento cuando el servicio este habilitado.';
+  }
+
+  if (this.selectedDocumentMode === 'MANUAL') {
+    return 'El profesional emitira o subira el documento desde su panel.';
+  }
+
+  return 'No se solicitara documento tributario para esta cita.';
 }
 }

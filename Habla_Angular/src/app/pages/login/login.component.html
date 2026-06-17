@@ -146,6 +146,17 @@
             placeholder="Ej: terapia, nutricion, coaching, medicina, asesoria legal..."
           ></textarea>
         </label>
+
+        <label class="field full">
+          <span>Documento tributario</span>
+          <select
+            [ngModel]="$any(this).registerForm.wantsTaxDocumentByDefault ? 'yes' : 'no'"
+            (ngModelChange)="$any(this).registerForm.wantsTaxDocumentByDefault = $event === 'yes'"
+          >
+            <option value="no">Lo decidire al reservar</option>
+            <option value="yes">Quiero boleta por defecto</option>
+          </select>
+        </label>
         }
 
         @if ($any(this).selectedRole === 'PROFESSIONAL') {
@@ -191,7 +202,68 @@
               placeholder="Cuenta tu enfoque, experiencia y el tipo de atencion que ofreces."
             ></textarea>
           </label>
+
+          <label class="field">
+            <span>Gestion de boletas</span>
+            <select
+              [ngModel]="$any(this).registerForm.documentAutomationEnabled ? 'habla' : 'manual'"
+              (ngModelChange)="$any(this).registerForm.documentAutomationEnabled = $event === 'habla'; $any(this).registerForm.manualDocumentMode = $event !== 'habla'"
+            >
+              <option value="manual">Las emitire por mi cuenta</option>
+              <option value="habla">Quiero que Habla las gestione</option>
+            </select>
+          </label>
         }
+
+        <label class="field">
+          <span>{{ $any(this).selectedRole === 'PROFESSIONAL' ? 'RUT emisor' : 'RUT para boleta' }}</span>
+          <input
+            type="text"
+            [ngModel]="$any(this).registerForm.taxId"
+            (ngModelChange)="$any(this).registerForm.taxId = $event"
+            placeholder="12.345.678-9"
+          />
+        </label>
+
+        <label class="field">
+          <span>{{ $any(this).selectedRole === 'PROFESSIONAL' ? 'Razon social' : 'Nombre tributario' }}</span>
+          <input
+            type="text"
+            [ngModel]="$any(this).registerForm.taxName"
+            (ngModelChange)="$any(this).registerForm.taxName = $event"
+            placeholder="Nombre o razon social"
+          />
+        </label>
+
+        <label class="field">
+          <span>Email tributario</span>
+          <input
+            type="email"
+            [ngModel]="$any(this).registerForm.taxEmail"
+            (ngModelChange)="$any(this).registerForm.taxEmail = $event"
+            placeholder="documentos@email.com"
+          />
+        </label>
+
+        <label class="field">
+          <span>Ciudad o comuna</span>
+          <input
+            type="text"
+            [ngModel]="$any(this).registerForm.taxCity"
+            (ngModelChange)="$any(this).registerForm.taxCity = $event"
+            placeholder="Santiago"
+          />
+        </label>
+
+        <label class="field full">
+          <span>Direccion tributaria</span>
+          <input
+            type="text"
+            [ngModel]="$any(this).registerForm.taxAddress"
+            (ngModelChange)="$any(this).registerForm.taxAddress = $event"
+            placeholder="Calle, numero, oficina o departamento"
+          />
+        </label>
       </div>
 
       <label class="consent-row">

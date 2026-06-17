@@ -69,6 +69,15 @@ export class ProfileComponent {
   role = '';
   country = '';
   timezone = '';
+  taxId = '';
+  taxName = '';
+  taxEmail = '';
+  taxAddress = '';
+  taxCountry = '';
+  taxCity = '';
+  wantsTaxDocumentByDefault = false;
+  documentAutomationEnabled = false;
+  manualDocumentMode = true;
 
   availableCountries = [
   { label: 'Chile', value: 'CL' },
@@ -125,6 +134,16 @@ this.email = user.email;
 this.role = user.role;
 this.country = user.country || '';
 this.timezone = user.timezone || '';
+const professionalTax = user.professional || {};
+this.taxId = professionalTax.taxId || user.taxId || '';
+this.taxName = professionalTax.taxName || user.taxName || '';
+this.taxEmail = professionalTax.taxEmail || user.taxEmail || '';
+this.taxAddress = professionalTax.taxAddress || user.taxAddress || '';
+this.taxCountry = professionalTax.taxCountry || user.taxCountry || user.country || '';
+this.taxCity = professionalTax.taxCity || user.taxCity || '';
+this.wantsTaxDocumentByDefault = user.wantsTaxDocumentByDefault === true;
+this.documentAutomationEnabled = professionalTax.documentAutomationEnabled === true;
+this.manualDocumentMode = professionalTax.manualDocumentMode !== false;
 this.finishProfileRequest();
 },
       error: (err) => {
@@ -304,6 +323,138 @@ async editTimezone() {
 
   await alert.present();
 }
+
+async editTaxInfo() {
+  const alert = await this.alertCtrl.create({
+    header: this.role === 'PROFESSIONAL' ? 'Datos tributarios emisor' : 'Datos para boleta',
+    inputs: [
+      {
+        name: 'taxId',
+        type: 'text',
+        value: this.taxId,
+        placeholder: this.role === 'PROFESSIONAL' ? 'RUT emisor' : 'RUT',
+      },
+      {
+        name: 'taxName',
+        type: 'text',
+        value: this.taxName,
+        placeholder: this.role === 'PROFESSIONAL' ? 'Razon social' : 'Nombre tributario',
+      },
+      {
+        name: 'taxEmail',
+        type: 'email',
+        value: this.taxEmail,
+        placeholder: 'Email tributario',
+      },
+      {
+        name: 'taxCity',
+        type: 'text',
+        value: this.taxCity,
+        placeholder: 'Ciudad o comuna',
+      },
+      {
+        name: 'taxAddress',
+        type: 'text',
+        value: this.taxAddress,
+        placeholder: 'Direccion tributaria',
+      },
+    ],
+    buttons: [
+      { text: 'Cancelar', role: 'cancel' },
+      {
+        text: 'Guardar',
+        handler: (data) => {
+          const payload = {
+            taxId: this.cleanOptional(data.taxId),
+            taxName: this.cleanOptional(data.taxName),
+            taxEmail: this.cleanOptional(data.taxEmail),
+            taxAddress: this.cleanOptional(data.taxAddress),
+            taxCountry: this.taxCountry || this.country,
+            taxCity: this.cleanOptional(data.taxCity),
+          };
+
+          this.auth.updateProfile(payload).subscribe((updatedUser: any) => {
+            const professionalTax = updatedUser.professional || {};
+            this.taxId = professionalTax.taxId || updatedUser.taxId || '';
+            this.taxName = professionalTax.taxName || updatedUser.taxName || '';
+            this.taxEmail = professionalTax.taxEmail || updatedUser.taxEmail || '';
+            this.taxAddress = professionalTax.taxAddress || updatedUser.taxAddress || '';
+            this.taxCountry = professionalTax.taxCountry || updatedUser.taxCountry || updatedUser.country || '';
+            this.taxCity = professionalTax.taxCity || updatedUser.taxCity || '';
+          });
+
+          return true;
+        }
+      }
+    ]
+  });
+
+  await alert.present();
+}
+
+async editDocumentPreference() {
+  const isProfessional = this.role === 'PROFESSIONAL';
+  const alert = await this.alertCtrl.create({
+    header: isProfessional ? 'Gestion de documentos' : 'Preferencia de boleta',
+    inputs: isProfessional
+      ? [
+          {
+            type: 'radio',
+            label: 'Emitire documentos por mi cuenta',
+            value: 'manual',
+            checked: !this.documentAutomationEnabled,
+          },
+          {
+            type: 'radio',
+            label: 'Quiero que Habla los gestione',
+            value: 'habla',
+            checked: this.documentAutomationEnabled,
+          },
+        ]
+      : [
+          {
+            type: 'radio',
+            label: 'Decidir al reservar',
+            value: 'no',
+            checked: !this.wantsTaxDocumentByDefault,
+          },
+          {
+            type: 'radio',
+            label: 'Pedir boleta por defecto',
+            value: 'yes',
+            checked: this.wantsTaxDocumentByDefault,
+          },
+        ],
+    buttons: [
+      { text: 'Cancelar', role: 'cancel' },
+      {
+        text: 'Guardar',
+        handler: (selected) => {
+          if (!selected) return false;
+
+          const payload = isProfessional
+            ? {
+                documentAutomationEnabled: selected === 'habla',
+                manualDocumentMode: selected !== 'habla',
+              }
+            : {
+                wantsTaxDocumentByDefault: selected === 'yes',
+              };
+
+          this.auth.updateProfile(payload).subscribe((updatedUser: any) => {
+            this.wantsTaxDocumentByDefault = updatedUser.wantsTaxDocumentByDefault === true;
+            this.documentAutomationEnabled = updatedUser.professional?.documentAutomationEnabled === true;
+            this.manualDocumentMode = updatedUser.professional?.manualDocumentMode !== false;
+          });
+
+          return true;
+        }
+      }
+    ]
+  });
+
+  await alert.present();
+}
 getCountryLabel(code: string): string {
   const found = this.availableCountries.find(c => c.value === code);
   return found ? found.label : code;
@@ -335,5 +486,22 @@ logout() {
 
 goToAppointments() {
   this.router.navigateByUrl('/tabs/appointments');
+}
+
+getDocumentPreferenceLabel(): string {
+  if (this.role === 'PROFESSIONAL') {
+    return this.documentAutomationEnabled
+      ? 'Habla gestionara documentos'
+      : 'Emision manual por profesional';
+  }
+
+  return this.wantsTaxDocumentByDefault
+    ? 'Pedir boleta por defecto'
+    : 'Decidir al reservar';
+}
+
+private cleanOptional(value: string): string | undefined {
+  const cleaned = value?.trim();
+  return cleaned ? cleaned : undefined;
 }
 }

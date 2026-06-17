@@ -515,6 +515,136 @@ confirmAppointment(id: string) {
 }
 
 // 💳 ABRIR MODAL DE PAGO
+canAddToCalendar(appt: any): boolean {
+  return appt?.status === 'CONFIRMED' && !!appt?.date;
+}
+
+async addToCalendar(appt: any) {
+  if (!this.canAddToCalendar(appt)) {
+    await this.presentToast('La cita debe estar confirmada para agregarla al calendario', 'warning');
+    return;
+  }
+
+  const alert = await this.alertCtrl.create({
+    header: 'Agregar al calendario',
+    message: 'Elige como quieres guardar esta cita.',
+    buttons: [
+      { text: 'Cancelar', role: 'cancel' },
+      {
+        text: 'Google Calendar',
+        handler: () => {
+          window.open(this.buildGoogleCalendarUrl(appt), '_blank', 'noopener');
+          return true;
+        }
+      },
+      {
+        text: 'Archivo .ics',
+        handler: () => {
+          this.downloadIcsFile(appt);
+          return true;
+        }
+      }
+    ]
+  });
+
+  await alert.present();
+}
+
+private buildGoogleCalendarUrl(appt: any): string {
+  const start = new Date(appt.date);
+  const end = new Date(start.getTime() + this.getAppointmentDuration(appt) * 60000);
+  const details = this.getCalendarDescription(appt);
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: this.getCalendarTitle(appt),
+    dates: `${this.formatGoogleDate(start)}/${this.formatGoogleDate(end)}`,
+    details,
+    location: appt.meetLink || 'Habla',
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+private downloadIcsFile(appt: any): void {
+  const start = new Date(appt.date);
+  const end = new Date(start.getTime() + this.getAppointmentDuration(appt) * 60000);
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Habla//Appointments//ES',
+    'BEGIN:VEVENT',
+    `UID:${appt.id}@habla`,
+    `DTSTAMP:${this.formatIcsDate(new Date())}`,
+    `DTSTART:${this.formatIcsDate(start)}`,
+    `DTEND:${this.formatIcsDate(end)}`,
+    `SUMMARY:${this.escapeIcsText(this.getCalendarTitle(appt))}`,
+    `DESCRIPTION:${this.escapeIcsText(this.getCalendarDescription(appt))}`,
+    `LOCATION:${this.escapeIcsText(appt.meetLink || 'Habla')}`,
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `habla-cita-${appt.id}.ics`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+private getCalendarTitle(appt: any): string {
+  return `Cita Habla con ${this.getNombre(appt)}`;
+}
+
+private getCalendarDescription(appt: any): string {
+  const parts = [
+    `Cita confirmada en Habla.`,
+    `Participante: ${this.getNombre(appt)}.`,
+  ];
+
+  if (appt.meetLink) {
+    parts.push(`Videollamada: ${appt.meetLink}`);
+  }
+
+  return parts.join('\n');
+}
+
+private getAppointmentDuration(appt: any): number {
+  return Number(
+    appt?.professional?.professional?.duration ||
+    appt?.professional?.professional?.sessionDuration ||
+    60
+  );
+}
+
+private formatGoogleDate(date: Date): string {
+  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+}
+
+private formatIcsDate(date: Date): string {
+  return this.formatGoogleDate(date);
+}
+
+private escapeIcsText(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n');
+}
+canJoinVideoCall(appt: any): boolean {
+  return appt?.status === 'CONFIRMED' && !!appt?.meetLink;
+}
+
+openVideoCall(appt: any): void {
+  if (!this.canJoinVideoCall(appt)) {
+    this.presentToast('La videollamada estara disponible cuando la cita este confirmada', 'warning');
+    return;
+  }
+
+  window.open(appt.meetLink, '_blank', 'noopener');
+}
 async openPayment(appt: any) {
 
   const data = {

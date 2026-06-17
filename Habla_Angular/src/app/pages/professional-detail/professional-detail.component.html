@@ -102,9 +102,94 @@
       </ion-card-content>
     </ion-card>
 
-    <ion-card *ngIf="loaded && availableHours.length === 0">
+    <ion-card *ngIf="$any(this).loaded && $any(this).availableHours.length === 0">
       <ion-card-content class="empty-hours">
         No hay horarios disponibles para la fecha seleccionada
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Documento tributario</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <div class="document-options">
+          <label
+            class="document-option"
+            [class.active]="$any(this).selectedDocumentMode === 'NONE'"
+          >
+            <input
+              type="radio"
+              name="documentMode"
+              value="NONE"
+              [ngModel]="$any(this).selectedDocumentMode"
+              (ngModelChange)="$any(this).onDocumentModeChange($event)"
+            />
+            <span>
+              <strong>No necesito documento</strong>
+              <small>Reserva sin boleta o factura asociada.</small>
+            </span>
+          </label>
+
+          <label
+            class="document-option"
+            [class.active]="$any(this).selectedDocumentMode === 'MANUAL'"
+          >
+            <input
+              type="radio"
+              name="documentMode"
+              value="MANUAL"
+              [ngModel]="$any(this).selectedDocumentMode"
+              (ngModelChange)="$any(this).onDocumentModeChange($event)"
+            />
+            <span>
+              <strong>Lo emite el profesional</strong>
+              <small>Quedara pendiente para que el profesional lo cargue o marque como emitido.</small>
+            </span>
+          </label>
+
+          <label
+            class="document-option"
+            [class.active]="$any(this).selectedDocumentMode === 'AUTOMATED'"
+            [class.disabled]="!professional?.documentAutomationEnabled"
+          >
+            <input
+              type="radio"
+              name="documentMode"
+              value="AUTOMATED"
+              [disabled]="!professional?.documentAutomationEnabled"
+              [ngModel]="$any(this).selectedDocumentMode"
+              (ngModelChange)="$any(this).onDocumentModeChange($event)"
+            />
+            <span>
+              <strong>Gestionar con Habla</strong>
+              <small>
+                {{ professional?.documentAutomationEnabled
+                  ? 'Habla gestionara el documento tributario.'
+                  : 'Este profesional aun no activo gestion por Habla.' }}
+              </small>
+            </span>
+          </label>
+        </div>
+
+        <p class="document-helper">
+          {{ $any(this).getDocumentModeLabel() }}
+        </p>
+
+        <p
+          class="document-helper warning"
+          *ngIf="$any(this).selectedDocumentMode !== 'NONE' && !$any(this).customerTaxReady"
+        >
+          Puedes completar o corregir tus datos tributarios desde Perfil.
+        </p>
+
+        <p
+          class="document-helper warning"
+          *ngIf="$any(this).selectedDocumentMode !== 'NONE' && !$any(this).professionalTaxReady"
+        >
+          Este profesional debe completar sus datos tributarios para emitir documentos.
+        </p>
       </ion-card-content>
     </ion-card>
 
