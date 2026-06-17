@@ -18,6 +18,12 @@ export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
   @UseGuards(JwtAuthGuard)
+  @Post('support/conversation')
+  getOrCreateSupportConversation(@Request() req: { user: { id: string } }) {
+    return this.messagesService.getOrCreateSupportConversation(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('send')
   sendMessage(
     @Request() req: any,

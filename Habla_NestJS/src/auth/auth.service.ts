@@ -59,6 +59,14 @@ export class AuthService {
         email,
         password: hashedPassword,
         role,
+        isActive: true,
+        ...(role === Role.PROFESSIONAL && {
+          professional: {
+            create: {
+              name,
+            },
+          },
+        }),
       },
     });
 

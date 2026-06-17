@@ -16,6 +16,88 @@ export class MessagesService {
     private gateway: MessagesGateway,
   ) {}
 
+  async getOrCreateSupportConversation(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.role === Role.ADMIN) {
+      throw new ForbiddenException('Admin users cannot open support as clients');
+    }
+
+    const admin = await this.prisma.user.findFirst({
+      where: {
+        role: Role.ADMIN,
+        isActive: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    if (!admin) {
+      throw new NotFoundException('Support is not available');
+    }
+
+    let conversation = await this.prisma.conversation.findUnique({
+      where: {
+        customerId_professionalId: {
+          customerId: userId,
+          professionalId: admin.id,
+        },
+      },
+      include: {
+        messages: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (!conversation) {
+      conversation = await this.prisma.conversation.create({
+        data: {
+          customerId: userId,
+          professionalId: admin.id,
+          messages: {
+            create: {
+              senderId: admin.id,
+              content:
+                'Hola, somos soporte de Habla. Cuéntanos en qué podemos ayudarte.',
+            },
+          },
+        },
+        include: {
+          messages: {
+            orderBy: {
+              createdAt: 'desc',
+            },
+            take: 1,
+          },
+        },
+      });
+    }
+
+    return {
+      conversationId: conversation.id,
+      otherUser: {
+        id: admin.id,
+        email: admin.email,
+        name: admin.name || 'Soporte Habla',
+      },
+      lastMessage: conversation.messages[0] ?? null,
+      updatedAt: conversation.updatedAt,
+      unreadCount: 0,
+      isSupport: true,
+    };
+  }
+
   async sendMessage(
     senderId: string,
     receiverId: string,
