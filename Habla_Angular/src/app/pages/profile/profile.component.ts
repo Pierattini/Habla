@@ -1,8 +1,8 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { AlertController } from '@ionic/angular';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 
 type Appointment = {
@@ -52,7 +52,8 @@ import {
     IonButton,
     IonIcon,
     IonItem,
-    IonLabel
+    IonLabel,
+    RouterLink
   ]
 })
 
@@ -88,7 +89,8 @@ export class ProfileComponent {
   constructor(
   private auth: AuthService,
   private alertCtrl: AlertController,
-  private router: Router
+  private router: Router,
+  private cdr: ChangeDetectorRef
 ) {
     addIcons({
   'person-circle-outline': personCircleOutline,
@@ -163,6 +165,7 @@ finishProfileRequest() {
   if (this.profileRequestsPending === 0) {
     this.loading = false;
     this.loaded = true;
+    this.cdr.detectChanges();
   }
 }
 async editName() {

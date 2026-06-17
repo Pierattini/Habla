@@ -20,6 +20,10 @@ export class AuthService {
     });
   }
 
+  register(data: { name: string; email: string; password: string; role: 'CUSTOMER' | 'PROFESSIONAL' }) {
+    return this.http.post(`${this.api}/auth/register`, data);
+  }
+
   // 🔥 HEADERS CON TOKEN
   getHeaders() {
     const token = localStorage.getItem('token');

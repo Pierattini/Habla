@@ -18,6 +18,13 @@ export class MessagesService {
     );
   }
 
+  getOrCreateSupportConversation(): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/support/conversation`,
+      {}
+    );
+  }
+
   getConversationMessages(conversationId: string): Observable<any[]> {
     return this.http.get<any[]>(
       `${this.apiUrl}/conversations/${conversationId}`

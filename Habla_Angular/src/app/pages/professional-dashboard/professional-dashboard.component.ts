@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -103,7 +103,8 @@ export class ProfessionalDashboardComponent {
 
   constructor(
     private professionalProfileService: ProfessionalProfileService,
-    private taxDocumentsService: TaxDocumentsService
+    private taxDocumentsService: TaxDocumentsService,
+    private cdr: ChangeDetectorRef
   ) {
 
     addIcons({
@@ -564,6 +565,7 @@ onFileSelected(event: any) {
     if (this.dashboardRequestsPending === 0) {
       this.loading = false;
       this.loaded = true;
+      this.cdr.detectChanges();
     }
   }
 

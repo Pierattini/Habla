@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { RouterLink } from '@angular/router';
@@ -14,7 +14,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 })
 export class MessagesComponent {
   public conversations: any[] = [];
-  public loading: boolean = true;
+  public loading: boolean = false;
   public loaded: boolean = false;
   public requestedProfessionalId: string | null = null;
   public conversationNotFound: boolean = false;
@@ -22,7 +22,8 @@ export class MessagesComponent {
   constructor(
     private messagesService: MessagesService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ionViewWillEnter() {
@@ -72,6 +73,7 @@ export class MessagesComponent {
 
         this.loading = false;
         this.loaded = true;
+        this.cdr.detectChanges();
 
         console.log('Conversations:', this.conversations);
       },
@@ -80,6 +82,7 @@ export class MessagesComponent {
         console.error(err);
         this.loading = false;
         this.loaded = true;
+        this.cdr.detectChanges();
       }
     });
   }

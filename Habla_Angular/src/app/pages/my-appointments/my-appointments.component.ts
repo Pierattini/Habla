@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ToastController, IonicModule, ModalController } from '@ionic/angular';
@@ -43,6 +43,7 @@ export class MyAppointmentsComponent {
   private http: HttpClient,
   private toastCtrl: ToastController,
   private alertCtrl: AlertController,
+  private cdr: ChangeDetectorRef,
   private router: Router,
   private modalCtrl: ModalController,
   private route: ActivatedRoute,
@@ -104,6 +105,7 @@ this.loadTaxDocumentsForAppointments();
     this.groupAppointments();
     this.loading = false;
     this.loaded = true;
+    this.cdr.detectChanges();
   }
 });
 }
@@ -146,6 +148,7 @@ finishAppointmentsLoad() {
   this.groupAppointments();
   this.loading = false;
   this.loaded = true;
+  this.cdr.detectChanges();
 }
   cancelAppointment(id: string) {
   this.loadingId = id;
@@ -674,6 +677,7 @@ openChat(appt: any) {
   );
 }
 }
+
 
 
 

@@ -1,0 +1,38 @@
+<main class="support-page">
+  <section class="support-shell">
+    <button
+      type="button"
+      class="back-link"
+      (click)="goBack()"
+    >
+      Volver
+    </button>
+
+    <header class="support-hero">
+      <span>Soporte Habla</span>
+      <h1>Estamos para ayudarte</h1>
+      <p>
+        Conversa con el equipo de soporte para resolver dudas sobre tu cuenta,
+        citas, pagos, documentos o uso de la plataforma.
+      </p>
+    </header>
+
+    <div class="support-actions">
+      <button
+        type="button"
+        class="support-button"
+        [disabled]="loading"
+        (click)="openSupportChat()"
+      >
+        {{ loading ? 'Abriendo chat...' : 'Chatear con soporte' }}
+      </button>
+
+      <p
+        *ngIf="errorMessage"
+        class="support-error"
+      >
+        {{ errorMessage }}
+      </p>
+    </div>
+  </section>
+</main>

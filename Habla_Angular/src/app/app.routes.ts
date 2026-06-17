@@ -9,6 +9,23 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/login/login.component').then(m => m.LoginComponent)
   },
+  {
+    path: 'privacy-policy',
+    loadComponent: () =>
+      import('./pages/legal/legal-page.component').then(m => m.LegalPageComponent)
+  },
+
+  {
+    path: 'terms',
+    loadComponent: () =>
+      import('./pages/legal/legal-page.component').then(m => m.LegalPageComponent)
+  },
+
+  {
+    path: 'cookies',
+    loadComponent: () =>
+      import('./pages/legal/legal-page.component').then(m => m.LegalPageComponent)
+  },
 
   // 📱 TABS
   {
@@ -38,6 +55,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/profile/profile.component')
             .then(m => m.ProfileComponent),
+      },
+      {
+        path: 'support',
+        loadComponent: () =>
+          import('./pages/support/support.component')
+            .then(m => m.SupportComponent),
       },
 
       // 🧑‍⚕️ DETALLE PROFESIONAL
@@ -92,3 +115,5 @@ export const routes: Routes = [
     redirectTo: 'login'
   }
 ];
+
+

@@ -1,9 +1,8 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChangeDetectorRef } from '@angular/core';
 import { API_URL } from '../../core/config/api.config';
 //import { IonicModule } from '@ionic/angular';
 
@@ -77,7 +76,7 @@ export class ProfessionalDetailComponent {
   constructor(
   private route: ActivatedRoute,
   private http: HttpClient,
-  //private cdr: ChangeDetectorRef,
+  private cdr: ChangeDetectorRef,
   private router: Router 
 ) {}
 
@@ -112,6 +111,7 @@ export class ProfessionalDetailComponent {
   if (!this.id) {
     this.loading = false;
     this.loaded = true;
+    this.cdr.detectChanges();
     return;
   }
 
@@ -133,6 +133,7 @@ export class ProfessionalDetailComponent {
         console.error(err);
         this.loading = false;
         this.loaded = true;
+        this.cdr.detectChanges();
       }
     });
 }
@@ -141,6 +142,7 @@ export class ProfessionalDetailComponent {
   if (!this.professional?.id || !this.selectedDate) {
     this.loading = false;
     this.loaded = true;
+    this.cdr.detectChanges();
     return;
   }
 
@@ -161,14 +163,15 @@ export class ProfessionalDetailComponent {
   this.availableHours = res;
   this.loading = false;
   this.loaded = true;
+  this.cdr.detectChanges();
 
-  //this.cdr.detectChanges();
 },
     error: (err) => {
       console.error(err);
       this.availableHours = [];
       this.loading = false;
       this.loaded = true;
+      this.cdr.detectChanges();
     }
   });
 }
