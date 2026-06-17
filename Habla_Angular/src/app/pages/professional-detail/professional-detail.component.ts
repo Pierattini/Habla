@@ -378,7 +378,7 @@ onDocumentModeChange(mode: 'NONE' | 'MANUAL' | 'AUTOMATED') {
 
 getDocumentModeLabel(): string {
   if (this.selectedDocumentMode === 'AUTOMATED') {
-    return 'Habla gestionara el documento cuando el servicio este habilitado.';
+    return 'Conecta gestionara el documento cuando el servicio este habilitado.';
   }
 
   if (this.selectedDocumentMode === 'MANUAL') {

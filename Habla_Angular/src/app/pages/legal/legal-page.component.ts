@@ -29,7 +29,7 @@ export class LegalPageComponent {
       eyebrow: 'Privacidad',
       title: 'Privacy Policy',
       updatedAt: '17 de junio de 2026',
-      intro: 'Esta politica explica como Habla trata informacion personal para operar una plataforma de atencion profesional, agenda, mensajeria y gestion de servicios.',
+      intro: 'Esta politica explica como Conecta trata informacion personal para operar una plataforma de atencion profesional, agenda, mensajeria y gestion de servicios.',
       sections: [
         {
           title: 'Datos que podemos recopilar',
@@ -68,13 +68,13 @@ export class LegalPageComponent {
       eyebrow: 'Condiciones',
       title: 'Terms and Conditions',
       updatedAt: '17 de junio de 2026',
-      intro: 'Estos terminos regulan el uso de Habla como plataforma digital para conectar usuarios con profesionales y administrar servicios relacionados.',
+      intro: 'Estos terminos regulan el uso de Conecta como plataforma digital para conectar usuarios con profesionales y administrar servicios relacionados.',
       sections: [
         {
           title: 'Uso de la plataforma',
           body: [
             'Debes entregar informacion veraz, mantener segura tu cuenta y usar la plataforma de forma responsable.',
-            'Habla puede actualizar funciones, suspender cuentas inactivas o restringir usos que afecten la seguridad o integridad del servicio.',
+            'Conecta puede actualizar funciones, suspender cuentas inactivas o restringir usos que afecten la seguridad o integridad del servicio.',
           ],
         },
         {
@@ -94,7 +94,7 @@ export class LegalPageComponent {
         {
           title: 'Limitacion de responsabilidad',
           body: [
-            'Habla facilita herramientas tecnologicas para agenda, comunicacion y gestion. La relacion profesional se desarrolla entre usuario y profesional.',
+            'Conecta facilita herramientas tecnologicas para agenda, comunicacion y gestion. La relacion profesional se desarrolla entre usuario y profesional.',
             'El servicio puede requerir conexion a internet, disponibilidad de terceros y mantenimiento tecnico.',
           ],
         },
@@ -104,7 +104,7 @@ export class LegalPageComponent {
       eyebrow: 'Preferencias',
       title: 'Cookies and Tracking',
       updatedAt: '17 de junio de 2026',
-      intro: 'Esta politica describe tecnologias de almacenamiento, cookies o identificadores similares que podrian usarse en versiones web o moviles de Habla.',
+      intro: 'Esta politica describe tecnologias de almacenamiento, cookies o identificadores similares que podrian usarse en versiones web o moviles de Conecta.',
       sections: [
         {
           title: 'Tecnologias necesarias',
@@ -124,7 +124,7 @@ export class LegalPageComponent {
           title: 'Cookies en app movil',
           body: [
             'En una app movil nativa las cookies pueden no funcionar igual que en una web, pero pueden existir tecnologias equivalentes como almacenamiento local, tokens o identificadores.',
-            'Si Habla incorpora webviews, pagos externos, analitica o herramientas de soporte, podrian aplicar politicas adicionales de proveedores.',
+            'Si Conecta incorpora webviews, pagos externos, analitica o herramientas de soporte, podrian aplicar politicas adicionales de proveedores.',
           ],
         },
       ],

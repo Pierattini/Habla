@@ -559,7 +559,7 @@ private buildGoogleCalendarUrl(appt: any): string {
     text: this.getCalendarTitle(appt),
     dates: `${this.formatGoogleDate(start)}/${this.formatGoogleDate(end)}`,
     details,
-    location: appt.meetLink || 'Habla',
+    location: appt.meetLink || 'Conecta',
   });
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
@@ -571,7 +571,7 @@ private downloadIcsFile(appt: any): void {
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Habla//Appointments//ES',
+    'PRODID:-//Conecta//Appointments//ES',
     'BEGIN:VEVENT',
     `UID:${appt.id}@habla`,
     `DTSTAMP:${this.formatIcsDate(new Date())}`,
@@ -579,7 +579,7 @@ private downloadIcsFile(appt: any): void {
     `DTEND:${this.formatIcsDate(end)}`,
     `SUMMARY:${this.escapeIcsText(this.getCalendarTitle(appt))}`,
     `DESCRIPTION:${this.escapeIcsText(this.getCalendarDescription(appt))}`,
-    `LOCATION:${this.escapeIcsText(appt.meetLink || 'Habla')}`,
+    `LOCATION:${this.escapeIcsText(appt.meetLink || 'Conecta')}`,
     'END:VEVENT',
     'END:VCALENDAR',
   ].join('\r\n');
@@ -594,12 +594,12 @@ private downloadIcsFile(appt: any): void {
 }
 
 private getCalendarTitle(appt: any): string {
-  return `Cita Habla con ${this.getNombre(appt)}`;
+  return `Cita Conecta con ${this.getNombre(appt)}`;
 }
 
 private getCalendarDescription(appt: any): string {
   const parts = [
-    `Cita confirmada en Habla.`,
+    `Cita confirmada en Conecta.`,
     `Participante: ${this.getNombre(appt)}.`,
   ];
 

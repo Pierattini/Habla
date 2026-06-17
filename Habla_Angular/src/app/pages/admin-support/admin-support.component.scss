@@ -1,0 +1,276 @@
+:host {
+  display: block;
+  min-height: 100%;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+.admin-support-page {
+  min-height: 100vh;
+  padding: 24px 16px 112px;
+}
+
+.admin-support-shell {
+  width: min(760px, 100%);
+  margin: 0 auto;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 18px;
+  color: var(--app-primary);
+  font-size: 14px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.page-hero,
+.toolbar-panel,
+.ticket-card,
+.state-message {
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.page-hero {
+  padding: 28px;
+}
+
+.page-hero span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--app-primary);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.page-hero h1 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
+
+.page-hero p {
+  margin: 12px 0 0;
+  color: var(--app-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.summary-card {
+  min-height: 92px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.summary-card span {
+  display: block;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.summary-card strong {
+  display: block;
+  margin-top: 14px;
+  color: var(--app-primary);
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.toolbar-panel {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding: 16px;
+}
+
+.toolbar-panel label {
+  display: grid;
+  gap: 7px;
+  flex: 1;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.toolbar-panel select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 20%, transparent);
+  border-radius: var(--app-radius-md);
+  background: #ffffff;
+  color: var(--app-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 0 12px;
+}
+
+.ticket-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.ticket-card {
+  padding: 18px;
+}
+
+.ticket-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.ticket-id {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.ticket-card h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.ticket-email {
+  margin: 5px 0 0;
+  color: var(--app-muted);
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.status-pill {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-primary) 12%, #ffffff);
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.status-pill.closed {
+  background: color-mix(in srgb, var(--app-muted) 12%, #ffffff);
+  color: var(--app-muted);
+}
+
+.ticket-message {
+  margin: 14px 0 0;
+  color: var(--app-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ticket-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 12px;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ticket-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.primary-button,
+.ghost-button {
+  min-height: 42px;
+  border-radius: var(--app-radius-md);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  padding: 0 14px;
+}
+
+.primary-button {
+  border: 0;
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  color: #ffffff;
+  box-shadow: 0 14px 26px color-mix(in srgb, var(--app-primary) 24%, transparent);
+}
+
+.ghost-button {
+  border: 1px solid color-mix(in srgb, var(--app-primary) 24%, transparent);
+  background: #ffffff;
+  color: var(--app-primary);
+}
+
+.ghost-button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.state-message {
+  margin: 14px 0 0;
+  padding: 16px;
+  color: var(--app-muted);
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.state-message.warning {
+  color: var(--app-text);
+  background: color-mix(in srgb, var(--app-primary) 8%, #ffffff);
+}
+
+@media (max-width: 560px) {
+  .admin-support-page {
+    padding: 20px 12px 112px;
+  }
+
+  .page-hero,
+  .toolbar-panel,
+  .ticket-card,
+  .state-message {
+    border-radius: var(--app-radius-lg);
+  }
+
+  .toolbar-panel,
+  .ticket-header {
+    display: grid;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .primary-button,
+  .ghost-button {
+    flex: 1 1 100%;
+  }
+}

@@ -30,6 +30,78 @@ ion-button {
   margin: 0 auto;
 }
 
+.support-ticket-panel {
+  display: grid;
+  gap: 12px;
+  margin: 12px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.support-ticket-panel span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.support-ticket-panel h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.support-ticket-panel p {
+  margin: 5px 0 0;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+.support-ticket-panel strong {
+  width: max-content;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-primary) 12%, #ffffff);
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.support-ticket-panel strong.closed {
+  background: color-mix(in srgb, var(--app-muted) 12%, #ffffff);
+  color: var(--app-muted);
+}
+
+.support-ticket-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.support-ticket-actions button {
+  min-height: 38px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 22%, transparent);
+  border-radius: var(--app-radius-md);
+  background: #ffffff;
+  color: var(--app-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 0 12px;
+}
+
+.support-ticket-actions button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
 .chat-tabs {
   position: sticky;
   top: 0;

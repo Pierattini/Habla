@@ -14,6 +14,47 @@
 
 <ion-content class="chat-content">
 
+  <section
+    class="support-ticket-panel"
+    *ngIf="$any(this).isAdmin && $any(this).supportTicket as supportTicket"
+  >
+    <div>
+      <span>Ticket {{ supportTicket.id | slice:0:8 }}</span>
+      <h2>{{ supportTicket.customer.name || supportTicket.customer.email }}</h2>
+      <p>{{ supportTicket.customer.email }}</p>
+    </div>
+
+    <strong [class.closed]="supportTicket.status === 'CLOSED'">
+      {{ $any(this).getSupportStatusLabel(supportTicket.status) }}
+    </strong>
+
+    <div class="support-ticket-actions">
+      <button
+        type="button"
+        [disabled]="$any(this).updatingTicketStatus || supportTicket.status === 'OPEN'"
+        (click)="$any(this).updateSupportTicketStatus('OPEN')"
+      >
+        Reabrir
+      </button>
+
+      <button
+        type="button"
+        [disabled]="$any(this).updatingTicketStatus || supportTicket.status === 'IN_PROGRESS'"
+        (click)="$any(this).updateSupportTicketStatus('IN_PROGRESS')"
+      >
+        En progreso
+      </button>
+
+      <button
+        type="button"
+        [disabled]="$any(this).updatingTicketStatus || supportTicket.status === 'CLOSED'"
+        (click)="$any(this).updateSupportTicketStatus('CLOSED')"
+      >
+        Cerrar
+      </button>
+    </div>
+  </section>
+
   <!-- TABS -->
   <div class="chat-tabs">
     <button

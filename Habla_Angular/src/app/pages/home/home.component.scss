@@ -14,14 +14,19 @@ ion-content {
 }
 
 .header-logo img {
-  width: 142px;
-  height: 142px;
-  object-fit: cover;
+  width: min(100%, 280px);
+  height: 128px;
+  object-fit: contain;
   object-position: center;
-  border-radius: 50%;
+  border-radius: 24px;
   background: var(--app-surface);
-  padding: 4px;
+  padding: 0;
   box-shadow: var(--app-shadow-soft);
+}
+
+.header-logo img.home-brand-logo {
+  object-fit: cover;
+  object-position: center 57%;
 }
 
 .header-logo p {

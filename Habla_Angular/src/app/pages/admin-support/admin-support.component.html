@@ -1,0 +1,118 @@
+<main class="admin-support-page">
+  <section class="admin-support-shell">
+    <a class="back-link" routerLink="/tabs/profile">Volver</a>
+
+    <header class="page-hero">
+      <span>Soporte Conecta</span>
+      <h1>Tickets de soporte</h1>
+      <p>Revisa conversaciones abiertas y cambia el estado operativo del ticket.</p>
+    </header>
+
+    <section class="summary-grid">
+      <article class="summary-card">
+        <span>Total</span>
+        <strong>{{ $any(this).summary.total }}</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Abiertos</span>
+        <strong>{{ $any(this).summary.open }}</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>En progreso</span>
+        <strong>{{ $any(this).summary.inProgress }}</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Cerrados</span>
+        <strong>{{ $any(this).summary.closed }}</strong>
+      </article>
+    </section>
+
+    <section class="toolbar-panel">
+      <label>
+        <span>Estado</span>
+        <select [value]="statusFilter" (change)="onStatusFilterChange($event)">
+          <option *ngFor="let status of statuses" [value]="status">
+            {{ getStatusLabel(status) }}
+          </option>
+        </select>
+      </label>
+
+      <button type="button" class="ghost-button" (click)="loadTickets()">
+        Actualizar
+      </button>
+    </section>
+
+    <p *ngIf="loading" class="state-message">Cargando tickets...</p>
+
+    <p *ngIf="loaded && errorMessage" class="state-message warning">
+      {{ errorMessage }}
+    </p>
+
+    <p *ngIf="loaded && !loading && !errorMessage && tickets.length === 0" class="state-message">
+      No hay tickets para este filtro.
+    </p>
+
+    <section class="ticket-list" *ngIf="loaded && tickets.length > 0">
+      <article class="ticket-card" *ngFor="let ticket of tickets">
+        <div class="ticket-header">
+          <div>
+            <span class="ticket-id">Ticket {{ ticket.id | slice:0:8 }}</span>
+            <h2>{{ getCustomerName(ticket) }}</h2>
+            <p class="ticket-email">{{ ticket.customer.email }}</p>
+          </div>
+
+          <span class="status-pill" [class.closed]="ticket.status === 'CLOSED'">
+            {{ getStatusLabel(ticket.status) }}
+          </span>
+        </div>
+
+        <p class="ticket-message">{{ getLastMessage(ticket) }}</p>
+
+        <div class="ticket-meta">
+          <span>{{ ticket.messageCount || 0 }} mensajes</span>
+          <span>Creado: {{ ticket.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+          <span>Actualizado: {{ ticket.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+          <span *ngIf="getLastMessageDate(ticket)">
+            Ultimo mensaje: {{ getLastMessageDate(ticket) | date:'dd/MM/yyyy HH:mm' }}
+          </span>
+        </div>
+
+        <div class="ticket-actions">
+          <button type="button" class="primary-button" (click)="openConversation(ticket)">
+            Abrir chat
+          </button>
+
+          <button
+            type="button"
+            class="ghost-button"
+            [disabled]="isUpdating(ticket) || ticket.status === 'OPEN'"
+            (click)="updateStatus(ticket, 'OPEN')"
+          >
+            Reabrir
+          </button>
+
+          <button
+            type="button"
+            class="ghost-button"
+            [disabled]="isUpdating(ticket) || ticket.status === 'IN_PROGRESS'"
+            (click)="updateStatus(ticket, 'IN_PROGRESS')"
+          >
+            En progreso
+          </button>
+
+          <button
+            type="button"
+            class="ghost-button"
+            [disabled]="isUpdating(ticket) || ticket.status === 'CLOSED'"
+            (click)="updateStatus(ticket, 'CLOSED')"
+          >
+            Cerrar
+          </button>
+        </div>
+      </article>
+    </section>
+  </section>
+</main>

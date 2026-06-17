@@ -156,6 +156,15 @@
     </ion-button>
 
     <ion-button
+      *ngIf="role === 'ADMIN'"
+      expand="block"
+      color="tertiary"
+      routerLink="/tabs/admin-support"
+    >
+      Administrar soporte
+    </ion-button>
+
+    <ion-button
       *ngIf="role === 'PROFESSIONAL'"
       expand="block"
       color="tertiary"

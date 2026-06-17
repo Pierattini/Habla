@@ -2,27 +2,24 @@
   @if ($any(this).mode === 'intro') {
   <section
     class="splash-panel"
-    aria-label="Cargando Habla"
+    aria-label="Cargando Conecta"
   >
-    <div class="logo-orbit">
-      <div class="brand-mark">H</div>
-    </div>
-
-    <h1>Habla</h1>
-    <p>Atencion profesional, simple y humana.</p>
+    <img class="splash-brand-image" src="assets/conecta-full.png" alt="Conecta" />
   </section>
   }
 
   @if ($any(this).mode !== 'intro') {
   <section
     class="onboarding-shell"
-    aria-label="Acceso Habla"
+    aria-label="Acceso Conecta"
   >
     <div class="brand-row">
-      <div class="brand-mark small">H</div>
+      <div class="brand-mark small">
+        <img src="assets/soloimagen.png" alt="Conecta" />
+      </div>
       <div>
-        <strong>Habla</strong>
-        <span>Bienestar profesional</span>
+        <strong>Conecta</strong>
+        <span>Conecta con lo que importa</span>
       </div>
     </div>
 
@@ -46,7 +43,7 @@
 
     @if ($any(this).mode === 'register') {
       <header class="login-heading">
-        <span>Comienza en Habla</span>
+        <span>Comienza en Conecta</span>
         <h1>Elige como quieres usar la plataforma</h1>
         <p>Configuraremos tu experiencia segun tu rol.</p>
       </header>
@@ -210,7 +207,7 @@
               (ngModelChange)="$any(this).registerForm.documentAutomationEnabled = $event === 'habla'; $any(this).registerForm.manualDocumentMode = $event !== 'habla'"
             >
               <option value="manual">Las emitire por mi cuenta</option>
-              <option value="habla">Quiero que Habla las gestione</option>
+              <option value="habla">Quiero que Conecta las gestione</option>
             </select>
           </label>
         }

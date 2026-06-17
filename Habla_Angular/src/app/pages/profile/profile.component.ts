@@ -406,7 +406,7 @@ async editDocumentPreference() {
           },
           {
             type: 'radio',
-            label: 'Quiero que Habla los gestione',
+            label: 'Quiero que Conecta los gestione',
             value: 'habla',
             checked: this.documentAutomationEnabled,
           },
@@ -491,7 +491,7 @@ goToAppointments() {
 getDocumentPreferenceLabel(): string {
   if (this.role === 'PROFESSIONAL') {
     return this.documentAutomationEnabled
-      ? 'Habla gestionara documentos'
+      ? 'Conecta gestionara documentos'
       : 'Emision manual por profesional';
   }
 

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { professionalGuard } from './core/guards/professional.guard';
+import { adminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
 
@@ -61,6 +62,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/support/support.component')
             .then(m => m.SupportComponent),
+      },
+      {
+        path: 'admin-support',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./pages/admin-support/admin-support.component')
+            .then(m => m.AdminSupportComponent),
       },
 
       // 🧑‍⚕️ DETALLE PROFESIONAL
