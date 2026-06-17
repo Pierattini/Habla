@@ -2,19 +2,193 @@ import {
   Injectable,
   ForbiddenException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AppointmentStatus, Role } from '@prisma/client';
+import { AppointmentStatus, Role, SupportTicketStatus } from '@prisma/client';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { v2 as cloudinary } from 'cloudinary';
 import { MessagesGateway } from './messages.gateway';
+import { EmailService } from '../email/email.service';
 @Injectable()
 export class MessagesService {
+  private readonly supportMessageEmailCooldownMs = 5 * 60 * 1000;
+  private readonly supportMessageEmailSentAt = new Map<string, number>();
+
   constructor(
     private prisma: PrismaService,
     private cloudinaryService: CloudinaryService,
     private gateway: MessagesGateway,
+    private emailService: EmailService,
   ) {}
+
+  async getSupportSummary() {
+    const [total, open, inProgress, closed] = await Promise.all([
+      this.prisma.supportTicket.count(),
+      this.prisma.supportTicket.count({
+        where: { status: SupportTicketStatus.OPEN },
+      }),
+      this.prisma.supportTicket.count({
+        where: { status: SupportTicketStatus.IN_PROGRESS },
+      }),
+      this.prisma.supportTicket.count({
+        where: { status: SupportTicketStatus.CLOSED },
+      }),
+    ]);
+
+    return {
+      total,
+      open,
+      inProgress,
+      closed,
+    };
+  }
+
+  async getSupportTickets(status?: SupportTicketStatus) {
+    if (status && !Object.values(SupportTicketStatus).includes(status)) {
+      throw new BadRequestException('Invalid support ticket status');
+    }
+
+    const tickets = await this.prisma.supportTicket.findMany({
+      where: {
+        ...(status && { status }),
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+        admin: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+        conversation: {
+          include: {
+            messages: {
+              orderBy: {
+                createdAt: 'desc',
+              },
+              take: 1,
+            },
+            _count: {
+              select: {
+                messages: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+
+    return tickets.map((ticket) => ({
+      id: ticket.id,
+      status: ticket.status,
+      conversationId: ticket.conversationId,
+      customer: ticket.customer,
+      admin: ticket.admin,
+      lastMessage: ticket.conversation.messages[0] ?? null,
+      messageCount: ticket.conversation._count.messages,
+      createdAt: ticket.createdAt,
+      updatedAt: ticket.updatedAt,
+      closedAt: ticket.closedAt,
+    }));
+  }
+
+  async updateSupportTicketStatus(
+    id: string,
+    status: SupportTicketStatus,
+  ) {
+    if (!Object.values(SupportTicketStatus).includes(status)) {
+      throw new BadRequestException('Invalid support ticket status');
+    }
+
+    const ticket = await this.prisma.supportTicket.findUnique({
+      where: { id },
+    });
+
+    if (!ticket) {
+      throw new NotFoundException('Support ticket not found');
+    }
+
+    return this.prisma.supportTicket.update({
+      where: { id },
+      data: {
+        status,
+        closedAt:
+          status === SupportTicketStatus.CLOSED
+            ? ticket.closedAt ?? new Date()
+            : null,
+      },
+    });
+  }
+
+  async getSupportTicketByConversation(conversationId: string) {
+    const ticket = await this.prisma.supportTicket.findFirst({
+      where: {
+        conversationId,
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+        admin: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+        conversation: {
+          include: {
+            messages: {
+              orderBy: {
+                createdAt: 'desc',
+              },
+              take: 1,
+            },
+            _count: {
+              select: {
+                messages: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+
+    if (!ticket) {
+      throw new NotFoundException('Support ticket not found');
+    }
+
+    return {
+      id: ticket.id,
+      status: ticket.status,
+      conversationId: ticket.conversationId,
+      customer: ticket.customer,
+      admin: ticket.admin,
+      lastMessage: ticket.conversation.messages[0] ?? null,
+      messageCount: ticket.conversation._count.messages,
+      createdAt: ticket.createdAt,
+      updatedAt: ticket.updatedAt,
+      closedAt: ticket.closedAt,
+    };
+  }
 
   async getOrCreateSupportConversation(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -84,8 +258,35 @@ export class MessagesService {
       });
     }
 
+    let ticket = await this.prisma.supportTicket.findFirst({
+      where: {
+        conversationId: conversation.id,
+        status: {
+          in: [SupportTicketStatus.OPEN, SupportTicketStatus.IN_PROGRESS],
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!ticket) {
+      ticket = await this.prisma.supportTicket.create({
+        data: {
+          conversationId: conversation.id,
+          customerId: userId,
+          adminId: admin.id,
+          status: SupportTicketStatus.OPEN,
+        },
+      });
+
+      this.notifySupportTicketCreated(ticket.id, conversation.id, user, admin);
+    }
+
     return {
       conversationId: conversation.id,
+      ticketId: ticket.id,
+      ticketStatus: ticket.status,
       otherUser: {
         id: admin.id,
         email: admin.email,
@@ -341,7 +542,7 @@ export class MessagesService {
       },
     });
 
-    return this.prisma.message.create({
+    const message = await this.prisma.message.create({
       data: {
         conversationId,
         senderId,
@@ -350,6 +551,10 @@ export class MessagesService {
         fileName,
       },
     });
+
+    this.notifySupportTicketMessage(conversationId, senderId, content);
+
+    return message;
   }
   async getConversationFiles(
     conversationId: string,
@@ -449,5 +654,85 @@ export class MessagesService {
         fileSize: file.size,
       },
     });
+  }
+
+  private notifySupportTicketCreated(
+    ticketId: string,
+    conversationId: string,
+    customer: { email: string; name?: string | null },
+    admin: { email: string; name?: string | null },
+  ) {
+    this.emailService
+      .sendSupportTicketCreatedEmail({
+        adminEmail: admin.email,
+        adminName: admin.name || 'Soporte Habla',
+        customerName: customer.name || customer.email,
+        customerEmail: customer.email,
+        ticketId,
+        conversationId,
+      })
+      .catch((error) =>
+        console.error('Error enviando correo de nuevo ticket:', error),
+      );
+  }
+
+  private async notifySupportTicketMessage(
+    conversationId: string,
+    senderId: string,
+    content?: string,
+  ) {
+    try {
+      const ticket = await this.prisma.supportTicket.findFirst({
+        where: {
+          conversationId,
+          status: {
+            in: [SupportTicketStatus.OPEN, SupportTicketStatus.IN_PROGRESS],
+          },
+        },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+            },
+          },
+          admin: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      if (!ticket || ticket.customerId !== senderId) return;
+      if (!this.canSendSupportMessageEmail(conversationId)) return;
+
+      await this.emailService.sendSupportTicketMessageEmail({
+        adminEmail: ticket.admin.email,
+        adminName: ticket.admin.name || 'Soporte Habla',
+        customerName: ticket.customer.name || ticket.customer.email,
+        customerEmail: ticket.customer.email,
+        ticketId: ticket.id,
+        conversationId: ticket.conversationId,
+        message: content,
+      });
+    } catch (error) {
+      console.error('Error enviando correo de mensaje soporte:', error);
+    }
+  }
+
+  private canSendSupportMessageEmail(conversationId: string) {
+    const now = Date.now();
+    const lastSentAt = this.supportMessageEmailSentAt.get(conversationId) ?? 0;
+
+    if (now - lastSentAt < this.supportMessageEmailCooldownMs) {
+      return false;
+    }
+
+    this.supportMessageEmailSentAt.set(conversationId, now);
+    return true;
   }
 }

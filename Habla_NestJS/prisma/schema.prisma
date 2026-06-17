@@ -8,17 +8,17 @@ datasource db {
 }
 
 model Availability {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   professionalId String
   day            WeekDay
   scheduleMode   ScheduleMode @default(CONTINUOUS)
   startMinute    Int
   endMinute      Int
-  breakMinute    Int      @default(0)
+  breakMinute    Int          @default(0)
   specificSlots  Json?
   blockedRanges  Json?
-  createdAt      DateTime @default(now())
-  professional   User     @relation(fields: [professionalId], references: [id])
+  createdAt      DateTime     @default(now())
+  professional   User         @relation(fields: [professionalId], references: [id])
 
   @@index([professionalId, day])
 }
@@ -50,9 +50,11 @@ model User {
   availabilities           Availability[]
   professional             Professional?
 
-  customerConversations     Conversation[] @relation("CustomerConversations")
-  professionalConversations Conversation[] @relation("ProfessionalConversations")
-  sentMessages              Message[]      @relation("SentMessages")
+  customerConversations     Conversation[]  @relation("CustomerConversations")
+  professionalConversations Conversation[]  @relation("ProfessionalConversations")
+  sentMessages              Message[]       @relation("SentMessages")
+  supportTicketsAsCustomer  SupportTicket[] @relation("SupportTicketCustomer")
+  supportTicketsAsAdmin     SupportTicket[] @relation("SupportTicketAdmin")
 
   credit Float @default(0)
 }
@@ -140,12 +142,34 @@ model Conversation {
   customer     User @relation("CustomerConversations", fields: [customerId], references: [id])
   professional User @relation("ProfessionalConversations", fields: [professionalId], references: [id])
 
-  messages     Message[]
-  appointments Appointment[]
+  messages       Message[]
+  appointments   Appointment[]
+  supportTickets SupportTicket[]
 
   @@unique([customerId, professionalId])
   @@index([customerId])
   @@index([professionalId])
+}
+
+model SupportTicket {
+  id             String              @id @default(uuid())
+  conversationId String
+  customerId     String
+  adminId        String
+  status         SupportTicketStatus @default(OPEN)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  closedAt       DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  customer     User         @relation("SupportTicketCustomer", fields: [customerId], references: [id])
+  admin        User         @relation("SupportTicketAdmin", fields: [adminId], references: [id])
+
+  @@index([conversationId])
+  @@index([customerId])
+  @@index([adminId])
+  @@index([status])
+  @@index([conversationId, status])
 }
 
 model Message {
@@ -278,6 +302,12 @@ enum DocumentStatus {
   DOCUMENT_SENT
   DOCUMENT_FAILED
   DOCUMENT_CANCELLED
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
 }
 
 enum DocumentMode {

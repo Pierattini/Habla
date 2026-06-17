@@ -13,9 +13,45 @@ import { MessagesService } from './messages.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
+import { Role, SupportTicketStatus } from '@prisma/client';
 @Controller('messages')
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('admin/support/summary')
+  getSupportSummary() {
+    return this.messagesService.getSupportSummary();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('admin/support/tickets')
+  getSupportTickets(@Query('status') status?: SupportTicketStatus) {
+    return this.messagesService.getSupportTickets(status);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('admin/support/tickets/conversation/:conversationId')
+  getSupportTicketByConversation(
+    @Param('conversationId') conversationId: string,
+  ) {
+    return this.messagesService.getSupportTicketByConversation(conversationId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch('admin/support/tickets/:id/status')
+  updateSupportTicketStatus(
+    @Param('id') id: string,
+    @Body() body: { status: SupportTicketStatus },
+  ) {
+    return this.messagesService.updateSupportTicketStatus(id, body.status);
+  }
 
   @UseGuards(JwtAuthGuard)
   @Post('support/conversation')
