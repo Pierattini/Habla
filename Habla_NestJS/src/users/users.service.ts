@@ -58,7 +58,18 @@ export class UsersService {
     const dataToUpdate: any = {};
 
     if (dto.name !== undefined) dataToUpdate.name = dto.name;
+    if (dto.email !== undefined) dataToUpdate.email = dto.email;
     if (dto.image !== undefined) dataToUpdate.image = dto.image;
+    if (dto.timezone !== undefined) dataToUpdate.timezone = dto.timezone;
+    if (dto.taxId !== undefined) dataToUpdate.taxId = dto.taxId;
+    if (dto.taxName !== undefined) dataToUpdate.taxName = dto.taxName;
+    if (dto.taxEmail !== undefined) dataToUpdate.taxEmail = dto.taxEmail;
+    if (dto.taxAddress !== undefined) dataToUpdate.taxAddress = dto.taxAddress;
+    if (dto.taxCountry !== undefined) dataToUpdate.taxCountry = dto.taxCountry;
+    if (dto.taxCity !== undefined) dataToUpdate.taxCity = dto.taxCity;
+    if (dto.wantsTaxDocumentByDefault !== undefined) {
+      dataToUpdate.wantsTaxDocumentByDefault = dto.wantsTaxDocumentByDefault;
+    }
 
     if (dto.country !== undefined) {
       dataToUpdate.country = dto.country;
@@ -110,6 +121,42 @@ export class UsersService {
         ...(dto.duration !== undefined && {
           duration: dto.duration,
         }),
+
+        ...(dto.taxId !== undefined && {
+          taxId: dto.taxId,
+        }),
+
+        ...(dto.taxName !== undefined && {
+          taxName: dto.taxName,
+        }),
+
+        ...(dto.taxEmail !== undefined && {
+          taxEmail: dto.taxEmail,
+        }),
+
+        ...(dto.taxAddress !== undefined && {
+          taxAddress: dto.taxAddress,
+        }),
+
+        ...(dto.taxCountry !== undefined && {
+          taxCountry: dto.taxCountry,
+        }),
+
+        ...(dto.taxCity !== undefined && {
+          taxCity: dto.taxCity,
+        }),
+
+        ...(dto.documentAutomationEnabled !== undefined && {
+          documentAutomationEnabled: dto.documentAutomationEnabled,
+        }),
+
+        ...(dto.manualDocumentMode !== undefined && {
+          manualDocumentMode: dto.manualDocumentMode,
+        }),
+
+        ...(dto.taxProvider !== undefined && {
+          taxProvider: dto.taxProvider,
+        }),
       },
     });
 
@@ -135,15 +182,28 @@ export class UsersService {
     });
   }
   async findProfessionals() {
-    const data = await this.prisma.professional.findMany();
+    const data = await this.prisma.professional.findMany({
+      include: {
+        user: true,
+      },
+    });
 
     return data.map((p) => ({
       id: p.userId,
+      email: p.user.email,
       name: p.name || 'Profesional',
       specialty: p.specialty,
       price: p.price,
       duration: p.duration,
       image: p.image,
+      documentAutomationEnabled: p.documentAutomationEnabled,
+      manualDocumentMode: p.manualDocumentMode,
+      taxId: p.taxId,
+      taxName: p.taxName,
+      taxEmail: p.taxEmail,
+      taxAddress: p.taxAddress,
+      taxCountry: p.taxCountry,
+      taxCity: p.taxCity,
     }));
   }
 
@@ -172,6 +232,13 @@ export class UsersService {
         role: true,
         country: true,
         timezone: true,
+        taxId: true,
+        taxName: true,
+        taxEmail: true,
+        taxAddress: true,
+        taxCountry: true,
+        taxCity: true,
+        wantsTaxDocumentByDefault: true,
 
         professional: {
           select: {
@@ -188,6 +255,15 @@ export class UsersService {
             accountNumber: true,
             accountHolder: true,
             accountEmail: true,
+            documentAutomationEnabled: true,
+            manualDocumentMode: true,
+            taxProvider: true,
+            taxId: true,
+            taxName: true,
+            taxEmail: true,
+            taxAddress: true,
+            taxCountry: true,
+            taxCity: true,
           },
         },
       },

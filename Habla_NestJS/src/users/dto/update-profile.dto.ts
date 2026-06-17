@@ -1,4 +1,14 @@
-import { IsEmail, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
+import { TaxProvider } from '@prisma/client';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -23,6 +33,34 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
+  taxId?: string;
+
+  @IsOptional()
+  @IsString()
+  taxName?: string;
+
+  @IsOptional()
+  @IsEmail()
+  taxEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  taxAddress?: string;
+
+  @IsOptional()
+  @IsString()
+  taxCountry?: string;
+
+  @IsOptional()
+  @IsString()
+  taxCity?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  wantsTaxDocumentByDefault?: boolean;
+
+  @IsOptional()
+  @IsString()
   specialty?: string;
 
   @IsOptional()
@@ -39,4 +77,16 @@ export class UpdateProfileDto {
   @Min(15)
   @Max(240)
   duration?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  documentAutomationEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  manualDocumentMode?: boolean;
+
+  @IsOptional()
+  @IsEnum(TaxProvider)
+  taxProvider?: TaxProvider;
 }

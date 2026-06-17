@@ -41,6 +41,7 @@ export class AppointmentsController {
       {
         documentRequested: body.documentRequested ?? false,
         documentCurrency: body.documentCurrency,
+        documentMode: body.documentMode,
       },
     );
   }

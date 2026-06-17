@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   ForbiddenException,
@@ -37,6 +38,7 @@ export class AppointmentsService {
     options: {
       documentRequested?: boolean;
       documentCurrency?: string;
+      documentMode?: DocumentMode;
     } = {},
   ) {
     const now = new Date();
@@ -200,8 +202,21 @@ export class AppointmentsService {
     }
 
     // 👇 crear cita con precio final
+    const requestedMode = options.documentMode ?? DocumentMode.MANUAL;
     const documentRequested = options.documentRequested === true;
     const documentCurrency = options.documentCurrency ?? 'CLP';
+
+    if (documentRequested && requestedMode === DocumentMode.AUTOMATED) {
+      if (!professional.documentAutomationEnabled) {
+        throw new BadRequestException(
+          'This professional has not enabled Habla document management',
+        );
+      }
+    }
+
+    if (documentRequested) {
+      this.ensureTaxDataReady(customer, professional);
+    }
 
     const appointment = await this.prisma.appointment.create({
       data: {
@@ -226,26 +241,34 @@ export class AppointmentsService {
         create: {
           appointmentId: appointment.id,
           status: DocumentStatus.DOCUMENT_PENDING,
-          mode: DocumentMode.MANUAL,
+          mode: requestedMode,
           amount: finalPrice,
           currency: documentCurrency,
           customerTaxId: customer.taxId,
-          customerTaxName: customer.taxName,
-          customerTaxEmail: customer.taxEmail,
+          customerTaxName: customer.taxName || customer.name || customer.email,
+          customerTaxEmail: customer.taxEmail || customer.email,
           customerTaxAddress: customer.taxAddress,
-          customerTaxCountry: customer.taxCountry,
+          customerTaxCountry: customer.taxCountry || customer.country,
           customerTaxCity: customer.taxCity,
           professionalTaxId: professional.taxId,
-          professionalTaxName: professional.taxName,
-          professionalTaxEmail: professional.taxEmail,
+          professionalTaxName:
+            professional.taxName || professional.name || professional.user.email,
+          professionalTaxEmail: professional.taxEmail || professional.user.email,
           professionalTaxAddress: professional.taxAddress,
-          professionalTaxCountry: professional.taxCountry,
+          professionalTaxCountry:
+            professional.taxCountry || professional.user.country,
           professionalTaxCity: professional.taxCity,
           events: {
             create: {
               actorId: customerId,
               type: 'DOCUMENT_CREATED',
-              message: 'Tax document created from appointment request',
+              message:
+                requestedMode === DocumentMode.AUTOMATED
+                  ? 'Tax document requested for Habla management'
+                  : 'Tax document requested for professional manual management',
+              metadata: {
+                mode: requestedMode,
+              },
             },
           },
         },
@@ -313,6 +336,10 @@ export class AppointmentsService {
   async confirmAppointment(id: string, professionalId: string) {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id },
+      include: {
+        customer: true,
+        professional: true,
+      },
     });
 
     if (!appointment) {
@@ -323,10 +350,24 @@ export class AppointmentsService {
       throw new ForbiddenException('You cannot confirm this appointment');
     }
 
-    return this.prisma.appointment.update({
+    const meetLink = this.buildVideoConferenceLink(appointment.id);
+
+    const updated = await this.prisma.appointment.update({
       where: { id },
-      data: { status: AppointmentStatus.CONFIRMED },
+      data: {
+        status: AppointmentStatus.CONFIRMED,
+        meetLink,
+      },
     });
+
+    this.scheduleVideoConferenceEmails(
+      appointment.customer.email,
+      appointment.professional.email,
+      appointment.date,
+      meetLink,
+    );
+
+    return updated;
   }
 
   async cancelAppointment(id: string, userId: string) {
@@ -855,9 +896,7 @@ export class AppointmentsService {
     }
 
     // 🔥 generar link Meet
-    const meetLink = `https://meet.google.com/${Math.random()
-      .toString(36)
-      .substring(2, 10)}`;
+    const meetLink = this.buildVideoConferenceLink(appointment.id);
 
     // 🔥 actualizar BD
     const updated = await this.prisma.appointment.update({
@@ -964,6 +1003,7 @@ export class AppointmentsService {
       where: { id },
       data: {
         status: AppointmentStatus.CONFIRMED,
+        meetLink: this.buildVideoConferenceLink(appointment.id),
       },
     });
   }
@@ -1170,5 +1210,65 @@ export class AppointmentsService {
       </div>
     `,
     });
+  }
+
+  private scheduleVideoConferenceEmails(
+    customerEmail: string,
+    professionalEmail: string,
+    appointmentDate: Date,
+    meetLink: string,
+  ): void {
+    const sendTime = new Date(appointmentDate.getTime() - 10 * 60 * 1000);
+    const delay = sendTime.getTime() - Date.now();
+
+    const sendEmails = () => {
+      this.sendMeetEmail(customerEmail, meetLink)
+        .then(() => this.sendMeetEmail(professionalEmail, meetLink))
+        .catch((error) =>
+          console.error('Error enviando correos de videollamada:', error),
+        );
+    };
+
+    if (delay > 0) {
+      setTimeout(sendEmails, delay);
+      return;
+    }
+
+    sendEmails();
+  }
+
+  private buildVideoConferenceLink(appointmentId: string): string {
+    const baseUrl =
+      process.env.VIDEO_CONFERENCE_BASE_URL || 'https://meet.jit.si';
+    const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
+    const roomName = `habla-${appointmentId}`;
+
+    return `${normalizedBaseUrl}/${roomName}`;
+  }
+
+  private ensureTaxDataReady(customer: any, professional: any): void {
+    const customerMissing = [
+      !customer.taxId ? 'RUT cliente' : null,
+      !customer.taxName ? 'nombre tributario cliente' : null,
+      !(customer.taxEmail || customer.email) ? 'email tributario cliente' : null,
+      !customer.taxAddress ? 'direccion tributaria cliente' : null,
+      !customer.taxCity ? 'ciudad/comuna cliente' : null,
+    ].filter(Boolean);
+
+    const professionalMissing = [
+      !professional.taxId ? 'RUT profesional' : null,
+      !professional.taxName ? 'razon social profesional' : null,
+      !(professional.taxEmail || professional.user?.email) ? 'email tributario profesional' : null,
+      !professional.taxAddress ? 'direccion tributaria profesional' : null,
+      !professional.taxCity ? 'ciudad/comuna profesional' : null,
+    ].filter(Boolean);
+
+    const missing = [...customerMissing, ...professionalMissing];
+
+    if (missing.length > 0) {
+      throw new BadRequestException(
+        `Faltan datos tributarios para solicitar documento: ${missing.join(', ')}`,
+      );
+    }
   }
 }
