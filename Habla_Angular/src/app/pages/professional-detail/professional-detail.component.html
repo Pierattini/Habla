@@ -68,6 +68,81 @@
 
     <ion-card>
       <ion-card-header>
+        <ion-card-title>Modalidad de atencion</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <p class="document-helper">
+          {{ $any(this).getAttentionModeLabel() }}
+        </p>
+
+        <div
+          class="document-options"
+          *ngIf="professional.attentionMode === 'BOTH'"
+        >
+          <label
+            class="document-option"
+            [class.active]="$any(this).selectedAttentionMode === 'ONLINE'"
+          >
+            <input
+              type="radio"
+              name="attentionMode"
+              value="ONLINE"
+              [ngModel]="$any(this).selectedAttentionMode"
+              (ngModelChange)="$any(this).onAttentionModeChange($event)"
+            />
+            <span>
+              <strong>Online</strong>
+              <small>{{ $any(this).getVideoProviderLabel() }}</small>
+            </span>
+          </label>
+
+          <label
+            class="document-option"
+            [class.active]="$any(this).selectedAttentionMode === 'PRESENTIAL'"
+          >
+            <input
+              type="radio"
+              name="attentionMode"
+              value="PRESENTIAL"
+              [ngModel]="$any(this).selectedAttentionMode"
+              (ngModelChange)="$any(this).onAttentionModeChange($event)"
+            />
+            <span>
+              <strong>Presencial</strong>
+              <small>{{ professional.officeCity || 'Direccion disponible al confirmar' }}</small>
+            </span>
+          </label>
+        </div>
+
+        <p
+          class="document-helper"
+          *ngIf="$any(this).selectedAttentionMode === 'ONLINE'"
+        >
+          {{ $any(this).getVideoProviderLabel() }}
+        </p>
+
+        <p
+          class="document-helper"
+          *ngIf="$any(this).selectedAttentionMode === 'PRESENTIAL'"
+        >
+          {{ professional.officeAddress || 'Direccion pendiente' }}
+          {{ professional.officeCity ? ', ' + professional.officeCity : '' }}
+          {{ professional.officeRegion ? ', ' + professional.officeRegion : '' }}
+          {{ professional.officeCountry ? ', ' + professional.officeCountry : '' }}
+        </p>
+
+        <p
+          class="document-helper"
+          *ngIf="$any(this).selectedAttentionMode === 'PRESENTIAL' && professional.arrivalInstructions"
+        >
+          {{ professional.arrivalInstructions }}
+        </p>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card>
+      <ion-card-header>
         <ion-card-title>Selecciona una fecha</ion-card-title>
       </ion-card-header>
 

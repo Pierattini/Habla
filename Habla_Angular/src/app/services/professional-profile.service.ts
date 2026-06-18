@@ -27,13 +27,28 @@ export class ProfessionalProfileService {
   }
 
   updateProfile(data: {
-    name: string;
-    image: string;
-    specialty?: string;
-    description?: string;
-    price?: number;
-    duration?: number;
-  }) {
+  name: string;
+  image: string;
+  specialty?: string;
+  description?: string;
+  price?: number;
+  duration?: number;
+
+  attentionMode?: 'ONLINE' | 'PRESENTIAL' | 'BOTH';
+
+  officeAddress?: string;
+  officeCity?: string;
+  officeRegion?: string;
+  officeCountry?: string;
+
+  officeLatitude?: number | null;
+  officeLongitude?: number | null;
+
+  arrivalInstructions?: string;
+
+  videoProvider?: string;
+  customVideoUrl?: string;
+}) {
     return this.http.patch(`${this.api}/users/me`, data);
   }
 

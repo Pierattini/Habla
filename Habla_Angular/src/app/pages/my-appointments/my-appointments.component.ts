@@ -559,7 +559,7 @@ private buildGoogleCalendarUrl(appt: any): string {
     text: this.getCalendarTitle(appt),
     dates: `${this.formatGoogleDate(start)}/${this.formatGoogleDate(end)}`,
     details,
-    location: appt.meetLink || 'Conecta',
+    location: this.getCalendarLocation(appt),
   });
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
@@ -579,7 +579,7 @@ private downloadIcsFile(appt: any): void {
     `DTEND:${this.formatIcsDate(end)}`,
     `SUMMARY:${this.escapeIcsText(this.getCalendarTitle(appt))}`,
     `DESCRIPTION:${this.escapeIcsText(this.getCalendarDescription(appt))}`,
-    `LOCATION:${this.escapeIcsText(appt.meetLink || 'Conecta')}`,
+    `LOCATION:${this.escapeIcsText(this.getCalendarLocation(appt))}`,
     'END:VEVENT',
     'END:VCALENDAR',
   ].join('\r\n');
@@ -588,7 +588,7 @@ private downloadIcsFile(appt: any): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `habla-cita-${appt.id}.ics`;
+  link.download = `conecta-cita-${appt.id}.ics`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -610,6 +610,18 @@ private getCalendarDescription(appt: any): string {
   return parts.join('\n');
 }
 
+private getCalendarLocation(appt: any): string {
+  if (appt?.attentionMode === 'PRESENTIAL') {
+    return [
+      appt.appointmentAddress,
+      appt.appointmentCity,
+      appt.appointmentRegion,
+      appt.appointmentCountry,
+    ].filter(Boolean).join(', ') || 'Atencion presencial';
+  }
+
+  return appt?.meetLink || 'Conecta';
+}
 private getAppointmentDuration(appt: any): number {
   return Number(
     appt?.professional?.professional?.duration ||

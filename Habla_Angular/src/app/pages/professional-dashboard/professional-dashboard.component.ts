@@ -136,7 +136,17 @@ export class ProfessionalDashboardComponent {
     interval: 15,
 
     rules: '',
-    image: ''
+    image: '',
+    attentionMode: 'ONLINE' as 'ONLINE' | 'PRESENTIAL' | 'BOTH',
+    officeAddress: '',
+    officeCity: '',
+    officeRegion: '',
+    officeCountry: '',
+    officeLatitude: null as number | null,
+    officeLongitude: null as number | null,
+    arrivalInstructions: '',
+    videoProvider: 'JITSI',
+    customVideoUrl: ''
   };
 
   // 🔥 BLOQUES HORARIOS
@@ -216,6 +226,16 @@ export class ProfessionalDashboardComponent {
         description: this.profile.description,
         price: Number(this.profile.price),
         duration: Number(this.profile.duration),
+        attentionMode: this.profile.attentionMode as 'ONLINE' | 'PRESENTIAL' | 'BOTH',
+        officeAddress: this.profile.officeAddress,
+        officeCity: this.profile.officeCity,
+        officeRegion: this.profile.officeRegion,
+        officeCountry: this.profile.officeCountry,
+        officeLatitude: this.profile.officeLatitude,
+        officeLongitude: this.profile.officeLongitude,
+        arrivalInstructions: this.profile.arrivalInstructions,
+        videoProvider: this.profile.videoProvider,
+        customVideoUrl: this.profile.customVideoUrl,
       }),
       ...availabilityRequests,
     ]).subscribe({
@@ -273,7 +293,17 @@ onFileSelected(event: any) {
         duration: res.professional?.duration || 90,
         interval: res.professional?.interval || 15,
         rules: res.professional?.rules || '',
-        image: res.professional?.image || ''
+        image: res.professional?.image || '',
+        attentionMode: res.professional?.attentionMode || 'ONLINE',
+        officeAddress: res.professional?.officeAddress || '',
+        officeCity: res.professional?.officeCity || '',
+        officeRegion: res.professional?.officeRegion || '',
+        officeCountry: res.professional?.officeCountry || '',
+        officeLatitude: res.professional?.officeLatitude ?? null,
+        officeLongitude: res.professional?.officeLongitude ?? null,
+        arrivalInstructions: res.professional?.arrivalInstructions || '',
+        videoProvider: res.professional?.videoProvider || 'JITSI',
+        customVideoUrl: res.professional?.customVideoUrl || ''
       };
 
       this.loadAvailability(() => this.finishDashboardRequest());
@@ -448,6 +478,21 @@ onFileSelected(event: any) {
 
     if (!Number.isInteger(breakMinute) || breakMinute < 0 || breakMinute > 240) {
       errors.push('El descanso debe estar entre 0 y 240 minutos.');
+    }
+
+    if (
+      ['PRESENTIAL', 'BOTH'].includes(this.profile.attentionMode) &&
+      (!this.profile.officeAddress || !this.profile.officeCity || !this.profile.officeCountry)
+    ) {
+      errors.push('Para atencion presencial debes indicar direccion, ciudad y pais.');
+    }
+
+    if (
+      this.profile.attentionMode !== 'PRESENTIAL' &&
+      ['GOOGLE_MEET', 'ZOOM', 'CUSTOM'].includes(this.profile.videoProvider) &&
+      !this.profile.customVideoUrl
+    ) {
+      errors.push('Para Google Meet, Zoom o enlace personalizado debes indicar el enlace de videollamada.');
     }
 
     for (const item of this.availability as AgendaDay[]) {

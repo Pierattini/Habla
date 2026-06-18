@@ -337,6 +337,102 @@
 
   </ion-card>
 
+  <!-- MODALIDAD -->
+  <ion-card>
+
+    <ion-card-content>
+
+      <h2 class="section-title">
+        Modalidad de atencion
+      </h2>
+
+      <ion-item>
+        <ion-label>
+          Tipo de atencion
+        </ion-label>
+
+        <select [(ngModel)]="profile.attentionMode">
+          <option value="ONLINE">Online</option>
+          <option value="PRESENTIAL">Presencial</option>
+          <option value="BOTH">Online y presencial</option>
+        </select>
+      </ion-item>
+
+      <ng-container *ngIf="profile.attentionMode !== 'PRESENTIAL'">
+        <ion-item>
+          <ion-label>
+            Videollamada
+          </ion-label>
+
+          <select [(ngModel)]="profile.videoProvider">
+            <option value="JITSI">Generar sala automaticamente</option>
+            <option value="GOOGLE_MEET">Google Meet</option>
+            <option value="ZOOM">Zoom</option>
+            <option value="CUSTOM">Enlace personalizado</option>
+          </select>
+        </ion-item>
+
+        <ion-item *ngIf="profile.videoProvider !== 'JITSI'">
+          <ion-label position="stacked">
+            Enlace de videollamada
+          </ion-label>
+
+          <ion-input
+            type="url"
+            [(ngModel)]="profile.customVideoUrl">
+          </ion-input>
+        </ion-item>
+      </ng-container>
+
+      <ng-container *ngIf="profile.attentionMode !== 'ONLINE'">
+        <ion-item>
+          <ion-label position="stacked">
+            Direccion
+          </ion-label>
+
+          <ion-input [(ngModel)]="profile.officeAddress"></ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">
+            Ciudad
+          </ion-label>
+
+          <ion-input [(ngModel)]="profile.officeCity"></ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">
+            Region
+          </ion-label>
+
+          <ion-input [(ngModel)]="profile.officeRegion"></ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">
+            Pais
+          </ion-label>
+
+          <ion-input [(ngModel)]="profile.officeCountry"></ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">
+            Instrucciones de llegada
+          </ion-label>
+
+          <ion-textarea
+            rows="3"
+            [(ngModel)]="profile.arrivalInstructions">
+          </ion-textarea>
+        </ion-item>
+      </ng-container>
+
+    </ion-card-content>
+
+  </ion-card>
+
   <!-- CONFIG SESIÓN -->
   <ion-card>
 

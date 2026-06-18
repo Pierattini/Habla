@@ -75,6 +75,7 @@ export class ProfessionalDetailComponent {
   isBooking: boolean = false;
   successMessage: string = '';
   selectedDocumentMode: 'NONE' | 'MANUAL' | 'AUTOMATED' = 'NONE';
+  selectedAttentionMode: 'ONLINE' | 'PRESENTIAL' = 'ONLINE';
   wantsTaxDocumentByDefault = false;
   customerTaxReady = false;
   professionalTaxReady = false;
@@ -96,6 +97,7 @@ export class ProfessionalDetailComponent {
       this.selectedHour = null;
       this.successMessage = '';
       this.selectedDocumentMode = 'NONE';
+      this.selectedAttentionMode = 'ONLINE';
       this.loaded = false;
     }
 
@@ -143,6 +145,10 @@ export class ProfessionalDetailComponent {
 
         console.log('PROFESIONAL FINAL:', this.professional);
 
+        this.selectedAttentionMode =
+          this.professional?.attentionMode === 'PRESENTIAL'
+            ? 'PRESENTIAL'
+            : 'ONLINE';
         this.applyDefaultDocumentMode();
         this.loadAvailability();
       },
@@ -253,7 +259,8 @@ async bookAppointment() {
     documentMode: this.selectedDocumentMode !== 'NONE'
       ? this.selectedDocumentMode
       : undefined,
-    documentCurrency: 'CLP'
+    documentCurrency: 'CLP',
+    attentionMode: this.selectedAttentionMode
   };
 
 
@@ -374,6 +381,41 @@ onDocumentModeChange(mode: 'NONE' | 'MANUAL' | 'AUTOMATED') {
   }
 
   this.selectedDocumentMode = mode;
+}
+
+onAttentionModeChange(mode: 'ONLINE' | 'PRESENTIAL') {
+  if (!this.professional) return;
+
+  if (this.professional.attentionMode === 'ONLINE') {
+    this.selectedAttentionMode = 'ONLINE';
+    return;
+  }
+
+  if (this.professional.attentionMode === 'PRESENTIAL') {
+    this.selectedAttentionMode = 'PRESENTIAL';
+    return;
+  }
+
+  this.selectedAttentionMode = mode;
+}
+
+getAttentionModeLabel(): string {
+  if (!this.professional) return '';
+
+  if (this.professional.attentionMode === 'ONLINE') return 'Atencion online';
+  if (this.professional.attentionMode === 'PRESENTIAL') return 'Atencion presencial';
+
+  return 'Online o presencial';
+}
+
+getVideoProviderLabel(): string {
+  const provider = this.professional?.videoProvider || 'JITSI';
+
+  if (provider === 'GOOGLE_MEET') return 'Google Meet';
+  if (provider === 'ZOOM') return 'Zoom';
+  if (provider === 'CUSTOM') return 'Enlace personalizado';
+
+  return 'Sala online generada por Conecta';
 }
 
 getDocumentModeLabel(): string {

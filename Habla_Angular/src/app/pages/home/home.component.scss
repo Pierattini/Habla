@@ -18,10 +18,12 @@ ion-content {
   height: 128px;
   object-fit: contain;
   object-position: center;
-  border-radius: 24px;
-  background: var(--app-surface);
+
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+
   padding: 0;
-  box-shadow: var(--app-shadow-soft);
 }
 
 .header-logo img.home-brand-logo {
