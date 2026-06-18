@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsArray,
   IsEmail,
   IsEnum,
   IsInt,
@@ -127,4 +128,21 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   customVideoUrl?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  customerInterests?: string[];
+
+  @IsOptional()
+  @IsEnum(AttentionModality)
+  preferredAttentionMode?: AttentionModality;
+
+  @IsOptional()
+  @IsString()
+  preferredCity?: string;
+
+  @IsOptional()
+  @IsString()
+  preferredRegion?: string;
 }

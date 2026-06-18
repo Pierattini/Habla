@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { Role } from '@prisma/client';
+import { AttentionModality, Role } from '@prisma/client';
 
 @Controller('auth')
 export class AuthController {
@@ -44,13 +44,18 @@ export class AuthController {
   // 📝 REGISTER
   @Post('register')
   register(
-    @Body() body: { name: string; email: string; password: string; role: Role },
+    @Body()
+    body: {
+      name: string;
+      email: string;
+      password: string;
+      role: Role;
+      customerInterests?: string[];
+      preferredAttentionMode?: AttentionModality;
+      specialty?: string;
+      attentionMode?: AttentionModality;
+    },
   ) {
-    return this.authService.register(
-      body.name,
-      body.email,
-      body.password,
-      body.role,
-    );
+    return this.authService.register(body);
   }
 }

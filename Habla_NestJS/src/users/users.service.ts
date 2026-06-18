@@ -67,6 +67,18 @@ export class UsersService {
     if (dto.taxAddress !== undefined) dataToUpdate.taxAddress = dto.taxAddress;
     if (dto.taxCountry !== undefined) dataToUpdate.taxCountry = dto.taxCountry;
     if (dto.taxCity !== undefined) dataToUpdate.taxCity = dto.taxCity;
+    if (dto.customerInterests !== undefined) {
+      dataToUpdate.customerInterests = dto.customerInterests;
+    }
+    if (dto.preferredAttentionMode !== undefined) {
+      dataToUpdate.preferredAttentionMode = dto.preferredAttentionMode;
+    }
+    if (dto.preferredCity !== undefined) {
+      dataToUpdate.preferredCity = dto.preferredCity;
+    }
+    if (dto.preferredRegion !== undefined) {
+      dataToUpdate.preferredRegion = dto.preferredRegion;
+    }
     if (dto.wantsTaxDocumentByDefault !== undefined) {
       dataToUpdate.wantsTaxDocumentByDefault = dto.wantsTaxDocumentByDefault;
     }
@@ -289,6 +301,10 @@ export class UsersService {
         taxCountry: true,
         taxCity: true,
         wantsTaxDocumentByDefault: true,
+        customerInterests: true,
+        preferredAttentionMode: true,
+        preferredCity: true,
+        preferredRegion: true,
 
         professional: {
           select: {

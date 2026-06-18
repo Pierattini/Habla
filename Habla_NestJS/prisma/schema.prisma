@@ -44,6 +44,10 @@ model User {
   taxCountry                String?
   taxCity                   String?
   wantsTaxDocumentByDefault Boolean @default(false)
+  customerInterests         String[] @default([])
+  preferredAttentionMode    AttentionModality?
+  preferredCity             String?
+  preferredRegion           String?
 
   customerAppointments     Appointment[]  @relation("CustomerAppointments")
   professionalAppointments Appointment[]  @relation("ProfessionalAppointments")
