@@ -7,6 +7,7 @@ import {
   IsUUID,
 } from 'class-validator';
 import { DocumentMode } from '@prisma/client';
+import { AttentionModality } from '@prisma/client';
 
 export class CreateAppointmentDto {
   @IsUUID()
@@ -26,4 +27,8 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsEnum(DocumentMode)
   documentMode?: DocumentMode;
+
+  @IsOptional()
+  @IsEnum(AttentionModality)
+  attentionMode?: AttentionModality;
 }

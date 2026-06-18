@@ -84,6 +84,15 @@ model Appointment {
 
   // 🔥 OTROS
   meetLink String?
+  attentionMode        AttentionModality @default(ONLINE)
+  appointmentAddress   String?
+  appointmentCity      String?
+  appointmentRegion    String?
+  appointmentCountry   String?
+  appointmentLatitude  Float?
+  appointmentLongitude Float?
+  arrivalInstructions  String?
+  videoProvider        VideoProvider?
 
   documentRequested   Boolean        @default(false)
   documentStatus      DocumentStatus @default(DOCUMENT_NOT_REQUIRED)
@@ -112,6 +121,16 @@ model Professional {
   duration    Int?
   isOnline    Boolean? @default(true)
   image       String?
+  attentionMode       AttentionModality @default(ONLINE)
+  officeAddress       String?
+  officeCity          String?
+  officeRegion        String?
+  officeCountry       String?
+  officeLatitude      Float?
+  officeLongitude     Float?
+  arrivalInstructions String?
+  videoProvider       VideoProvider @default(JITSI)
+  customVideoUrl      String?
 
   // Datos Bancarios
   bankName      String?
@@ -292,6 +311,19 @@ enum AppointmentStatus {
   CANCELLED
   RESCHEDULED
   REFUNDED
+}
+
+enum AttentionModality {
+  ONLINE
+  PRESENTIAL
+  BOTH
+}
+
+enum VideoProvider {
+  JITSI
+  GOOGLE_MEET
+  ZOOM
+  CUSTOM
 }
 
 enum DocumentStatus {

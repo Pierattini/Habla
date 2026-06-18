@@ -8,7 +8,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
-import { TaxProvider } from '@prisma/client';
+import { AttentionModality, TaxProvider, VideoProvider } from '@prisma/client';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -89,4 +89,42 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsEnum(TaxProvider)
   taxProvider?: TaxProvider;
+
+  @IsOptional()
+  @IsEnum(AttentionModality)
+  attentionMode?: AttentionModality;
+
+  @IsOptional()
+  @IsString()
+  officeAddress?: string;
+
+  @IsOptional()
+  @IsString()
+  officeCity?: string;
+
+  @IsOptional()
+  @IsString()
+  officeRegion?: string;
+
+  @IsOptional()
+  @IsString()
+  officeCountry?: string;
+
+  @IsOptional()
+  officeLatitude?: number;
+
+  @IsOptional()
+  officeLongitude?: number;
+
+  @IsOptional()
+  @IsString()
+  arrivalInstructions?: string;
+
+  @IsOptional()
+  @IsEnum(VideoProvider)
+  videoProvider?: VideoProvider;
+
+  @IsOptional()
+  @IsString()
+  customVideoUrl?: string;
 }

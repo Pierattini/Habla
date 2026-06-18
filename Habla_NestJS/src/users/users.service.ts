@@ -157,6 +157,46 @@ export class UsersService {
         ...(dto.taxProvider !== undefined && {
           taxProvider: dto.taxProvider,
         }),
+
+        ...(dto.attentionMode !== undefined && {
+          attentionMode: dto.attentionMode,
+        }),
+
+        ...(dto.officeAddress !== undefined && {
+          officeAddress: dto.officeAddress,
+        }),
+
+        ...(dto.officeCity !== undefined && {
+          officeCity: dto.officeCity,
+        }),
+
+        ...(dto.officeRegion !== undefined && {
+          officeRegion: dto.officeRegion,
+        }),
+
+        ...(dto.officeCountry !== undefined && {
+          officeCountry: dto.officeCountry,
+        }),
+
+        ...(dto.officeLatitude !== undefined && {
+          officeLatitude: dto.officeLatitude,
+        }),
+
+        ...(dto.officeLongitude !== undefined && {
+          officeLongitude: dto.officeLongitude,
+        }),
+
+        ...(dto.arrivalInstructions !== undefined && {
+          arrivalInstructions: dto.arrivalInstructions,
+        }),
+
+        ...(dto.videoProvider !== undefined && {
+          videoProvider: dto.videoProvider,
+        }),
+
+        ...(dto.customVideoUrl !== undefined && {
+          customVideoUrl: dto.customVideoUrl,
+        }),
       },
     });
 
@@ -204,6 +244,16 @@ export class UsersService {
       taxAddress: p.taxAddress,
       taxCountry: p.taxCountry,
       taxCity: p.taxCity,
+      attentionMode: p.attentionMode,
+      officeAddress: p.officeAddress,
+      officeCity: p.officeCity,
+      officeRegion: p.officeRegion,
+      officeCountry: p.officeCountry,
+      officeLatitude: p.officeLatitude,
+      officeLongitude: p.officeLongitude,
+      arrivalInstructions: p.arrivalInstructions,
+      videoProvider: p.videoProvider,
+      customVideoUrl: p.customVideoUrl,
     }));
   }
 
@@ -264,6 +314,16 @@ export class UsersService {
             taxAddress: true,
             taxCountry: true,
             taxCity: true,
+            attentionMode: true,
+            officeAddress: true,
+            officeCity: true,
+            officeRegion: true,
+            officeCountry: true,
+            officeLatitude: true,
+            officeLongitude: true,
+            arrivalInstructions: true,
+            videoProvider: true,
+            customVideoUrl: true,
           },
         },
       },

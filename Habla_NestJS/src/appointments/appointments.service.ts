@@ -6,10 +6,12 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  AttentionModality,
   AppointmentStatus,
   DocumentMode,
   DocumentStatus,
   ScheduleMode,
+  VideoProvider,
   WeekDay,
 } from '@prisma/client';
 import * as nodemailer from 'nodemailer';
@@ -39,6 +41,7 @@ export class AppointmentsService {
       documentRequested?: boolean;
       documentCurrency?: string;
       documentMode?: DocumentMode;
+      attentionMode?: AttentionModality;
     } = {},
   ) {
     const now = new Date();
@@ -75,6 +78,20 @@ export class AppointmentsService {
 
     if (!customer) {
       throw new NotFoundException('Customer not found');
+    }
+
+    const attentionMode = this.resolveAttentionMode(
+      options.attentionMode,
+      professional.attentionMode,
+    );
+
+    if (
+      attentionMode === AttentionModality.PRESENTIAL &&
+      !this.hasPresentialData(professional)
+    ) {
+      throw new BadRequestException(
+        'Este profesional debe completar direccion, ciudad y pais antes de recibir reservas presenciales',
+      );
     }
 
     const appointmentDurationInMinutes =
@@ -209,7 +226,7 @@ export class AppointmentsService {
     if (documentRequested && requestedMode === DocumentMode.AUTOMATED) {
       if (!professional.documentAutomationEnabled) {
         throw new BadRequestException(
-          'This professional has not enabled Habla document management',
+          'This professional has not enabled Conecta document management',
         );
       }
     }
@@ -225,6 +242,39 @@ export class AppointmentsService {
         professionalId,
         penalty: finalPrice, // opcional (puedes usar otro campo si luego haces pricing formal)
         documentRequested,
+        attentionMode,
+        appointmentAddress:
+          attentionMode === AttentionModality.PRESENTIAL
+            ? professional.officeAddress
+            : null,
+        appointmentCity:
+          attentionMode === AttentionModality.PRESENTIAL
+            ? professional.officeCity
+            : null,
+        appointmentRegion:
+          attentionMode === AttentionModality.PRESENTIAL
+            ? professional.officeRegion
+            : null,
+        appointmentCountry:
+          attentionMode === AttentionModality.PRESENTIAL
+            ? professional.officeCountry
+            : null,
+        appointmentLatitude:
+          attentionMode === AttentionModality.PRESENTIAL
+            ? professional.officeLatitude
+            : null,
+        appointmentLongitude:
+          attentionMode === AttentionModality.PRESENTIAL
+            ? professional.officeLongitude
+            : null,
+        arrivalInstructions:
+          attentionMode === AttentionModality.PRESENTIAL
+            ? professional.arrivalInstructions
+            : null,
+        videoProvider:
+          attentionMode === AttentionModality.ONLINE
+            ? professional.videoProvider
+            : null,
         documentStatus: documentRequested
           ? DocumentStatus.DOCUMENT_PENDING
           : DocumentStatus.DOCUMENT_NOT_REQUIRED,
@@ -264,7 +314,7 @@ export class AppointmentsService {
               type: 'DOCUMENT_CREATED',
               message:
                 requestedMode === DocumentMode.AUTOMATED
-                  ? 'Tax document requested for Habla management'
+                  ? 'Tax document requested for Conecta management'
                   : 'Tax document requested for professional manual management',
               metadata: {
                 mode: requestedMode,
@@ -338,7 +388,11 @@ export class AppointmentsService {
       where: { id },
       include: {
         customer: true,
-        professional: true,
+        professional: {
+          include: {
+            professional: true,
+          },
+        },
       },
     });
 
@@ -350,7 +404,13 @@ export class AppointmentsService {
       throw new ForbiddenException('You cannot confirm this appointment');
     }
 
-    const meetLink = this.buildVideoConferenceLink(appointment.id);
+    const meetLink =
+      appointment.attentionMode === AttentionModality.ONLINE
+        ? this.buildVideoConferenceLink(
+            appointment.id,
+            appointment.professional.professional,
+          )
+        : null;
 
     const updated = await this.prisma.appointment.update({
       where: { id },
@@ -360,12 +420,14 @@ export class AppointmentsService {
       },
     });
 
-    this.scheduleVideoConferenceEmails(
-      appointment.customer.email,
-      appointment.professional.email,
-      appointment.date,
-      meetLink,
-    );
+    if (meetLink) {
+      this.scheduleVideoConferenceEmails(
+        appointment.customer.email,
+        appointment.professional.email,
+        appointment.date,
+        meetLink,
+      );
+    }
 
     return updated;
   }
@@ -883,7 +945,11 @@ export class AppointmentsService {
       where: { id },
       include: {
         customer: true,
-        professional: true,
+        professional: {
+          include: {
+            professional: true,
+          },
+        },
       },
     });
 
@@ -895,32 +961,31 @@ export class AppointmentsService {
       throw new ForbiddenException('No puedes confirmar este pago');
     }
 
-    // 🔥 generar link Meet
-    const meetLink = this.buildVideoConferenceLink(appointment.id);
+    const meetLink =
+      appointment.attentionMode === AttentionModality.ONLINE
+        ? this.buildVideoConferenceLink(
+            appointment.id,
+            appointment.professional.professional,
+          )
+        : null;
 
     // 🔥 actualizar BD
     const updated = await this.prisma.appointment.update({
       where: { id },
       data: {
         status: AppointmentStatus.CONFIRMED,
-        meetLink: meetLink,
+        meetLink,
       },
     });
 
     // 🔥 CALCULAR ENVÍO 10 MIN ANTES
-    const sendTime = new Date(appointment.date.getTime() - 10 * 60 * 1000);
-    const now = new Date();
-    const delay = sendTime.getTime() - now.getTime();
-
-    if (delay > 0) {
-      setTimeout(() => {
-        this.sendMeetEmail(appointment.customer.email, meetLink)
-          .then(() =>
-            this.sendMeetEmail(appointment.professional.email, meetLink),
-          )
-          .then(() => console.log('📧 Correos enviados (Meet)'))
-          .catch((error) => console.error('Error enviando correos:', error));
-      }, delay);
+    if (meetLink) {
+      this.scheduleVideoConferenceEmails(
+        appointment.customer.email,
+        appointment.professional.email,
+        appointment.date,
+        meetLink,
+      );
     }
 
     return updated;
@@ -993,6 +1058,13 @@ export class AppointmentsService {
   async confirmPaymentFromLink(id: string) {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id },
+      include: {
+        professional: {
+          include: {
+            professional: true,
+          },
+        },
+      },
     });
 
     if (!appointment) {
@@ -1003,7 +1075,13 @@ export class AppointmentsService {
       where: { id },
       data: {
         status: AppointmentStatus.CONFIRMED,
-        meetLink: this.buildVideoConferenceLink(appointment.id),
+        meetLink:
+          appointment.attentionMode === AttentionModality.ONLINE
+            ? this.buildVideoConferenceLink(
+                appointment.id,
+                appointment.professional.professional,
+              )
+            : null,
       },
     });
   }
@@ -1237,11 +1315,67 @@ export class AppointmentsService {
     sendEmails();
   }
 
-  private buildVideoConferenceLink(appointmentId: string): string {
+  private resolveAttentionMode(
+    requestedMode: AttentionModality | undefined,
+    professionalMode: AttentionModality,
+  ): AttentionModality {
+    if (professionalMode === AttentionModality.ONLINE) {
+      if (requestedMode && requestedMode !== AttentionModality.ONLINE) {
+        throw new BadRequestException('Este profesional solo atiende online');
+      }
+
+      return AttentionModality.ONLINE;
+    }
+
+    if (professionalMode === AttentionModality.PRESENTIAL) {
+      if (requestedMode && requestedMode !== AttentionModality.PRESENTIAL) {
+        throw new BadRequestException(
+          'Este profesional solo atiende presencial',
+        );
+      }
+
+      return AttentionModality.PRESENTIAL;
+    }
+
+    if (!requestedMode || requestedMode === AttentionModality.BOTH) {
+      throw new BadRequestException(
+        'Selecciona si quieres atencion online o presencial',
+      );
+    }
+
+    return requestedMode;
+  }
+
+  private hasPresentialData(professional: {
+    officeAddress?: string | null;
+    officeCity?: string | null;
+    officeCountry?: string | null;
+  }): boolean {
+    return !!(
+      professional.officeAddress &&
+      professional.officeCity &&
+      professional.officeCountry
+    );
+  }
+
+  private buildVideoConferenceLink(
+    appointmentId: string,
+    professional?: {
+      videoProvider?: VideoProvider | null;
+      customVideoUrl?: string | null;
+    } | null,
+  ): string {
+    if (
+      professional?.customVideoUrl &&
+      professional.videoProvider !== VideoProvider.JITSI
+    ) {
+      return professional.customVideoUrl;
+    }
+
     const baseUrl =
       process.env.VIDEO_CONFERENCE_BASE_URL || 'https://meet.jit.si';
     const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
-    const roomName = `habla-${appointmentId}`;
+    const roomName = `conecta-${appointmentId}`;
 
     return `${normalizedBaseUrl}/${roomName}`;
   }
