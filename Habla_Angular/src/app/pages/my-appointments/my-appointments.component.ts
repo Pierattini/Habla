@@ -645,6 +645,28 @@ private escapeIcsText(value: string): string {
     .replace(/,/g, '\\,')
     .replace(/\n/g, '\\n');
 }
+getAppointmentModeLabel(appt: any): string {
+  if (appt?.attentionMode === 'PRESENTIAL') return 'Presencial';
+  return 'Online';
+}
+
+getAppointmentModeDetail(appt: any): string {
+  if (appt?.attentionMode === 'PRESENTIAL') {
+    return [
+      appt.appointmentAddress,
+      appt.appointmentCity,
+      appt.appointmentRegion,
+      appt.appointmentCountry,
+    ].filter(Boolean).join(', ') || 'Direccion presencial pendiente';
+  }
+
+  if (appt?.meetLink) return 'Videollamada disponible';
+  return 'Videollamada al confirmar';
+}
+
+getAppointmentArrivalInstructions(appt: any): string {
+  return appt?.arrivalInstructions || '';
+}
 canJoinVideoCall(appt: any): boolean {
   return appt?.status === 'CONFIRMED' && !!appt?.meetLink;
 }

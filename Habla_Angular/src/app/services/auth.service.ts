@@ -20,7 +20,16 @@ export class AuthService {
     });
   }
 
-  register(data: { name: string; email: string; password: string; role: 'CUSTOMER' | 'PROFESSIONAL' }) {
+  register(data: {
+    name: string;
+    email: string;
+    password: string;
+    role: 'CUSTOMER' | 'PROFESSIONAL';
+    customerInterests?: string[];
+    preferredAttentionMode?: 'ONLINE' | 'PRESENTIAL' | 'BOTH';
+    specialty?: string;
+    attentionMode?: 'ONLINE' | 'PRESENTIAL' | 'BOTH';
+  }) {
     return this.http.post(`${this.api}/auth/register`, data);
   }
 

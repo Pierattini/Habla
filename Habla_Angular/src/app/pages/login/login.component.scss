@@ -95,21 +95,13 @@
   margin-bottom: 18px;
 }
 
-.brand-row strong,
-.brand-row span {
+.brand-wordmark {
+  width: 150px;
+  height: 54px;
   display: block;
-}
-
-.brand-row strong {
-  font-size: 18px;
-  font-weight: 900;
-}
-
-.brand-row span {
+  object-fit: contain;
+  object-position: center;
   margin-top: 2px;
-  color: var(--app-muted);
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .mode-tabs {
@@ -178,6 +170,7 @@
 }
 
 .role-grid,
+.option-grid,
 .form-grid {
   display: grid;
   gap: 12px;
@@ -186,6 +179,63 @@
 .role-grid {
   grid-template-columns: 1fr 1fr;
   margin-bottom: 20px;
+}
+
+.step-progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 0 0 20px;
+}
+
+.step-progress span {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.12);
+}
+
+.step-progress span.active {
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+}
+
+.option-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.option-card {
+  min-height: 78px;
+  padding: 14px;
+  border: 1px solid rgba(168, 85, 247, 0.16);
+  border-radius: var(--app-radius-lg);
+  background: #fcfaff;
+  color: var(--app-text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.option-card strong,
+.option-card small {
+  display: block;
+}
+
+.option-card strong {
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.option-card small {
+  margin-top: 7px;
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.option-card.active {
+  border-color: var(--app-primary);
+  background: rgba(168, 85, 247, 0.1);
+  box-shadow: 0 14px 28px rgba(168, 85, 247, 0.13);
 }
 
 .role-card {
@@ -340,6 +390,34 @@
   transform: translateY(1px);
 }
 
+.wizard-actions {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.wizard-actions .login-button {
+  margin-top: 0;
+}
+
+.secondary-button {
+  min-height: 52px;
+  border: 1px solid rgba(168, 85, 247, 0.18);
+  border-radius: var(--app-radius-md);
+  background: #fcfaff;
+  color: var(--app-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.secondary-button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
 .legal-links {
   display: flex;
   justify-content: center;
@@ -374,7 +452,12 @@
   }
 
   .role-grid,
+  .option-grid,
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wizard-actions {
     grid-template-columns: 1fr;
   }
 

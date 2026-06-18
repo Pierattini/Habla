@@ -1,4 +1,4 @@
-:host {
+﻿:host {
   display: block;
   background: var(--app-bg);
   color: var(--app-text);
@@ -493,3 +493,14 @@ ion-textarea:focus-within {
   font-size: 14px;
   font-weight: 400;
 }
+
+.profile-completion-card { margin-bottom: 24px; padding: 18px; border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent); border-radius: var(--app-radius-xl); background: var(--app-surface); }
+.profile-completion-header { display: flex; justify-content: space-between; gap: 14px; }
+.profile-completion-header span, .profile-completion-header strong, .profile-completion-items span { color: var(--app-primary); font-size: 12px; font-weight: 900; }
+.profile-completion-header h2 { margin: 5px 0 0; color: var(--app-text); font-size: 18px; font-weight: 900; line-height: 1.25; }
+.profile-completion-card p { margin: 10px 0 12px; color: var(--app-muted); font-size: 13px; }
+.profile-completion-progress { height: 8px; margin-bottom: 12px; border-radius: 999px; background: color-mix(in srgb, var(--app-primary) 12%, transparent); overflow: hidden; }
+.profile-completion-progress span { display: block; height: 100%; background: var(--app-primary); }
+.profile-completion-items { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.profile-completion-items span { padding: 7px 10px; border-radius: 999px; background: #fcfaff; color: var(--app-muted); }
+

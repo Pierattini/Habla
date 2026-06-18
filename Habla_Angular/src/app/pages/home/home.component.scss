@@ -10,33 +10,40 @@ ion-content {
 
 .header-logo {
   text-align: center;
-  margin: 18px 16px 10px;
+  margin: 0 0 6px;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  border-radius: 0;
+}
+
+.header-logo::before,
+.header-logo::after {
+  content: none;
 }
 
 .header-logo img {
-  width: min(100%, 280px);
-  height: 128px;
-  object-fit: contain;
-  object-position: center;
-
+  width: min(106vw, 520px);
+  max-width: none;
+  height: 178px;
+  display: block;
+  margin: -14px auto -20px;
+  object-fit: cover;
+  object-position: 34% 52%;
+  transform: translateX(-8%);
   background: transparent;
   border-radius: 0;
-  box-shadow: none;
-
-  padding: 0;
-}
-
-.header-logo img.home-brand-logo {
-  object-fit: cover;
-  object-position: center 57%;
 }
 
 .header-logo p {
-  margin-top: 10px;
-  color: var(--app-muted);
-  font-size: 14px;
+  position: relative;
+  z-index: 1;
+  margin: -2px 0 8px;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 800;
+  text-align: center;
 }
-
 .categories {
   display: flex;
   gap: 10px;
@@ -180,6 +187,40 @@ ion-button {
   padding: 0 16px;
 }
 
+.quick-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 16px 12px;
+}
+
+.quick-heading span,
+.preference-heading span {
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.quick-heading h3 {
+  margin: 4px 0 0;
+  color: var(--app-text);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.quick-heading button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(168, 85, 247, 0.18);
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-primary-light) 10%, var(--app-surface));
+  color: var(--app-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 @media (max-width: 400px) {
   .quick-grid {
     grid-template-columns: repeat(3, 1fr);
@@ -282,7 +323,323 @@ ion-button {
   width: 80%;
 }
 
+.completion-card {
+  margin: 16px;
+  padding: 18px;
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.completion-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.completion-header span {
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.completion-header h4 {
+  margin: 4px 0 0;
+  color: var(--app-text);
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.completion-header strong {
+  min-width: 34px;
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-primary-light) 18%, var(--app-bg));
+  color: var(--app-primary);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.completion-card p {
+  margin: 10px 0 12px;
+  color: var(--app-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.completion-progress {
+  height: 8px;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.12);
+  overflow: hidden;
+}
+
+.completion-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+}
+
+.completion-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.completion-items span {
+  min-height: 30px;
+  padding: 7px 10px;
+  border: 1px solid rgba(168, 85, 247, 0.14);
+  border-radius: 999px;
+  background: #fcfaff;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.completion-card ion-button {
+  width: 80%;
+}
+
 .search-box {
   position: relative;
   z-index: 1;
+}
+
+.modality-filter {
+  display: flex;
+  gap: 8px;
+  margin: 12px 16px 16px;
+  padding: 6px;
+  overflow-x: auto;
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+  scrollbar-width: none;
+}
+
+.modality-filter::-webkit-scrollbar {
+  display: none;
+}
+
+.modality-filter button {
+  flex: 1 0 auto;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--app-radius-md);
+  background: transparent;
+  color: var(--app-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.modality-filter button.active {
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(168, 85, 247, 0.22);
+}
+
+.results-title {
+  margin: 18px 16px 8px;
+  color: var(--app-text);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.professional-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 7px;
+}
+
+.mode-badge {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-primary) 12%, var(--app-surface));
+  color: var(--app-primary);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.mode-detail {
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.preference-panel {
+  margin: 16px;
+  padding: 16px;
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.preference-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.preference-heading h3 {
+  margin: 4px 0 0;
+  color: var(--app-text);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.preference-heading p {
+  margin: 6px 0 0;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.preference-heading button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(168, 85, 247, 0.18);
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-primary-light) 10%, var(--app-surface));
+  color: var(--app-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.preference-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.preference-actions button.secondary {
+  background: #fcfaff;
+  color: var(--app-muted);
+}
+
+.preference-heading button:disabled {
+  opacity: 0.65;
+}
+
+.interest-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.interest-search {
+  margin-bottom: 12px;
+}
+
+.interest-search input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(168, 85, 247, 0.14);
+  border-radius: var(--app-radius-md);
+  outline: none;
+  background: #fcfaff;
+  color: var(--app-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.interest-search input:focus {
+  border-color: var(--app-primary-light);
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.11);
+}
+
+.interest-chips button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid rgba(168, 85, 247, 0.14);
+  border-radius: 999px;
+  background: #fcfaff;
+  color: var(--app-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.interest-chips button.active {
+  border-color: rgba(168, 85, 247, 0.34);
+  background: color-mix(in srgb, var(--app-primary-light) 14%, var(--app-surface));
+  color: var(--app-primary);
+}
+
+.interest-chips button.disabled {
+  opacity: 0.45;
+}
+
+.preference-notice {
+  margin: 10px 0 0;
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.preference-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.preference-fields label {
+  display: block;
+}
+
+.preference-fields span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.preference-fields input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(168, 85, 247, 0.14);
+  border-radius: var(--app-radius-md);
+  outline: none;
+  background: #fcfaff;
+  color: var(--app-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.preference-fields input:focus {
+  border-color: var(--app-primary-light);
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.11);
+}
+
+@media (max-width: 420px) {
+  .preference-heading {
+    flex-direction: column;
+  }
+
+  .preference-heading button {
+    width: 100%;
+  }
+
+  .preference-fields {
+    grid-template-columns: 1fr;
+  }
 }

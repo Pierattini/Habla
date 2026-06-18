@@ -14,6 +14,41 @@
     </p>
   </div>
 
+  <section
+    *ngIf="$any(this).shouldShowProfessionalCompletion"
+    class="profile-completion-card"
+  >
+    <div class="profile-completion-header">
+      <div>
+        <span>Perfil {{ $any(this).professionalCompletionPercent }}%</span>
+        <h2>Deja tu perfil listo para recibir reservas</h2>
+      </div>
+
+      <strong>{{ $any(this).professionalCompletionItems.length }}</strong>
+    </div>
+
+    <p>
+      Completa estos puntos para que los clientes puedan encontrarte, reservar y pagar con confianza.
+    </p>
+
+    <div class="profile-completion-progress">
+      <span [style.width.%]="$any(this).professionalCompletionPercent"></span>
+    </div>
+
+    <div class="profile-completion-items">
+      <span *ngFor="let item of $any(this).professionalCompletionItems">
+        {{ item }}
+      </span>
+    </div>
+
+    <ion-button
+      size="small"
+      (click)="$any(this).scrollToProfessionalProfile()"
+    >
+      Completar ahora
+    </ion-button>
+  </section>
+
   <!-- FOTO -->
   <div class="profile-header">
 
@@ -67,7 +102,7 @@
     </div>
   </section>
 
-  <ion-card>
+  <ion-card id="professional-profile-form">
 
     <ion-card-content>
 

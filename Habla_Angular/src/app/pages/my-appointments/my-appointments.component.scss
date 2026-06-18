@@ -241,6 +241,48 @@ ion-card {
   font-weight: 800;
 }
 
+.appointment-modality {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-lg);
+  background: color-mix(in srgb, var(--app-primary-light) 8%, var(--app-surface));
+}
+
+.appointment-modality div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.appointment-modality span {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-primary) 12%, var(--app-surface));
+  color: var(--app-primary);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.appointment-modality strong {
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.appointment-modality small {
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
 .documento-header p {
   margin: 0;
   color: var(--app-muted);

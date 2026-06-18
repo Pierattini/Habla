@@ -198,6 +198,60 @@ export class ProfessionalDashboardComponent {
     filteredTaxDocuments: [] as any[],
   };
 
+  get professionalCompletionItems(): string[] {
+    const missing: string[] = [];
+
+    if (!this.profile.image) {
+      missing.push('Sube una foto profesional');
+    }
+
+    if (!this.profile.specialty) {
+      missing.push('Agrega tu especialidad');
+    }
+
+    if (!this.profile.description || this.profile.description.trim().length < 30) {
+      missing.push('Completa una descripcion clara');
+    }
+
+    if (!Number(this.profile.price)) {
+      missing.push('Define precio de sesion');
+    }
+
+    if (!Number(this.profile.duration)) {
+      missing.push('Define duracion de sesion');
+    }
+
+    if (
+      ['PRESENTIAL', 'BOTH'].includes(this.profile.attentionMode) &&
+      (!this.profile.officeAddress || !this.profile.officeCity || !this.profile.officeCountry)
+    ) {
+      missing.push('Completa direccion presencial');
+    }
+
+    if (
+      this.profile.attentionMode !== 'PRESENTIAL' &&
+      ['GOOGLE_MEET', 'ZOOM', 'CUSTOM'].includes(this.profile.videoProvider) &&
+      !this.profile.customVideoUrl
+    ) {
+      missing.push('Agrega enlace de videollamada');
+    }
+
+    if (!this.availability.some((item: any) => item.enabled)) {
+      missing.push('Activa al menos un dia de agenda');
+    }
+
+    return missing;
+  }
+
+  get professionalCompletionPercent(): number {
+    const total = 8;
+    return Math.max(0, Math.round(((total - this.professionalCompletionItems.length) / total) * 100));
+  }
+
+  get shouldShowProfessionalCompletion(): boolean {
+    return this.loaded && this.professionalCompletionItems.length > 0;
+  }
+
   saveProfile() {
     const validationErrors = this.validateAgenda();
 
@@ -838,6 +892,12 @@ onFileSelected(event: any) {
     };
 
     return type ? labels[type] || type : 'Documento';
+  }
+
+  scrollToProfessionalProfile(): void {
+    document
+      .getElementById('professional-profile-form')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   
 

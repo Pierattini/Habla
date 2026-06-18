@@ -17,10 +17,7 @@
       <div class="brand-mark small">
         <img src="assets/soloimagen.png" alt="Conecta" />
       </div>
-      <div>
-        <strong>Conecta</strong>
-        <span>Conecta con lo que importa</span>
-      </div>
+      <img class="brand-wordmark" src="assets/logoletra.png" alt="Conecta - Conecta con lo que importa" />
     </div>
 
     <div class="mode-tabs" aria-label="Modo de acceso">
@@ -42,12 +39,19 @@
     </div>
 
     @if ($any(this).mode === 'register') {
+      <div class="step-progress" aria-label="Progreso de registro">
+        @for (step of [1, 2, 3, 4]; track step) {
+        <span [class.active]="$any(this).registerStep >= step"></span>
+        }
+      </div>
+
       <header class="login-heading">
-        <span>Comienza en Conecta</span>
-        <h1>Elige como quieres usar la plataforma</h1>
-        <p>Configuraremos tu experiencia segun tu rol.</p>
+        <span>Paso {{ $any(this).registerStep }} de 4</span>
+        <h1>{{ $any(this).getStepTitle() }}</h1>
+        <p>{{ $any(this).getStepSubtitle() }}</p>
       </header>
 
+      @if ($any(this).registerStep === 1) {
       <div class="role-grid">
         <button
           type="button"
@@ -55,9 +59,9 @@
           [class.active]="$any(this).selectedRole === 'CUSTOMER'"
           (click)="$any(this).selectRole('CUSTOMER')"
         >
-          <span>Paciente</span>
+          <span>Cliente</span>
           <strong>Quiero encontrar atencion</strong>
-          <small>Agenda sesiones, conversa y gestiona tus citas.</small>
+          <small>Busca profesionales, agenda y conversa desde un solo lugar.</small>
         </button>
 
         <button
@@ -71,9 +75,11 @@
           <small>Administra agenda, perfil, documentos y clientes.</small>
         </button>
       </div>
+      }
 
+      @if ($any(this).registerStep === 2) {
       <div class="form-grid">
-        <label class="field">
+        <label class="field full">
           <span>Nombre completo</span>
           <input
             type="text"
@@ -84,7 +90,7 @@
           />
         </label>
 
-        <label class="field">
+        <label class="field full">
           <span>Email</span>
           <input
             type="email"
@@ -95,7 +101,7 @@
           />
         </label>
 
-        <label class="field">
+        <label class="field full">
           <span>Contrasena</span>
           <input
             type="password"
@@ -105,162 +111,55 @@
             placeholder="Minimo 6 caracteres"
           />
         </label>
+      </div>
+      }
 
-        <label class="field">
-          <span>Pais</span>
-          <select
-            [ngModel]="$any(this).registerForm.country"
-            (ngModelChange)="$any(this).registerForm.country = $event"
-            (change)="$any(this).onCountryChange()"
-          >
-            @for (country of $any(this).countries; track country.value) {
-            <option
-              [value]="country.value"
-            >
-              {{ country.label }}
-            </option>
-            }
-          </select>
-        </label>
-
-        <label class="field full">
-          <span>Zona horaria</span>
-          <input
-            type="text"
-            [ngModel]="$any(this).registerForm.timezone"
-            (ngModelChange)="$any(this).registerForm.timezone = $event"
-            placeholder="America/Santiago"
-          />
-        </label>
-
-        @if ($any(this).selectedRole === 'CUSTOMER') {
-        <label class="field full">
-          <span>Que tipo de apoyo buscas?</span>
-          <textarea
-            rows="3"
-            [ngModel]="$any(this).registerForm.motivation"
-            (ngModelChange)="$any(this).registerForm.motivation = $event"
-            placeholder="Ej: terapia, nutricion, coaching, medicina, asesoria legal..."
-          ></textarea>
-        </label>
-
-        <label class="field full">
-          <span>Documento tributario</span>
-          <select
-            [ngModel]="$any(this).registerForm.wantsTaxDocumentByDefault ? 'yes' : 'no'"
-            (ngModelChange)="$any(this).registerForm.wantsTaxDocumentByDefault = $event === 'yes'"
-          >
-            <option value="no">Lo decidire al reservar</option>
-            <option value="yes">Quiero boleta por defecto</option>
-          </select>
-        </label>
+      @if ($any(this).registerStep === 3) {
+      <div class="option-grid">
+        @for (option of $any(this).getSelectedOptions(); track option) {
+        <button
+          type="button"
+          class="option-card"
+          [class.active]="$any(this).registerForm.interest === option"
+          (click)="$any(this).selectInterest(option)"
+        >
+          {{ option }}
+        </button>
         }
+      </div>
+      }
 
-        @if ($any(this).selectedRole === 'PROFESSIONAL') {
-          <label class="field">
-            <span>Especialidad</span>
-            <input
-              type="text"
-              [ngModel]="$any(this).registerForm.specialty"
-              (ngModelChange)="$any(this).registerForm.specialty = $event"
-              placeholder="Psicologia, nutricion, medicina..."
-            />
-          </label>
+      @if ($any(this).registerStep === 4) {
+      <div class="option-grid">
+        <button
+          type="button"
+          class="option-card"
+          [class.active]="$any(this).registerForm.attentionMode === 'ONLINE'"
+          (click)="$any(this).selectAttentionMode('ONLINE')"
+        >
+          <strong>Online</strong>
+          <small>Atencion por videollamada.</small>
+        </button>
 
-          <label class="field">
-            <span>Precio base CLP</span>
-            <input
-              type="number"
-              min="0"
-              [ngModel]="$any(this).registerForm.price"
-              (ngModelChange)="$any(this).registerForm.price = $event"
-              placeholder="30000"
-            />
-          </label>
+        <button
+          type="button"
+          class="option-card"
+          [class.active]="$any(this).registerForm.attentionMode === 'PRESENTIAL'"
+          (click)="$any(this).selectAttentionMode('PRESENTIAL')"
+        >
+          <strong>Presencial</strong>
+          <small>Busca atencion cerca de ti.</small>
+        </button>
 
-          <label class="field">
-            <span>Duracion sesion</span>
-            <input
-              type="number"
-              min="15"
-              max="240"
-              [ngModel]="$any(this).registerForm.duration"
-              (ngModelChange)="$any(this).registerForm.duration = $event"
-              placeholder="45"
-            />
-          </label>
-
-          <label class="field full">
-            <span>Descripcion profesional</span>
-            <textarea
-              rows="4"
-              [ngModel]="$any(this).registerForm.description"
-              (ngModelChange)="$any(this).registerForm.description = $event"
-              placeholder="Cuenta tu enfoque, experiencia y el tipo de atencion que ofreces."
-            ></textarea>
-          </label>
-
-          <label class="field">
-            <span>Gestion de boletas</span>
-            <select
-              [ngModel]="$any(this).registerForm.documentAutomationEnabled ? 'habla' : 'manual'"
-              (ngModelChange)="$any(this).registerForm.documentAutomationEnabled = $event === 'habla'; $any(this).registerForm.manualDocumentMode = $event !== 'habla'"
-            >
-              <option value="manual">Las emitire por mi cuenta</option>
-              <option value="habla">Quiero que Conecta las gestione</option>
-            </select>
-          </label>
-        }
-
-        <label class="field">
-          <span>{{ $any(this).selectedRole === 'PROFESSIONAL' ? 'RUT emisor' : 'RUT para boleta' }}</span>
-          <input
-            type="text"
-            [ngModel]="$any(this).registerForm.taxId"
-            (ngModelChange)="$any(this).registerForm.taxId = $event"
-            placeholder="12.345.678-9"
-          />
-        </label>
-
-        <label class="field">
-          <span>{{ $any(this).selectedRole === 'PROFESSIONAL' ? 'Razon social' : 'Nombre tributario' }}</span>
-          <input
-            type="text"
-            [ngModel]="$any(this).registerForm.taxName"
-            (ngModelChange)="$any(this).registerForm.taxName = $event"
-            placeholder="Nombre o razon social"
-          />
-        </label>
-
-        <label class="field">
-          <span>Email tributario</span>
-          <input
-            type="email"
-            [ngModel]="$any(this).registerForm.taxEmail"
-            (ngModelChange)="$any(this).registerForm.taxEmail = $event"
-            placeholder="documentos@email.com"
-          />
-        </label>
-
-        <label class="field">
-          <span>Ciudad o comuna</span>
-          <input
-            type="text"
-            [ngModel]="$any(this).registerForm.taxCity"
-            (ngModelChange)="$any(this).registerForm.taxCity = $event"
-            placeholder="Santiago"
-          />
-        </label>
-
-        <label class="field full">
-          <span>Direccion tributaria</span>
-          <input
-            type="text"
-            [ngModel]="$any(this).registerForm.taxAddress"
-            (ngModelChange)="$any(this).registerForm.taxAddress = $event"
-            placeholder="Calle, numero, oficina o departamento"
-          />
-        </label>
+        <button
+          type="button"
+          class="option-card"
+          [class.active]="$any(this).registerForm.attentionMode === 'BOTH'"
+          (click)="$any(this).selectAttentionMode('BOTH')"
+        >
+          <strong>Ambas</strong>
+          <small>Manten tus opciones abiertas.</small>
+        </button>
       </div>
 
       <label class="consent-row">
@@ -277,6 +176,7 @@
           y el tratamiento de mis datos.
         </span>
       </label>
+      }
 
       @if ($any(this).errorMessage) {
       <p class="form-error">
@@ -284,14 +184,38 @@
       </p>
       }
 
-      <button
-        type="button"
-        class="login-button"
-        [disabled]="$any(this).isSubmitting"
-        (click)="$any(this).register()"
-      >
-        {{ $any(this).isSubmitting ? 'Creando cuenta...' : 'Crear cuenta' }}
-      </button>
+      <div class="wizard-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          [disabled]="$any(this).registerStep === 1 || $any(this).isSubmitting"
+          (click)="$any(this).previousRegisterStep()"
+        >
+          Atras
+        </button>
+
+        @if ($any(this).registerStep < 4) {
+        <button
+          type="button"
+          class="login-button"
+          [disabled]="$any(this).isSubmitting"
+          (click)="$any(this).nextRegisterStep()"
+        >
+          Continuar
+        </button>
+        }
+
+        @if ($any(this).registerStep === 4) {
+        <button
+          type="button"
+          class="login-button"
+          [disabled]="$any(this).isSubmitting"
+          (click)="$any(this).register()"
+        >
+          {{ $any(this).isSubmitting ? 'Creando cuenta...' : 'Crear cuenta' }}
+        </button>
+        }
+      </div>
     }
 
     @if ($any(this).mode === 'login') {

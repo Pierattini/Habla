@@ -1,83 +1,200 @@
-<ion-content class="ion-padding">
-
-  <!-- 🧠 LOGO -->
+﻿<ion-content class="ion-padding">
   <div class="header-logo">
     <img class="home-brand-logo" src="assets/conecta-full.png" alt="Conecta" />
     <p>Encuentra tu profesional ideal</p>
   </div>
 
-  <!-- 🔍 BUSCADOR -->
   <div class="search-box">
-<ion-searchbar
-  [(ngModel)]="search"
-  (ionInput)="onSearch()"
-  placeholder="Buscar psicólogo, nutricionista..."
-  animated="true">
-</ion-searchbar>
-
+    <ion-searchbar
+      [(ngModel)]="search"
+      (ionInput)="onSearch()"
+      placeholder="Buscar psicologo, nutricionista..."
+      animated="true">
+    </ion-searchbar>
   </div>
 
-  <!-- 🧩 FILTROS RÁPIDOS (debajo del buscador) -->
+  <div class="modality-filter" aria-label="Modalidad de atencion">
+    <button
+      type="button"
+      *ngFor="let mode of modalityFilters"
+      [class.active]="selectedMode === mode.value"
+      (click)="filterMode($any(mode.value))"
+    >
+      {{ mode.label }}
+    </button>
+  </div>
+
   <div class="quick-section">
+    <div class="quick-heading">
+      <div>
+        <span>Accesos directos</span>
+        <h3>Tus sectores favoritos</h3>
+      </div>
+
+      <button
+        type="button"
+        (click)="scrollToPreferences()"
+      >
+        {{ showPreferenceEditor ? 'Editando' : 'Editar' }}
+      </button>
+    </div>
+
+
+  <section
+    id="preference-panel"
+    class="preference-panel"
+    *ngIf="showPreferenceEditor"
+  >
+    <div class="preference-heading">
+      <div>
+        <span>Personaliza tu busqueda</span>
+        <h3>Que estas buscando?</h3>
+        <p>{{ selectedInterests.length }}/9 sectores seleccionados</p>
+      </div>
+      <div class="preference-actions">
+        <button
+          type="button"
+          [disabled]="savingPreferences"
+          (click)="savePreferences()"
+        >
+          {{ savingPreferences ? 'Guardando...' : 'Guardar' }}
+        </button>
+
+        <button
+          type="button"
+          class="secondary"
+          (click)="closePreferences()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+
+    <div class="interest-search">
+      <input
+        type="text"
+        [(ngModel)]="interestSearch"
+        placeholder="Buscar sector o especialidad"
+      />
+    </div>
+
+    <div class="interest-chips">
+      <button
+        type="button"
+        *ngFor="let interest of getFilteredInterestOptions()"
+        [class.active]="selectedInterests.includes(interest)"
+        [class.disabled]="selectedInterests.length >= 9 && !selectedInterests.includes(interest)"
+        (click)="toggleInterest(interest)"
+      >
+        {{ interest }}
+      </button>
+    </div>
+
+    <p
+      *ngIf="getFilteredInterestOptions().length === 0"
+      class="preference-notice"
+    >
+      No encontramos opciones con esa busqueda.
+    </p>
+
+    <p
+      *ngIf="preferenceNotice"
+      class="preference-notice"
+    >
+      {{ preferenceNotice }}
+    </p>
+
+    <div class="preference-fields">
+      <label>
+        <span>Ciudad preferida</span>
+        <input
+          type="text"
+          [(ngModel)]="preferredCity"
+          (ngModelChange)="applyFilters()"
+          placeholder="Santiago"
+        />
+      </label>
+
+      <label>
+        <span>Region</span>
+        <input
+          type="text"
+          [(ngModel)]="preferredRegion"
+          (ngModelChange)="applyFilters()"
+          placeholder="Metropolitana"
+        />
+      </label>
+    </div>
+  </section>
+
     <div class="quick-grid">
+      <div
+        class="quick-card"
+        *ngFor="let item of quickFilters"
+        [class.active]="search === item"
+        (click)="filterCategory(item)"
+      >
+        <div class="icon">
+          {{ getIcon(item) }}
+        </div>
 
-  <div
-  class="quick-card"
-  *ngFor="let item of quickFilters"
-  [class.active]="search === item"
-  (click)="filterCategory(item)"
->
-    <div class="icon">
-      {{ getIcon(item) }}
-    </div>
-
-    <div class="label">
-      {{ item }}
+        <div class="label">
+          {{ item }}
+        </div>
+      </div>
     </div>
   </div>
-</div>
-</div>
-  <!-- 🔥 HOME (sin búsqueda) -->
-  <div *ngIf="!search">
 
-   <!-- 🔥 CTA PRO -->
-<div class="cta-card-pro">
 
-  <div class="cta-content">
-    
-    <div class="cta-header">
-      <h4>Configura tu cuenta</h4>
+  <div *ngIf="shouldShowProfileCompletion" class="completion-card">
+    <div class="cta-content">
+      <div class="completion-header">
+        <div>
+          <span>Perfil {{ getProfileCompletionPercent() }}%</span>
+          <h4>Completa tu experiencia</h4>
+        </div>
+
+        <strong>{{ profileCompletionItems.length }}</strong>
+      </div>
+
+      <p>Mientras mas datos agregues, mejores recomendaciones veras.</p>
+
+      <div class="completion-progress">
+        <span [style.width.%]="getProfileCompletionPercent()"></span>
+      </div>
+
+      <div class="completion-items">
+        <span *ngFor="let item of profileCompletionItems">
+          {{ item }}
+        </span>
+      </div>
+
+      <div class="cta-button">
+        <ion-button (click)="goToProfile()">
+          Completar perfil
+        </ion-button>
+      </div>
     </div>
-
-    <p>Completa tus datos y mejora tu experiencia en Conecta</p>
-
-    <div class="cta-button">
-      <ion-button (click)="goToProfile()">
-  Ir a mi perfil →
-</ion-button>
-    </div>
-
   </div>
 
-</div>
-</div>
-  <!-- 🔍 RESULTADOS -->
-  <div *ngIf="search">
-
-    <!-- ⏳ LOADING -->
+  <div>
     <div *ngIf="loading" class="center">
       <ion-spinner></ion-spinner>
       <p>Cargando profesionales...</p>
     </div>
 
-    <!-- ❌ VACÍO -->
+    <h3
+      *ngIf="!loading && filteredProfessionals.length > 0"
+      class="results-title"
+    >
+      {{ search ? 'Resultados' : 'Profesionales recomendados' }}
+    </h3>
+
     <div *ngIf="!loading && filteredProfessionals.length === 0" class="center">
       <p>No se encontraron profesionales</p>
     </div>
 
-    <!-- 💼 LISTA -->
     <ion-card *ngFor="let prof of filteredProfessionals">
-
       <ion-item lines="none">
         <ion-avatar slot="start">
           <img [src]="prof.image || 'https://i.pravatar.cc/150?img=1'" />
@@ -90,14 +207,19 @@
             {{ prof.specialty }}
           </p>
 
-          <p class="status" *ngIf="prof.isOnline">
-            🟢 Disponible
-          </p>
+          <div class="professional-badges">
+            <span class="mode-badge">
+              {{ getModeLabel(prof) }}
+            </span>
+
+            <span class="mode-detail">
+              {{ getModeDetail(prof) }}
+            </span>
+          </div>
         </ion-label>
       </ion-item>
 
       <ion-card-content>
-
         <div class="card-info">
           <span class="price">${{ prof.price }} CLP</span>
           <span class="duration">{{ prof.duration }} min</span>
@@ -106,10 +228,8 @@
         <ion-button expand="block" (click)="goToDetail(prof.id)">
           Ver perfil
         </ion-button>
-
       </ion-card-content>
     </ion-card>
-
   </div>
-
 </ion-content>
+

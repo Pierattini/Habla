@@ -5,6 +5,7 @@ import { AuthService } from '../../services/auth.service';
 
 type OnboardingMode = 'intro' | 'login' | 'register';
 type AccountRole = 'CUSTOMER' | 'PROFESSIONAL';
+type AttentionMode = 'ONLINE' | 'PRESENTIAL' | 'BOTH';
 
 @Component({
   selector: 'app-login',
@@ -19,6 +20,7 @@ type AccountRole = 'CUSTOMER' | 'PROFESSIONAL';
 export class LoginComponent implements OnInit {
   public mode: OnboardingMode = 'intro';
   public selectedRole: AccountRole = 'CUSTOMER';
+  public registerStep = 1;
   public isSubmitting = false;
   public errorMessage = '';
 
@@ -31,21 +33,32 @@ export class LoginComponent implements OnInit {
     password: '',
     country: 'CL',
     timezone: 'America/Santiago',
-    motivation: '',
+    interest: 'Salud',
     specialty: '',
-    description: '',
-    price: 30000,
-    duration: 45,
-    taxId: '',
-    taxName: '',
-    taxEmail: '',
-    taxAddress: '',
-    taxCity: '',
-    wantsTaxDocumentByDefault: false,
-    documentAutomationEnabled: false,
-    manualDocumentMode: true,
+    attentionMode: 'ONLINE' as AttentionMode,
     acceptedTerms: false,
   };
+
+  public customerInterests = [
+    'Salud',
+    'Belleza y estetica',
+    'Deporte y rehabilitacion',
+    'Asesoria profesional',
+    'Educacion/coaching',
+    'Otro',
+  ];
+
+  public professionalServices = [
+    'Psicologia',
+    'Nutricion',
+    'Kinesiologia',
+    'Peluqueria',
+    'Barberia',
+    'Depilacion',
+    'Estetica',
+    'Abogado',
+    'Otro',
+  ];
 
   public countries = [
     { label: 'Chile', value: 'CL', timezone: 'America/Santiago' },
@@ -72,6 +85,8 @@ export class LoginComponent implements OnInit {
 
   public selectRole(role: AccountRole): void {
     this.selectedRole = role;
+    this.registerForm.interest = role === 'CUSTOMER' ? 'Salud' : 'Psicologia';
+    this.registerForm.specialty = role === 'PROFESSIONAL' ? 'Psicologia' : '';
     this.errorMessage = '';
   }
 
@@ -82,6 +97,7 @@ export class LoginComponent implements OnInit {
 
   public showRegister(): void {
     this.mode = 'register';
+    this.registerStep = 1;
     this.errorMessage = '';
   }
 
@@ -122,6 +138,18 @@ export class LoginComponent implements OnInit {
       email: this.registerForm.email.trim(),
       password: this.registerForm.password,
       role: this.selectedRole,
+      customerInterests: this.selectedRole === 'CUSTOMER'
+        ? [this.registerForm.interest]
+        : undefined,
+      preferredAttentionMode: this.selectedRole === 'CUSTOMER'
+        ? this.registerForm.attentionMode
+        : undefined,
+      specialty: this.selectedRole === 'PROFESSIONAL'
+        ? this.registerForm.specialty.trim()
+        : undefined,
+      attentionMode: this.selectedRole === 'PROFESSIONAL'
+        ? this.registerForm.attentionMode
+        : undefined,
     }).subscribe({
       next: () => this.loginAfterRegister(),
       error: (err) => {
@@ -152,22 +180,11 @@ export class LoginComponent implements OnInit {
       name: this.registerForm.name.trim(),
       country: this.registerForm.country,
       timezone: this.registerForm.timezone,
-      taxId: this.cleanOptional(this.registerForm.taxId),
-      taxName: this.cleanOptional(this.registerForm.taxName),
-      taxEmail: this.cleanOptional(this.registerForm.taxEmail),
-      taxAddress: this.cleanOptional(this.registerForm.taxAddress),
-      taxCountry: this.registerForm.country,
-      taxCity: this.cleanOptional(this.registerForm.taxCity),
-      wantsTaxDocumentByDefault: this.registerForm.wantsTaxDocumentByDefault,
     };
 
-    if (this.selectedRole === 'PROFESSIONAL') {
-      profilePayload.specialty = this.registerForm.specialty.trim();
-      profilePayload.description = this.registerForm.description.trim();
-      profilePayload.price = Number(this.registerForm.price);
-      profilePayload.duration = Number(this.registerForm.duration);
-      profilePayload.documentAutomationEnabled = this.registerForm.documentAutomationEnabled;
-      profilePayload.manualDocumentMode = this.registerForm.manualDocumentMode;
+    if (this.selectedRole === 'CUSTOMER') {
+      profilePayload.customerInterests = [this.registerForm.interest];
+      profilePayload.preferredAttentionMode = this.registerForm.attentionMode;
     }
 
     this.auth.updateProfile(profilePayload).subscribe({
@@ -188,6 +205,11 @@ export class LoginComponent implements OnInit {
   }
 
   private isRegisterValid(): boolean {
+    if (this.registerStep < 4) {
+      this.errorMessage = 'Completa los pasos del registro.';
+      return false;
+    }
+
     if (!this.registerForm.name.trim()) {
       this.errorMessage = 'Ingresa tu nombre.';
       return false;
@@ -204,19 +226,91 @@ export class LoginComponent implements OnInit {
     }
 
     if (this.selectedRole === 'PROFESSIONAL') {
-      if (!this.registerForm.specialty.trim() || !this.registerForm.description.trim()) {
-        this.errorMessage = 'Completa tu especialidad y descripcion profesional.';
-        return false;
-      }
-
-      if (Number(this.registerForm.duration) < 15 || Number(this.registerForm.duration) > 240) {
-        this.errorMessage = 'La duracion debe estar entre 15 y 240 minutos.';
+      if (!this.registerForm.specialty.trim()) {
+        this.errorMessage = 'Selecciona el servicio que ofreces.';
         return false;
       }
     }
 
     if (!this.registerForm.acceptedTerms) {
       this.errorMessage = 'Debes aceptar terminos y politica de privacidad.';
+      return false;
+    }
+
+    return true;
+  }
+
+  public nextRegisterStep(): void {
+    if (!this.isCurrentStepValid()) return;
+
+    this.registerStep = Math.min(this.registerStep + 1, 4);
+    this.errorMessage = '';
+  }
+
+  public previousRegisterStep(): void {
+    this.registerStep = Math.max(this.registerStep - 1, 1);
+    this.errorMessage = '';
+  }
+
+  public getStepTitle(): string {
+    if (this.registerStep === 1) return 'Elige como quieres usar Conecta';
+    if (this.registerStep === 2) return 'Crea tu acceso';
+    if (this.registerStep === 3) {
+      return this.selectedRole === 'CUSTOMER'
+        ? 'Que estas buscando?'
+        : 'Que servicio ofreces?';
+    }
+
+    return 'Como prefieres atenderte?';
+  }
+
+  public getStepSubtitle(): string {
+    if (this.registerStep === 1) return 'Configuraremos tu experiencia segun tu rol.';
+    if (this.registerStep === 2) return 'Solo pedimos lo minimo para crear tu cuenta.';
+    if (this.registerStep === 3) return 'Esto nos ayuda a mostrar mejores recomendaciones.';
+    return 'Puedes cambiarlo despues desde tu perfil.';
+  }
+
+  public selectInterest(value: string): void {
+    this.registerForm.interest = value;
+
+    if (this.selectedRole === 'PROFESSIONAL') {
+      this.registerForm.specialty = value;
+    }
+  }
+
+  public selectAttentionMode(value: AttentionMode): void {
+    this.registerForm.attentionMode = value;
+  }
+
+  public getSelectedOptions(): string[] {
+    return this.selectedRole === 'CUSTOMER'
+      ? this.customerInterests
+      : this.professionalServices;
+  }
+
+  private isCurrentStepValid(): boolean {
+    if (this.registerStep === 1) return true;
+
+    if (this.registerStep === 2) {
+      if (!this.registerForm.name.trim()) {
+        this.errorMessage = 'Ingresa tu nombre.';
+        return false;
+      }
+
+      if (!this.registerForm.email.trim() || !this.registerForm.password) {
+        this.errorMessage = 'Ingresa email y contrasena.';
+        return false;
+      }
+
+      if (this.registerForm.password.length < 6) {
+        this.errorMessage = 'La contrasena debe tener al menos 6 caracteres.';
+        return false;
+      }
+    }
+
+    if (this.registerStep === 3 && !this.registerForm.interest) {
+      this.errorMessage = 'Selecciona una opcion.';
       return false;
     }
 

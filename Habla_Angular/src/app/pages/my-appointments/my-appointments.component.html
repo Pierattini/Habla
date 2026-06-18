@@ -324,7 +324,17 @@
 </p>
 
 
-<ng-container
+
+<div class="appointment-modality">
+  <div>
+    <span>{{ $any(this).getAppointmentModeLabel(appt) }}</span>
+    <strong>{{ $any(this).getAppointmentModeDetail(appt) }}</strong>
+  </div>
+
+  <small *ngIf="$any(this).getAppointmentArrivalInstructions(appt)">
+    {{ $any(this).getAppointmentArrivalInstructions(appt) }}
+  </small>
+</div><ng-container
   *ngTemplateOutlet="documentoTributario; context: { $implicit: appt }">
 </ng-container><div class="botones">
 
@@ -456,7 +466,17 @@
       <div class="estado" [ngClass]="getStatusColor(appt.status)">
         {{ getStatusLabel(appt.status) }}
       </div>
-<ng-container
+
+<div class="appointment-modality">
+  <div>
+    <span>{{ $any(this).getAppointmentModeLabel(appt) }}</span>
+    <strong>{{ $any(this).getAppointmentModeDetail(appt) }}</strong>
+  </div>
+
+  <small *ngIf="$any(this).getAppointmentArrivalInstructions(appt)">
+    {{ $any(this).getAppointmentArrivalInstructions(appt) }}
+  </small>
+</div><ng-container
   *ngTemplateOutlet="documentoTributario; context: { $implicit: appt }">
 </ng-container>
 <ng-container
