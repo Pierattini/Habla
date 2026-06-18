@@ -113,11 +113,46 @@ model Appointment {
   taxDocument    TaxDocument?
 }
 
+model ProfessionalCategory {
+  id          String       @id @default(uuid())
+  name        String
+  slug        String       @unique
+  description String?
+  icon        String?
+  sortOrder   Int          @default(0)
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  professions Profession[]
+
+  @@index([isActive, sortOrder])
+}
+
+model Profession {
+  id            String               @id @default(uuid())
+  categoryId    String
+  name          String
+  slug          String               @unique
+  aliases       String[]             @default([])
+  icon          String?
+  sortOrder     Int                  @default(0)
+  isActive      Boolean              @default(true)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  category      ProfessionalCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  professionals Professional[]
+
+  @@index([categoryId, isActive, sortOrder])
+  @@index([isActive, sortOrder])
+}
+
 model Professional {
   id     String @id @default(uuid())
   userId String @unique
   user   User   @relation(fields: [userId], references: [id])
 
+  professionId String?
+  profession   Profession? @relation(fields: [professionId], references: [id])
   specialty   String?
   description String?
   name        String?
@@ -152,6 +187,9 @@ model Professional {
   taxAddress                String?
   taxCountry                String?
   taxCity                   String?
+
+  @@index([professionId])
+  @@index([attentionMode])
 }
 
 model Conversation {

@@ -53,6 +53,7 @@ export class AuthController {
       customerInterests?: string[];
       preferredAttentionMode?: AttentionModality;
       specialty?: string;
+      professionId?: string;
       attentionMode?: AttentionModality;
     },
   ) {

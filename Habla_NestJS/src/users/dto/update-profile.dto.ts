@@ -66,6 +66,10 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
+  professionId?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
 
   @IsOptional()

@@ -12,6 +12,7 @@ type RegisterInput = {
   customerInterests?: string[];
   preferredAttentionMode?: AttentionModality;
   specialty?: string;
+  professionId?: string;
   attentionMode?: AttentionModality;
 };
 
@@ -84,6 +85,7 @@ export class AuthService {
             create: {
               name: data.name,
               specialty: data.specialty || null,
+              professionId: data.professionId || null,
               attentionMode: data.attentionMode ?? AttentionModality.ONLINE,
             },
           },

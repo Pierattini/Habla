@@ -11,6 +11,7 @@ import { AppointmentsModule } from './appointments/appointments.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { MessagesModule } from './messages/messages.module';
 import { TaxDocumentsModule } from './tax-documents/tax-documents.module';
+import { ProfessionsModule } from './professions/professions.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { TaxDocumentsModule } from './tax-documents/tax-documents.module';
     AvailabilityModule,
     MessagesModule,
     TaxDocumentsModule,
+    ProfessionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

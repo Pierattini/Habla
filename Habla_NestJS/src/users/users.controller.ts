@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Body,
+  Query,
   UseGuards,
   Request,
   Param,
@@ -32,8 +33,26 @@ export class UsersController {
 
   // 🔹 LISTAR PROFESIONALES (PARA EL FRONTEND)
   @Get('professionals')
-  getProfessionals() {
-    return this.usersService.findProfessionals();
+  getProfessionals(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+    @Query('specialty') specialty?: string,
+    @Query('professionId') professionId?: string,
+    @Query('professionSlug') professionSlug?: string,
+    @Query('categorySlug') categorySlug?: string,
+    @Query('attentionMode') attentionMode?: string,
+  ) {
+    return this.usersService.findProfessionals({
+      page: Number(page) || 1,
+      limit: Number(limit) || 12,
+      search,
+      specialty,
+      professionId,
+      professionSlug,
+      categorySlug,
+      attentionMode,
+    });
   }
 
   // 🔹 SOLO ADMIN VE TODOS
