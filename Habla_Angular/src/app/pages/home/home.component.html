@@ -24,6 +24,46 @@
     </button>
   </div>
 
+  <section class="category-section" *ngIf="professionCategories.length > 0">
+    <div class="section-heading">
+      <div>
+        <span>Categorias</span>
+        <h3>Elige un area</h3>
+      </div>
+
+      <button
+        *ngIf="selectedCategorySlug || selectedProfessionSlug"
+        type="button"
+        (click)="clearProfessionalFilters()"
+      >
+        Limpiar
+      </button>
+    </div>
+
+    <div class="category-grid">
+      <button
+        type="button"
+        *ngFor="let category of professionCategories"
+        [class.active]="selectedCategorySlug === category.slug"
+        (click)="selectCategory(category)"
+      >
+        <span>{{ getIcon(category.name) }}</span>
+        <strong>{{ category.name }}</strong>
+      </button>
+    </div>
+
+    <div class="specialty-strip" *ngIf="getVisibleProfessions().length > 0">
+      <button
+        type="button"
+        *ngFor="let profession of getVisibleProfessions()"
+        [class.active]="selectedProfessionSlug === profession.slug"
+        (click)="selectProfession(profession)"
+      >
+        {{ profession.name }}
+      </button>
+    </div>
+  </section>
+
   <div class="quick-section">
     <div class="quick-heading">
       <div>
@@ -82,11 +122,18 @@
       <button
         type="button"
         *ngFor="let interest of getFilteredInterestOptions()"
-        [class.active]="selectedInterests.includes(interest)"
-        [class.disabled]="selectedInterests.length >= 9 && !selectedInterests.includes(interest)"
+        [class.active]="isInterestSelected(interest)"
+        [class.disabled]="selectedInterests.length >= 9 && !isInterestSelected(interest)"
         (click)="toggleInterest(interest)"
       >
         {{ interest }}
+        <span
+          *ngIf="isInterestSelected(interest)"
+          class="chip-remove"
+          (click)="removeInterest(interest, $event)"
+        >
+          x
+        </span>
       </button>
     </div>
 
@@ -190,8 +237,16 @@
       {{ search ? 'Resultados' : 'Profesionales recomendados' }}
     </h3>
 
-    <div *ngIf="!loading && filteredProfessionals.length === 0" class="center">
-      <p>No se encontraron profesionales</p>
+    <p
+      *ngIf="!loading"
+      class="results-count"
+    >
+      Se encontraron {{ totalProfessionals }} profesionales
+    </p>
+
+    <div *ngIf="!loading && totalProfessionals === 0" class="empty-state">
+      <h3>No se encontraron profesionales</h3>
+      <p>Prueba con otro nombre, profesion o especialidad.</p>
     </div>
 
     <ion-card *ngFor="let prof of filteredProfessionals">
@@ -204,7 +259,7 @@
           <h2>{{ prof.name || 'Profesional' }}</h2>
 
           <p class="specialty">
-            {{ prof.specialty }}
+            {{ getProfessionalSpecialty(prof) }}
           </p>
 
           <div class="professional-badges">
@@ -230,6 +285,36 @@
         </ion-button>
       </ion-card-content>
     </ion-card>
+
+    <div
+      *ngIf="!loading && totalPages > 1"
+      class="pagination"
+    >
+      <button
+        type="button"
+        [disabled]="currentPage === 1"
+        (click)="previousPage()"
+      >
+        Anterior
+      </button>
+
+      <button
+        type="button"
+        *ngFor="let page of getPages()"
+        [class.active]="page === currentPage"
+        (click)="goToPage(page)"
+      >
+        {{ page }}
+      </button>
+
+      <button
+        type="button"
+        [disabled]="currentPage === totalPages"
+        (click)="nextPage()"
+      >
+        Siguiente
+      </button>
+    </div>
   </div>
 </ion-content>
 

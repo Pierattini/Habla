@@ -126,15 +126,16 @@ export class ProfessionalDetailComponent {
     return;
   }
 
-  this.http.get<any[]>(`${API_URL}/users/professionals`)
+  this.http.get<any>(`${API_URL}/users/professionals`)
     .subscribe({
       next: (res) => {
 
         console.log('ID URL:', this.id);
-        console.log('LISTA:', res);
+        const professionals = Array.isArray(res) ? res : res?.data || [];
+        console.log('LISTA:', professionals);
 
         // 🔥 SOLUCIÓN
-        this.professional = res.find(p => String(p.id) === String(this.id));
+        this.professional = professionals.find((p: any) => String(p.id) === String(this.id));
         this.professionalTaxReady = !!(
           this.professional?.taxId &&
           this.professional?.taxName &&

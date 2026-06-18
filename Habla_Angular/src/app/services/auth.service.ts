@@ -57,8 +57,30 @@ export class AuthService {
 }
 
   // 👨‍⚕️ PROFESIONALES
-  getProfessionals() {
-    return this.http.get(`${this.api}/users/professionals`, {
+  getProfessionals(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    specialty?: string;
+    professionId?: string;
+    professionSlug?: string;
+    categorySlug?: string;
+    attentionMode?: string;
+  }) {
+    const query = new URLSearchParams();
+
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.search) query.set('search', params.search);
+    if (params?.specialty) query.set('specialty', params.specialty);
+    if (params?.professionId) query.set('professionId', params.professionId);
+    if (params?.professionSlug) query.set('professionSlug', params.professionSlug);
+    if (params?.categorySlug) query.set('categorySlug', params.categorySlug);
+    if (params?.attentionMode) query.set('attentionMode', params.attentionMode);
+
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+
+    return this.http.get(`${this.api}/users/professionals${suffix}`, {
       headers: this.getHeaders()
     });
   }

@@ -61,7 +61,7 @@ getProfessionals() {
       next: (res) => {
         console.log('DATA:', res);
 
-        this.professionals = Array.isArray(res) ? res : [res];
+        this.professionals = Array.isArray(res) ? res : res?.data || [];
        // this.cd.detectChanges();
 
       },
