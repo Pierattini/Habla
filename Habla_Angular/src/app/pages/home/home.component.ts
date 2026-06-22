@@ -62,6 +62,8 @@ export class HomePage implements OnInit {
   professionCategories: ProfessionCategory[] = [];
   selectedCategorySlug = '';
   selectedProfessionSlug = '';
+  private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private professionalsRequestId = 0;
 
   quickFilters: string[] = [];
   interestOptions = [
@@ -137,7 +139,13 @@ export class HomePage implements OnInit {
   }
 
   loadProfessionals() {
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = null;
+    }
+
     this.loading = true;
+    const requestId = ++this.professionalsRequestId;
 
     this.auth.getProfessionals({
       page: this.currentPage,
@@ -150,6 +158,8 @@ export class HomePage implements OnInit {
       attentionMode: this.selectedMode,
     }).subscribe({
       next: (res: any) => {
+        if (requestId !== this.professionalsRequestId) return;
+
         const items = Array.isArray(res) ? res : res?.data || [];
 
         this.professionals = items;
@@ -167,6 +177,8 @@ export class HomePage implements OnInit {
       },
 
       error: () => {
+        if (requestId !== this.professionalsRequestId) return;
+
         this.professionals = [];
         this.filteredProfessionals = [];
         this.loading = false;
@@ -182,7 +194,14 @@ export class HomePage implements OnInit {
     }
 
     this.currentPage = 1;
-    this.loadProfessionals();
+
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+    }
+
+    this.searchDebounceTimer = setTimeout(() => {
+      this.loadProfessionals();
+    }, 350);
   }
 
   applyFilters() {
@@ -461,8 +480,13 @@ export class HomePage implements OnInit {
       .trim();
   }
 
-  goToDetail(id: string) {
-    this.router.navigate(['/tabs/professional', id]);
+  goToDetail(professional: any) {
+    if (professional?.slug) {
+      this.router.navigate(['/profesional', professional.slug]);
+      return;
+    }
+
+    this.router.navigate(['/tabs/professional', professional?.id]);
   }
 
   goToProfile() {

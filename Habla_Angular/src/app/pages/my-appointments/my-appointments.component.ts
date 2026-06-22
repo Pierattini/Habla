@@ -573,7 +573,7 @@ private downloadIcsFile(appt: any): void {
     'VERSION:2.0',
     'PRODID:-//Conecta//Appointments//ES',
     'BEGIN:VEVENT',
-    `UID:${appt.id}@habla`,
+    `UID:${appt.id}@conecta`,
     `DTSTAMP:${this.formatIcsDate(new Date())}`,
     `DTSTART:${this.formatIcsDate(start)}`,
     `DTEND:${this.formatIcsDate(end)}`,

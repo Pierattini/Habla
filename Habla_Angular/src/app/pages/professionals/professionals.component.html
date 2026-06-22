@@ -6,20 +6,23 @@
 
 <ion-content class="ion-padding">
 
-  <ion-card *ngFor="let professional of professionals" (click)="goToDetail(professional.id)">
+  <ion-card *ngFor="let professional of professionals" (click)="goToDetail(professional)">
 
     <ion-card-content style="text-align:center">
 
       <ion-avatar style="margin: 0 auto; width: 100px; height: 100px;">
-        <img [src]="professional.image || ('https://i.pravatar.cc/150?u=' + professional.email)" />
+        <img [src]="professional.image || ('https://i.pravatar.cc/150?u=' + professional.id)" />
       </ion-avatar>
 
       <h2>{{ professional.name }}</h2>
-      <p>{{ professional.specialty }}</p>
+      <p>{{ professional.professionName || professional.specialty }}</p>
+      <p *ngIf="professional.city">{{ professional.city }}</p>
+      <p>{{ professional.ratingAverage || 0 }} / 5 · {{ professional.reviewsCount || 0 }} opiniones</p>
+      <p *ngIf="professional.shortDescription">{{ professional.shortDescription }}</p>
       <p>ðŸ’° ${{ professional.price }} CLP</p>
 
       <ion-button expand="block">
-        Ver perfil
+        Solicitar cita
       </ion-button>
 
     </ion-card-content>

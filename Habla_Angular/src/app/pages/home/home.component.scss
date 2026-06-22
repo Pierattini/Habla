@@ -10,11 +10,12 @@ ion-content {
 
 .header-logo {
   text-align: center;
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
   background: transparent;
   border-radius: 0;
+  border: 0;
 }
 
 .header-logo::before,
@@ -23,26 +24,29 @@ ion-content {
 }
 
 .header-logo img {
-  width: min(106vw, 520px);
-  max-width: none;
-  height: 178px;
+  width: min(92vw, 470px);
+  max-width: 100%;
+  height: auto;
   display: block;
-  margin: -14px auto -20px;
-  object-fit: cover;
-  object-position: 34% 52%;
-  transform: translateX(-8%);
+  margin: -6px auto -2px;
+  object-fit: contain;
+  object-position: center center;
+  transform: none;
   background: transparent;
   border-radius: 0;
+  border: 0;
 }
 
 .header-logo p {
   position: relative;
   z-index: 1;
-  margin: -2px 0 8px;
+  margin: 0 0 6px;
   padding: 0;
   font-size: 18px;
   font-weight: 800;
   text-align: center;
+  background: transparent;
+  border: 0;
 }
 ion-card {
   margin: 14px 16px;

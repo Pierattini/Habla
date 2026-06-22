@@ -110,6 +110,13 @@ export const routes: Routes = [
     ]
   },
 
+
+  {
+    path: 'profesional/:slug',
+    loadComponent: () =>
+      import('./pages/professional-detail/professional-detail.component')
+        .then(m => m.ProfessionalDetailComponent),
+  },
   // 🔥 INICIO
   {
     path: '',

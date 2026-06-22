@@ -22,7 +22,7 @@
       <div class="photo-wrapper">
 
         <ion-avatar class="profile-avatar">
-          <img [src]="professional.image || ('https://i.pravatar.cc/150?u=' + professional.email)" />
+          <img [src]="professional.image || ('https://i.pravatar.cc/150?u=' + professional.id)" />
         </ion-avatar>
 
         <div class="message-icon" (click)="goToChat()">
@@ -33,11 +33,11 @@
 
       <div class="professional-info">
         <h2>
-          {{ professional.name || professional.email }}
+          {{ professional.name || 'Profesional' }}
         </h2>
 
         <p class="specialty">
-          {{ professional.specialty || 'Profesional' }}
+          {{ professional.professionName || professional.specialty || 'Profesional' }}
         </p>
 
         <div class="meta-grid">
@@ -61,7 +61,15 @@
 
       <ion-card-content>
         <p>
-          Agenda una sesion con este profesional segun la fecha y horario disponible.
+          {{ professional.description || professional.shortDescription || 'Agenda una sesion con este profesional segun la fecha y horario disponible.' }}
+        </p>
+
+        <p class="document-helper" *ngIf="professional.city">
+          {{ professional.city }}
+        </p>
+
+        <p class="document-helper">
+          {{ professional.ratingAverage || 0 }} / 5 · {{ professional.reviewsCount || 0 }} opiniones
         </p>
       </ion-card-content>
     </ion-card>
@@ -126,17 +134,10 @@
           class="document-helper"
           *ngIf="$any(this).selectedAttentionMode === 'PRESENTIAL'"
         >
-          {{ professional.officeAddress || 'Direccion pendiente' }}
-          {{ professional.officeCity ? ', ' + professional.officeCity : '' }}
+          Direccion exacta disponible al confirmar la reserva.
+          {{ professional.officeCity ? ' Ciudad: ' + professional.officeCity : '' }}
           {{ professional.officeRegion ? ', ' + professional.officeRegion : '' }}
           {{ professional.officeCountry ? ', ' + professional.officeCountry : '' }}
-        </p>
-
-        <p
-          class="document-helper"
-          *ngIf="$any(this).selectedAttentionMode === 'PRESENTIAL' && professional.arrivalInstructions"
-        >
-          {{ professional.arrivalInstructions }}
         </p>
       </ion-card-content>
     </ion-card>
@@ -256,7 +257,7 @@
           class="document-helper warning"
           *ngIf="$any(this).selectedDocumentMode !== 'NONE' && !$any(this).customerTaxReady"
         >
-          Puedes completar o corregir tus datos tributarios desde Perfil.
+          Al confirmar te pediremos los datos minimos para emitir el documento.
         </p>
 
         <p
@@ -280,7 +281,7 @@
       class="confirm-btn"
       [disabled]="!selectedHour || isBooking"
       (click)="bookAppointment()">
-      {{ isBooking ? 'Reservando...' : 'Confirmar cita' }}
+      {{ isBooking ? 'Reservando...' : 'Solicitar cita' }}
     </ion-button>
 
   </div>

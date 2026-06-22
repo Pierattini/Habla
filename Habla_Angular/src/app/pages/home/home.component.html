@@ -1,6 +1,6 @@
 ﻿<ion-content class="ion-padding">
   <div class="header-logo">
-    <img class="home-brand-logo" src="assets/conecta-full.png" alt="Conecta" />
+    <img class="home-brand-logo" src="assets/conecta-logo-clean.png" alt="Conecta" />
     <p>Encuentra tu profesional ideal</p>
   </div>
 
@@ -262,6 +262,14 @@
             {{ getProfessionalSpecialty(prof) }}
           </p>
 
+          <p *ngIf="prof.city" class="specialty">
+            {{ prof.city }}
+          </p>
+
+          <p class="specialty">
+            {{ prof.ratingAverage || 0 }} / 5 · {{ prof.reviewsCount || 0 }} opiniones
+          </p>
+
           <div class="professional-badges">
             <span class="mode-badge">
               {{ getModeLabel(prof) }}
@@ -280,8 +288,12 @@
           <span class="duration">{{ prof.duration }} min</span>
         </div>
 
-        <ion-button expand="block" (click)="goToDetail(prof.id)">
-          Ver perfil
+        <p *ngIf="prof.shortDescription" class="specialty">
+          {{ prof.shortDescription }}
+        </p>
+
+        <ion-button expand="block" (click)="goToDetail(prof)">
+          Solicitar cita
         </ion-button>
       </ion-card-content>
     </ion-card>

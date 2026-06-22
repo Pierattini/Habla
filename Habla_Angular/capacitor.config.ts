@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.habla.mobile',
-  appName: 'Habla',
+  appId: 'app.conecta.mobile',
+  appName: 'Conecta',
   webDir: 'dist/habla-app/browser',
   bundledWebRuntime: false,
   server: {

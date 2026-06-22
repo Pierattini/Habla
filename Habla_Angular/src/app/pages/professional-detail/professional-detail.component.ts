@@ -65,9 +65,11 @@ import {
 export class ProfessionalDetailComponent {
 
   id: string | null = null;
+  slug: string | null = null;
   professional: any = null;
   loading = true;
   loaded = false;
+  private profileViewRecordedFor = '';
 
   selectedDate: string = new Date().toISOString().split('T')[0];
   availableHours: string[] = [];
@@ -79,6 +81,7 @@ export class ProfessionalDetailComponent {
   wantsTaxDocumentByDefault = false;
   customerTaxReady = false;
   professionalTaxReady = false;
+  customerProfile: any = null;
 
   constructor(
   private route: ActivatedRoute,
@@ -90,8 +93,9 @@ export class ProfessionalDetailComponent {
 
   ionViewWillEnter() {
     const routeId = this.route.snapshot.paramMap.get('id');
+    const routeSlug = this.route.snapshot.paramMap.get('slug');
 
-    if (this.id !== routeId) {
+    if (this.id !== routeId || this.slug !== routeSlug) {
       this.professional = null;
       this.availableHours = [];
       this.selectedHour = null;
@@ -103,6 +107,7 @@ export class ProfessionalDetailComponent {
 
     this.loading = true;
     this.id = routeId;
+    this.slug = routeSlug;
     this.loadCustomerDocumentPreference();
     this.getProfessional();
   }
@@ -119,33 +124,28 @@ export class ProfessionalDetailComponent {
   this.loadAvailability();
 }
   getProfessional() {
-  if (!this.id) {
-    this.loading = false;
-    this.loaded = true;
-    this.cdr.detectChanges();
-    return;
-  }
+    if (!this.id && !this.slug) {
+      this.loading = false;
+      this.loaded = true;
+      this.cdr.detectChanges();
+      return;
+    }
 
-  this.http.get<any>(`${API_URL}/users/professionals`)
-    .subscribe({
+    const request$ = this.slug
+      ? this.http.get<any>(`${API_URL}/users/professionals/public/${this.slug}`)
+      : this.http.get<any>(`${API_URL}/users/professionals`);
+
+    request$.subscribe({
       next: (res) => {
+        if (this.slug) {
+          this.professional = res;
+          this.recordProfileView();
+        } else {
+          const professionals = Array.isArray(res) ? res : res?.data || [];
+          this.professional = professionals.find((p: any) => String(p.id) === String(this.id));
+        }
 
-        console.log('ID URL:', this.id);
-        const professionals = Array.isArray(res) ? res : res?.data || [];
-        console.log('LISTA:', professionals);
-
-        // 🔥 SOLUCIÓN
-        this.professional = professionals.find((p: any) => String(p.id) === String(this.id));
-        this.professionalTaxReady = !!(
-          this.professional?.taxId &&
-          this.professional?.taxName &&
-          (this.professional?.taxEmail || this.professional?.email) &&
-          this.professional?.taxAddress &&
-          this.professional?.taxCity
-        );
-
-        console.log('PROFESIONAL FINAL:', this.professional);
-
+        this.professionalTaxReady = this.professional?.taxDocumentReady === true;
         this.selectedAttentionMode =
           this.professional?.attentionMode === 'PRESENTIAL'
             ? 'PRESENTIAL'
@@ -160,8 +160,7 @@ export class ProfessionalDetailComponent {
         this.cdr.detectChanges();
       }
     });
-}
-
+  }
   loadAvailability() {
   if (!this.professional?.id || !this.selectedDate) {
     this.loading = false;
@@ -227,9 +226,7 @@ async bookAppointment() {
   }
   if (this.selectedDocumentMode !== 'NONE') {
     if (!this.customerTaxReady) {
-      const shouldContinue = await this.confirmBookingWithoutDocument(
-        'Completa tus datos tributarios en Perfil antes de solicitar documento.'
-      );
+      const shouldContinue = await this.openCustomerTaxDataModal();
 
       if (!shouldContinue) return;
     }
@@ -343,6 +340,108 @@ async confirmBookingWithoutDocument(message: string): Promise<boolean> {
     await alert.present();
   });
 }
+
+async openCustomerTaxDataModal(): Promise<boolean> {
+  return new Promise(async (resolve) => {
+    let settled = false;
+    let taxAlert: HTMLIonAlertElement;
+
+    const current = this.customerProfile || {};
+    const fallbackEmail = current.email || '';
+
+    taxAlert = await this.alertCtrl.create({
+      header: 'Datos para documento',
+      message: 'Completa estos datos una sola vez. Los guardaremos en tu perfil para emitir la boleta o factura.',
+      inputs: [
+        {
+          name: 'taxName',
+          type: 'text',
+          value: current.taxName || current.name || '',
+          placeholder: 'Nombre completo o razon social',
+        },
+        {
+          name: 'taxId',
+          type: 'text',
+          value: current.taxId || '',
+          placeholder: 'RUT / NIF / DNI',
+        },
+        {
+          name: 'taxEmail',
+          type: 'email',
+          value: current.taxEmail || fallbackEmail,
+          placeholder: 'Correo para documento',
+        },
+        {
+          name: 'taxCity',
+          type: 'text',
+          value: current.taxCity || '',
+          placeholder: 'Ciudad o comuna',
+        },
+        {
+          name: 'taxAddress',
+          type: 'text',
+          value: current.taxAddress || '',
+          placeholder: 'Direccion tributaria',
+        },
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel',
+        },
+        {
+          text: 'Guardar y continuar',
+          handler: (data) => {
+            const payload = {
+              taxName: this.cleanOptional(data.taxName),
+              taxId: this.cleanOptional(data.taxId),
+              taxEmail: this.cleanOptional(data.taxEmail) || fallbackEmail,
+              taxCity: this.cleanOptional(data.taxCity),
+              taxAddress: this.cleanOptional(data.taxAddress),
+              taxCountry: current.taxCountry || current.country || 'CL',
+            };
+
+            const missing = [
+              !payload.taxName ? 'nombre completo' : null,
+              !payload.taxId ? 'RUT / NIF / DNI' : null,
+              !payload.taxEmail ? 'correo' : null,
+              !payload.taxCity ? 'ciudad o comuna' : null,
+              !payload.taxAddress ? 'direccion' : null,
+            ].filter(Boolean);
+
+            if (missing.length > 0) {
+              alert(`Faltan datos para el documento: ${missing.join(', ')}.`);
+              return false;
+            }
+
+            this.auth.updateProfile(payload).subscribe({
+              next: (updatedUser: any) => {
+                this.updateCustomerTaxState(updatedUser);
+                settled = true;
+                taxAlert.dismiss(null, 'saved');
+                resolve(true);
+              },
+              error: () => {
+                alert('No se pudieron guardar los datos tributarios. Intenta nuevamente.');
+              },
+            });
+
+            return false;
+          },
+        },
+      ],
+    });
+
+    taxAlert.onDidDismiss().then((event) => {
+      if (!settled && event.role !== 'saved') {
+        resolve(false);
+      }
+    });
+
+    await taxAlert.present();
+  });
+}
+
 loadCustomerDocumentPreference() {
   const token = localStorage.getItem('token');
 
@@ -350,14 +449,7 @@ loadCustomerDocumentPreference() {
 
   this.auth.getProfile().subscribe({
     next: (user: any) => {
-      this.wantsTaxDocumentByDefault = user?.wantsTaxDocumentByDefault === true;
-      this.customerTaxReady = !!(
-        user?.taxId &&
-        user?.taxName &&
-        (user?.taxEmail || user?.email) &&
-        user?.taxAddress &&
-        user?.taxCity
-      );
+      this.updateCustomerTaxState(user);
       this.applyDefaultDocumentMode();
     },
     error: () => {
@@ -365,6 +457,18 @@ loadCustomerDocumentPreference() {
       this.customerTaxReady = false;
     }
   });
+}
+
+updateCustomerTaxState(user: any) {
+  this.customerProfile = user || null;
+  this.wantsTaxDocumentByDefault = user?.wantsTaxDocumentByDefault === true;
+  this.customerTaxReady = !!(
+    user?.taxId &&
+    user?.taxName &&
+    (user?.taxEmail || user?.email) &&
+    user?.taxAddress &&
+    user?.taxCity
+  );
 }
 
 applyDefaultDocumentMode() {
@@ -429,5 +533,23 @@ getDocumentModeLabel(): string {
   }
 
   return 'No se solicitara documento tributario para esta cita.';
+}
+
+private cleanOptional(value: string): string | undefined {
+  const cleaned = value?.trim();
+  return cleaned ? cleaned : undefined;
+}
+
+private recordProfileView(): void {
+  if (!this.slug || this.profileViewRecordedFor === this.slug) return;
+
+  this.profileViewRecordedFor = this.slug;
+
+  this.http.post(
+    `${API_URL}/users/professionals/public/${this.slug}/events`,
+    { type: 'VIEW' }
+  ).subscribe({
+    error: (err) => console.warn('No se pudo registrar vista de perfil:', err),
+  });
 }
 }

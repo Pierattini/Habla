@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.habla.app',
+  apiUrl: 'https://api.conecta.app',
 };

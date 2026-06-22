@@ -1,12 +1,16 @@
 import { ChangeDetectorRef, Component } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import {
+  DashboardTaxDocument,
+  TaxDocument,
   TaxDocumentsService
 } from '../../services/tax-documents.service';
 import {
   AvailabilityPayload,
+  ProfessionalProfile,
   ProfessionalProfileService,
   ScheduleMode
 } from '../../services/professional-profile.service';
@@ -86,6 +90,8 @@ export class ProfessionalDashboardComponent {
   selectedDocumentFilter = 'ALL';
   scheduleMode = 'automatic';
   isSaving = false;
+  publicProfileUrl = '';
+  publicProfileMessage = '';
   private professionalUserId = '';
   private dashboardRequestsPending = 0;
   documentFilters = [
@@ -104,6 +110,7 @@ export class ProfessionalDashboardComponent {
   constructor(
     private professionalProfileService: ProfessionalProfileService,
     private taxDocumentsService: TaxDocumentsService,
+    private http: HttpClient,
     private cdr: ChangeDetectorRef
   ) {
 
@@ -123,7 +130,8 @@ export class ProfessionalDashboardComponent {
     this.loadTaxDocuments();
   }
 
-  profile = {
+  profile: ProfessionalProfile = {
+    slug: '',
     name: '',
     specialty: '',
     description: '',
@@ -137,7 +145,7 @@ export class ProfessionalDashboardComponent {
 
     rules: '',
     image: '',
-    attentionMode: 'ONLINE' as 'ONLINE' | 'PRESENTIAL' | 'BOTH',
+    attentionMode: 'ONLINE',
     officeAddress: '',
     officeCity: '',
     officeRegion: '',
@@ -150,52 +158,72 @@ export class ProfessionalDashboardComponent {
   };
 
   // 🔥 BLOQUES HORARIOS
-  availability: any[] = [
+  availability: AgendaDay[] = [
 
     {
       day: 'Lunes',
+      code: 'MON',
       enabled: true,
+      scheduleMode: 'CONTINUOUS',
       start: '09:00',
-      end: '18:00'
+      end: '18:00',
+      specificSlots: [],
+      blockedRanges: [],
     },
 
     {
       day: 'Martes',
+      code: 'TUE',
       enabled: true,
+      scheduleMode: 'CONTINUOUS',
       start: '09:00',
-      end: '18:00'
+      end: '18:00',
+      specificSlots: [],
+      blockedRanges: [],
     },
 
     {
       day: 'Miércoles',
+      code: 'WED',
       enabled: false,
+      scheduleMode: 'CONTINUOUS',
       start: '09:00',
-      end: '18:00'
+      end: '18:00',
+      specificSlots: [],
+      blockedRanges: [],
     },
 
     {
       day: 'Jueves',
+      code: 'THU',
       enabled: false,
+      scheduleMode: 'CONTINUOUS',
       start: '09:00',
-      end: '18:00'
+      end: '18:00',
+      specificSlots: [],
+      blockedRanges: [],
     },
 
     {
       day: 'Viernes',
+      code: 'FRI',
       enabled: false,
+      scheduleMode: 'CONTINUOUS',
       start: '09:00',
-      end: '18:00'
+      end: '18:00',
+      specificSlots: [],
+      blockedRanges: [],
     }
 
   ];
 
-  pendingTaxDocuments: any[] = [];
-  taxDocuments: any[] = [];
+  pendingTaxDocuments: DashboardTaxDocument[] = [];
+  taxDocuments: DashboardTaxDocument[] = [];
   dashboardView = {
     pendingDocumentsCount: 0,
     sentDocumentsCount: 0,
     emittedThisMonthCount: 0,
-    filteredTaxDocuments: [] as any[],
+    filteredTaxDocuments: [] as DashboardTaxDocument[],
   };
 
   get professionalCompletionItems(): string[] {
@@ -236,7 +264,7 @@ export class ProfessionalDashboardComponent {
       missing.push('Agrega enlace de videollamada');
     }
 
-    if (!this.availability.some((item: any) => item.enabled)) {
+    if (!this.availability.some((item) => item.enabled)) {
       missing.push('Activa al menos un dia de agenda');
     }
 
@@ -262,7 +290,7 @@ export class ProfessionalDashboardComponent {
 
     this.isSaving = true;
 
-    const availabilityRequests = this.availability.map((item: any) => {
+    const availabilityRequests = this.availability.map((item) => {
       if (!item.enabled) {
         return this.professionalProfileService.deleteAvailability(item.code);
       }
@@ -280,7 +308,7 @@ export class ProfessionalDashboardComponent {
         description: this.profile.description,
         price: Number(this.profile.price),
         duration: Number(this.profile.duration),
-        attentionMode: this.profile.attentionMode as 'ONLINE' | 'PRESENTIAL' | 'BOTH',
+        attentionMode: this.profile.attentionMode,
         officeAddress: this.profile.officeAddress,
         officeCity: this.profile.officeCity,
         officeRegion: this.profile.officeRegion,
@@ -306,23 +334,24 @@ export class ProfessionalDashboardComponent {
       }
     });
   }
-onFileSelected(event: any) {
+onFileSelected(event: Event) {
 
   console.log('INPUT OK');
 
-  const file = event.target.files[0];
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
 
   if (!file) return;
 
   const reader = new FileReader();
 
-  reader.onload = (e: any) => {
+  reader.onload = (e: ProgressEvent<FileReader>) => {
 
     console.log('IMAGEN CARGADA');
 
     this.profile = {
       ...this.profile,
-      image: e.target.result
+      image: String(e.target?.result || '')
     };
     //this.imageVersion = Date.now();
   };
@@ -333,7 +362,7 @@ onFileSelected(event: any) {
   loadProfile() {
 
     this.professionalProfileService.getProfile().subscribe({
-      next: (res: any) => {
+      next: (res) => {
 
       console.log('PROFILE:', res);
       this.professionalUserId = res.id;
@@ -341,6 +370,7 @@ onFileSelected(event: any) {
 
       this.profile = {
         name: res.professional?.name || '',
+        slug: res.professional?.slug || '',
         specialty: res.professional?.specialty || '',
         description: res.professional?.description || '',
         price: res.professional?.price || 0,
@@ -359,6 +389,7 @@ onFileSelected(event: any) {
         videoProvider: res.professional?.videoProvider || 'JITSI',
         customVideoUrl: res.professional?.customVideoUrl || ''
       };
+      this.publicProfileUrl = this.buildPublicProfileUrl(this.profile.slug || '');
 
       this.loadAvailability(() => this.finishDashboardRequest());
 
@@ -383,12 +414,12 @@ onFileSelected(event: any) {
         next: (items) => {
           this.ensureAgendaDefaults();
 
-          for (const item of this.availability as any[]) {
+          for (const item of this.availability) {
             item.enabled = false;
           }
 
           for (const item of items) {
-            const agendaDay = (this.availability as any[]).find(
+            const agendaDay = this.availability.find(
               (day) => day.code === item.day
             );
 
@@ -404,14 +435,14 @@ onFileSelected(event: any) {
               }))
               : [];
             agendaDay.blockedRanges = Array.isArray(item.blockedRanges)
-              ? item.blockedRanges.map((range: any) => ({
+              ? item.blockedRanges.map((range) => ({
                 start: this.minutesToTime(range.startMinute),
                 end: this.minutesToTime(range.endMinute),
               }))
               : [];
 
             if (Number.isInteger(item.breakMinute)) {
-              this.profile.interval = item.breakMinute;
+              this.profile.interval = Number(item.breakMinute);
             }
           }
         },
@@ -437,7 +468,7 @@ onFileSelected(event: any) {
     ];
 
     this.availability = defaults.map((defaultDay) => {
-      const current = (this.availability as any[]).find((item) =>
+      const current = this.availability.find((item) =>
         item.code === defaultDay.code || item.day === defaultDay.day
       );
 
@@ -668,7 +699,7 @@ onFileSelected(event: any) {
     }
   }
 
-  get filteredTaxDocuments(): any[] {
+  get filteredTaxDocuments(): DashboardTaxDocument[] {
     if (this.selectedDocumentFilter === 'ALL') {
       return this.taxDocuments;
     }
@@ -725,7 +756,7 @@ onFileSelected(event: any) {
     };
   }
 
-  prepareDocumentView(document: any): any {
+  prepareDocumentView(document: DashboardTaxDocument): DashboardTaxDocument {
     return {
       ...document,
       view: {
@@ -807,9 +838,25 @@ onFileSelected(event: any) {
     );
   }
 
+  issueLibreDteDocument(documentId: string): void {
+    this.runDocumentAction(
+      documentId,
+      () => this.taxDocumentsService.issueLibreDte(documentId),
+      'No se pudo emitir con LibreDTE'
+    );
+  }
+
+  syncProviderStatus(documentId: string): void {
+    this.runDocumentAction(
+      documentId,
+      () => this.taxDocumentsService.syncProviderStatus(documentId),
+      'No se pudo sincronizar el estado'
+    );
+  }
+
   runDocumentAction(
     documentId: string,
-    action: () => any,
+    action: () => Observable<TaxDocument>,
     errorMessage: string
   ): void {
     if (this.documentActionIds[documentId]) return;
@@ -821,7 +868,7 @@ onFileSelected(event: any) {
         this.loadPendingTaxDocuments();
         this.loadTaxDocuments();
       },
-      error: (err: any) => {
+      error: (err: unknown) => {
         console.error(errorMessage, err);
         this.documentActionIds[documentId] = false;
         alert(errorMessage);
@@ -840,7 +887,7 @@ onFileSelected(event: any) {
     return this.uploadingDocumentIds[documentId] === true;
   }
 
-  openDocument(document: any): void {
+  openDocument(document: DashboardTaxDocument): void {
     if (!document.pdfUrl) return;
 
     const url = document.pdfUrl.startsWith('http')
@@ -850,7 +897,17 @@ onFileSelected(event: any) {
     window.open(url, '_blank', 'noopener');
   }
 
-  getDocumentCustomerName(document: any): string {
+  openDocumentXml(document: DashboardTaxDocument): void {
+    if (!document.xmlUrl) return;
+
+    const url = document.xmlUrl.startsWith('http')
+      ? document.xmlUrl
+      : `${API_URL}${document.xmlUrl}`;
+
+    window.open(url, '_blank', 'noopener');
+  }
+
+  getDocumentCustomerName(document: DashboardTaxDocument): string {
     return document?.customer?.name ||
       document?.customer?.email ||
       document?.appointment?.customer?.name ||
@@ -858,15 +915,15 @@ onFileSelected(event: any) {
       'Cliente';
   }
 
-  getDocumentAppointmentDate(document: any): string | null {
+  getDocumentAppointmentDate(document: DashboardTaxDocument): string | null {
     return document?.appointmentDate || document?.appointment?.date || null;
   }
 
-  getDocumentIssueDate(document: any): string | null {
+  getDocumentIssueDate(document: DashboardTaxDocument): string | null {
     return document?.generatedAt || document?.uploadedAt || document?.createdAt || null;
   }
 
-  getDocumentSentDate(document: any): string | null {
+  getDocumentSentDate(document: DashboardTaxDocument): string | null {
     return document?.sentAt || document?.emailSentAt || null;
   }
 
@@ -898,6 +955,74 @@ onFileSelected(event: any) {
     document
       .getElementById('professional-profile-form')
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async copyPublicProfileLink(): Promise<void> {
+    if (!this.publicProfileUrl || !this.profile.slug) return;
+
+    await this.copyToClipboard(this.publicProfileUrl);
+    this.publicProfileMessage = 'Enlace copiado correctamente';
+    this.recordProfileEvent('COPY_LINK');
+  }
+
+  async sharePublicProfile(): Promise<void> {
+    if (!this.publicProfileUrl || !this.profile.slug) return;
+
+    const shareData = {
+      title: 'Mi perfil en Conecta',
+      text: 'Reserva una cita conmigo en Conecta.',
+      url: this.publicProfileUrl,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        this.publicProfileMessage = 'Perfil compartido correctamente';
+        this.recordProfileEvent('SHARE');
+        return;
+      }
+    } catch (error) {
+      console.warn('No se pudo compartir el perfil:', error);
+      return;
+    }
+
+    await this.copyToClipboard(this.publicProfileUrl);
+    this.publicProfileMessage = 'Enlace copiado correctamente';
+    this.recordProfileEvent('COPY_LINK');
+  }
+
+  private buildPublicProfileUrl(slug: string): string {
+    if (!slug) return '';
+
+    return `https://conecta.app/profesional/${slug}`;
+  }
+
+  private async copyToClipboard(value: string): Promise<void> {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.setAttribute('readonly', 'true');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  }
+
+  private recordProfileEvent(type: 'COPY_LINK' | 'SHARE'): void {
+    if (!this.profile.slug) return;
+
+    this.http.post(
+      `${API_URL}/users/professionals/public/${this.profile.slug}/events`,
+      { type }
+    ).subscribe({
+      error: (err) => console.warn('No se pudo registrar evento de perfil:', err),
+    });
   }
   
 

@@ -68,8 +68,13 @@ getProfessionals() {
       error: (err) => console.error(err)
     });
 }
-  goToDetail(id: string) {
-  this.router.navigate(['/tabs/professional', id]);
+  goToDetail(professional: any) {
+  if (professional?.slug) {
+    this.router.navigate(['/profesional', professional.slug]);
+    return;
+  }
+
+  this.router.navigate(['/tabs/professional', professional?.id]);
 }
 
 }

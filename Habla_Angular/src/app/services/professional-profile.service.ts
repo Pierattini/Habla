@@ -3,6 +3,47 @@ import { HttpClient } from '@angular/common/http';
 import { API_URL } from '../core/config/api.config';
 
 export type ScheduleMode = 'CONTINUOUS' | 'SPECIFIC';
+export type AttentionMode = 'ONLINE' | 'PRESENTIAL' | 'BOTH';
+export type VideoProvider = 'JITSI' | 'GOOGLE_MEET' | 'ZOOM' | 'CUSTOM';
+
+export interface ProfessionalProfile {
+  slug?: string;
+  name: string;
+  specialty: string;
+  description: string;
+  price: number;
+  duration: number;
+  interval: number;
+  rules: string;
+  image: string;
+  attentionMode: AttentionMode;
+  officeAddress: string;
+  officeCity: string;
+  officeRegion: string;
+  officeCountry: string;
+  officeLatitude: number | null;
+  officeLongitude: number | null;
+  arrivalInstructions: string;
+  videoProvider: VideoProvider;
+  customVideoUrl: string;
+}
+
+export interface ProfessionalProfileResponse {
+  id: string;
+  professional?: Partial<ProfessionalProfile>;
+}
+
+export type ProfessionalProfileUpdatePayload = Omit<ProfessionalProfile, 'interval' | 'rules'>;
+
+export interface AvailabilityResponse {
+  day: string;
+  scheduleMode?: ScheduleMode;
+  startMinute?: number;
+  endMinute?: number;
+  breakMinute?: number;
+  specificSlots?: number[];
+  blockedRanges?: { startMinute: number; endMinute: number }[];
+}
 
 export interface AvailabilityPayload {
   day: string;
@@ -23,37 +64,15 @@ export class ProfessionalProfileService {
   constructor(private http: HttpClient) {}
 
   getProfile() {
-    return this.http.get(`${this.api}/users/me`);
+    return this.http.get<ProfessionalProfileResponse>(`${this.api}/users/me`);
   }
 
-  updateProfile(data: {
-  name: string;
-  image: string;
-  specialty?: string;
-  description?: string;
-  price?: number;
-  duration?: number;
-
-  attentionMode?: 'ONLINE' | 'PRESENTIAL' | 'BOTH';
-
-  officeAddress?: string;
-  officeCity?: string;
-  officeRegion?: string;
-  officeCountry?: string;
-
-  officeLatitude?: number | null;
-  officeLongitude?: number | null;
-
-  arrivalInstructions?: string;
-
-  videoProvider?: string;
-  customVideoUrl?: string;
-}) {
-    return this.http.patch(`${this.api}/users/me`, data);
+  updateProfile(data: ProfessionalProfileUpdatePayload) {
+    return this.http.patch<ProfessionalProfileResponse>(`${this.api}/users/me`, data);
   }
 
   getAvailability(professionalId: string) {
-    return this.http.get<any[]>(`${this.api}/availability/${professionalId}`);
+    return this.http.get<AvailabilityResponse[]>(`${this.api}/availability/${professionalId}`);
   }
 
   saveAvailability(data: AvailabilityPayload) {

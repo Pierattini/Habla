@@ -407,7 +407,7 @@ async editDocumentPreference() {
           {
             type: 'radio',
             label: 'Quiero que Conecta los gestione',
-            value: 'habla',
+            value: 'conecta',
             checked: this.documentAutomationEnabled,
           },
         ]
@@ -434,8 +434,8 @@ async editDocumentPreference() {
 
           const payload = isProfessional
             ? {
-                documentAutomationEnabled: selected === 'habla',
-                manualDocumentMode: selected !== 'habla',
+                documentAutomationEnabled: selected === 'conecta',
+                manualDocumentMode: selected !== 'conecta',
               }
             : {
                 wantsTaxDocumentByDefault: selected === 'yes',

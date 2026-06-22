@@ -84,6 +84,54 @@
 
 </div>
 
+  <ion-card>
+    <ion-card-content>
+      <h2 class="section-title">
+        Mi perfil publico
+      </h2>
+
+      <p class="public-profile-helper">
+        Comparte este enlace para que los clientes soliciten una cita dentro de Conecta.
+      </p>
+
+      <div class="public-profile-link" *ngIf="$any(this).publicProfileUrl; else publicProfilePending">
+        <span>{{ $any(this).publicProfileUrl }}</span>
+      </div>
+
+      <ng-template #publicProfilePending>
+        <div class="public-profile-link muted">
+          Guarda tu perfil para generar tu enlace publico.
+        </div>
+      </ng-template>
+
+      <div class="public-profile-actions">
+        <ion-button
+          fill="outline"
+          size="small"
+          [disabled]="!$any(this).publicProfileUrl"
+          (click)="$any(this).copyPublicProfileLink()"
+        >
+          Copiar enlace
+        </ion-button>
+
+        <ion-button
+          size="small"
+          [disabled]="!$any(this).publicProfileUrl"
+          (click)="$any(this).sharePublicProfile()"
+        >
+          Compartir perfil
+        </ion-button>
+      </div>
+
+      <p
+        *ngIf="$any(this).publicProfileMessage"
+        class="public-profile-message"
+      >
+        {{ $any(this).publicProfileMessage }}
+      </p>
+    </ion-card-content>
+  </ion-card>
+
   <!-- DOCUMENTOS -->
   <section class="documents-summary">
     <div class="metric-card">
@@ -196,6 +244,35 @@
           >
             Ver documento
           </a>
+
+          <a
+            *ngIf="$any(document).xmlUrl"
+            class="document-link"
+            [href]="$any(document).xmlUrl"
+            target="_blank"
+            rel="noopener"
+          >
+            Ver XML
+          </a>
+
+          <ion-button
+            fill="outline"
+            size="small"
+            [disabled]="$any(this).isDocumentActionRunning(document.id)"
+            (click)="$any(this).issueLibreDteDocument(document.id)"
+          >
+            Emitir LibreDTE
+          </ion-button>
+
+          <ion-button
+            *ngIf="$any(document).provider === 'LIBREDTE'"
+            fill="outline"
+            size="small"
+            [disabled]="$any(this).isDocumentActionRunning(document.id)"
+            (click)="$any(this).syncProviderStatus(document.id)"
+          >
+            Sincronizar SII
+          </ion-button>
 
           <ion-button
             fill="outline"

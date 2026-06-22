@@ -12,7 +12,15 @@ export interface PendingTaxDocument {
   emailSent?: boolean;
   emailSentAt?: string;
   type?: string;
+  provider?: string;
+  providerDocumentId?: string;
+  dteCode?: number;
+  folio?: string;
+  siiTrackId?: string;
+  siiStatus?: string;
+  siiStatusDetail?: string;
   pdfUrl?: string;
+  xmlUrl?: string;
   customer: {
     id: string;
     email: string;
@@ -36,7 +44,80 @@ export interface TaxDocument {
   emailSentAt?: string;
   status: string;
   type?: string;
+  provider?: string;
+  providerDocumentId?: string;
+  dteCode?: number;
+  folio?: string;
+  siiTrackId?: string;
+  siiStatus?: string;
+  siiStatusDetail?: string;
   pdfUrl?: string;
+  xmlUrl?: string;
+  createdAt?: string;
+  amount?: number;
+  currency?: string;
+  customer?: {
+    id?: string;
+    email?: string;
+    name?: string;
+  };
+  appointment?: {
+    date?: string;
+    customer?: {
+      id?: string;
+      email?: string;
+      name?: string;
+    };
+  };
+}
+
+export interface TaxDocumentView {
+  customerName: string;
+  appointmentDate: string | null;
+  issueDate: string | null;
+  sentDate: string | null;
+  statusLabel: string;
+  typeLabel: string;
+}
+
+export interface DashboardTaxDocument {
+  id: string;
+  appointmentId: string;
+  fileName?: string;
+  generatedAt?: string;
+  uploadedAt?: string;
+  sentAt?: string;
+  emailSent?: boolean;
+  emailSentAt?: string;
+  status: string;
+  type?: string;
+  provider?: string;
+  providerDocumentId?: string;
+  dteCode?: number;
+  folio?: string;
+  siiTrackId?: string;
+  siiStatus?: string;
+  siiStatusDetail?: string;
+  pdfUrl?: string;
+  xmlUrl?: string;
+  createdAt?: string;
+  amount?: number;
+  currency?: string;
+  appointmentDate?: string;
+  customer?: {
+    id?: string;
+    email?: string;
+    name?: string;
+  };
+  appointment?: {
+    date?: string;
+    customer?: {
+      id?: string;
+      email?: string;
+      name?: string;
+    };
+  };
+  view?: TaxDocumentView;
 }
 
 @Injectable({
@@ -93,6 +174,32 @@ export class TaxDocumentsService {
     return this.http.post<TaxDocument>(
       `${this.api}/tax-documents/${documentId}/resend-email`,
       {}
+    );
+  }
+
+  issueLibreDte(documentId: string, kind?: string) {
+    return this.http.post<TaxDocument>(
+      `${this.api}/tax-documents/${documentId}/issue-libredte`,
+      kind ? { kind } : {}
+    );
+  }
+
+  syncProviderStatus(documentId: string) {
+    return this.http.post<TaxDocument>(
+      `${this.api}/tax-documents/${documentId}/sync-provider-status`,
+      {}
+    );
+  }
+
+  getProviderPdf(documentId: string) {
+    return this.http.get<{ url: string }>(
+      `${this.api}/tax-documents/${documentId}/pdf`
+    );
+  }
+
+  getProviderXml(documentId: string) {
+    return this.http.get<{ url: string }>(
+      `${this.api}/tax-documents/${documentId}/xml`
     );
   }
 }
