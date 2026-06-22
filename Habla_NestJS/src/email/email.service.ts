@@ -32,20 +32,20 @@ export class EmailService {
     await transporter.sendMail({
       from: process.env.MAIL_FROM || process.env.EMAIL_USER,
       to: params.adminEmail,
-      subject: 'Nuevo ticket de soporte en Habla',
+      subject: 'Nuevo ticket de soporte en Conecta',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 560px; padding: 24px; color: #20172f;">
           <h2 style="margin: 0 0 18px; color: #6d4aff;">Nuevo ticket de soporte</h2>
           <p>Hola ${adminName},</p>
-          <p>Se ha creado un nuevo ticket de soporte en Habla.</p>
+          <p>Se ha creado un nuevo ticket de soporte en Conecta.</p>
           <div style="margin: 20px 0; padding: 16px; border: 1px solid #e6dcff; border-radius: 10px; background: #fbf8ff;">
             <p style="margin: 0 0 10px;"><strong>Cliente:</strong><br>${customerName}</p>
             <p style="margin: 0 0 10px;"><strong>Email:</strong><br>${customerEmail}</p>
             <p style="margin: 0 0 10px;"><strong>Ticket:</strong><br>${ticketId}</p>
             <p style="margin: 0;"><strong>Conversacion:</strong><br>${conversationId}</p>
           </div>
-          <p>Ingresa a Habla para revisar la conversacion y gestionar el estado del ticket.</p>
-          <p>Equipo Habla</p>
+          <p>Ingresa a Conecta para revisar la conversacion y gestionar el estado del ticket.</p>
+          <p>Equipo Conecta</p>
         </div>
       `,
     });
@@ -66,7 +66,7 @@ export class EmailService {
     await transporter.sendMail({
       from: process.env.MAIL_FROM || process.env.EMAIL_USER,
       to: params.adminEmail,
-      subject: 'Nuevo mensaje de soporte en Habla',
+      subject: 'Nuevo mensaje de soporte en Conecta',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 560px; padding: 24px; color: #20172f;">
           <h2 style="margin: 0 0 18px; color: #6d4aff;">Nuevo mensaje de soporte</h2>
@@ -77,8 +77,8 @@ export class EmailService {
             <p style="margin: 0 0 10px;"><strong>Ticket:</strong><br>${ticketId}</p>
             <p style="margin: 0;"><strong>Mensaje:</strong><br>${message}</p>
           </div>
-          <p>Ingresa a Habla para responder desde la bandeja de soporte.</p>
-          <p>Equipo Habla</p>
+          <p>Ingresa a Conecta para responder desde la bandeja de soporte.</p>
+          <p>Equipo Conecta</p>
         </div>
       `,
     });
@@ -96,10 +96,10 @@ export class EmailService {
     await transporter.sendMail({
       from: process.env.MAIL_FROM || process.env.EMAIL_USER,
       to: params.customerEmail,
-      subject: 'Documento disponible en Habla',
+      subject: 'Documento disponible en Conecta',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 560px; padding: 24px; color: #20172f;">
-          <h2 style="margin: 0 0 18px; color: #6d4aff;">Documento disponible en Habla</h2>
+          <h2 style="margin: 0 0 18px; color: #6d4aff;">Documento disponible en Conecta</h2>
 
           <p>Hola ${customerName},</p>
 
@@ -122,9 +122,9 @@ export class EmailService {
             ${pdfUrl}
           </p>
 
-          <p>Gracias por utilizar Habla.</p>
+          <p>Gracias por utilizar Conecta.</p>
 
-          <p>Equipo Habla</p>
+          <p>Equipo Conecta</p>
         </div>
       `,
     });

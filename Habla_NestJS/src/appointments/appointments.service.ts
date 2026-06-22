@@ -999,7 +999,7 @@ export class AppointmentsService {
       },
     });
 
-    const confirmLink = `http://localhost:3000/appointments/${appointmentId}/confirm-payment-link`;
+    const confirmLink = `${this.getPublicApiUrl()}/appointments/${appointmentId}/confirm-payment-link`;
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
@@ -1191,7 +1191,7 @@ export class AppointmentsService {
       },
     });
 
-    const confirmLink = `http://localhost:3000/appointments/${appointmentId}/refund-done`;
+    const confirmLink = `${this.getPublicApiUrl()}/appointments/${appointmentId}/refund-done`;
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
@@ -1284,7 +1284,7 @@ export class AppointmentsService {
 
         <br/>
 
-        <p>Gracias por usar Habla 👋</p>
+        <p>Gracias por usar Conecta 👋</p>
       </div>
     `,
     });
@@ -1378,6 +1378,13 @@ export class AppointmentsService {
     const roomName = `conecta-${appointmentId}`;
 
     return `${normalizedBaseUrl}/${roomName}`;
+  }
+
+  private getPublicApiUrl(): string {
+    return (process.env.PUBLIC_API_URL || 'http://localhost:3000').replace(
+      /\/$/,
+      '',
+    );
   }
 
   private ensureTaxDataReady(customer: any, professional: any): void {

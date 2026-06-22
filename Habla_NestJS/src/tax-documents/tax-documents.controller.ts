@@ -16,6 +16,7 @@ import type { AuthRequest } from '../auth/auth-request.interface';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { IssueLibreDteDocumentDto } from '../libredte/dto/issue-libredte-document.dto';
 import { CreateTaxDocumentDto } from './dto/create-tax-document.dto';
 import { MarkTaxDocumentDto } from './dto/mark-tax-document.dto';
 import { TaxDocumentsService } from './tax-documents.service';
@@ -133,5 +134,33 @@ export class TaxDocumentsController {
   @Post(':id/resend-email')
   resendEmail(@Param('id') id: string, @Request() req: AuthRequest) {
     return this.taxDocumentsService.resendTaxDocumentEmail(id, req.user);
+  }
+
+  @Post(':id/issue-libredte')
+  issueLibreDteDocument(
+    @Param('id') id: string,
+    @Request() req: AuthRequest,
+    @Body() body: IssueLibreDteDocumentDto,
+  ) {
+    return this.taxDocumentsService.issueLibreDteDocument(
+      id,
+      req.user,
+      body.kind,
+    );
+  }
+
+  @Post(':id/sync-provider-status')
+  syncProviderStatus(@Param('id') id: string, @Request() req: AuthRequest) {
+    return this.taxDocumentsService.syncLibreDteStatus(id, req.user);
+  }
+
+  @Get(':id/pdf')
+  getProviderPdf(@Param('id') id: string, @Request() req: AuthRequest) {
+    return this.taxDocumentsService.getLibreDteResource(id, req.user, 'pdf');
+  }
+
+  @Get(':id/xml')
+  getProviderXml(@Param('id') id: string, @Request() req: AuthRequest) {
+    return this.taxDocumentsService.getLibreDteResource(id, req.user, 'xml');
   }
 }

@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
@@ -115,6 +116,11 @@ export class UsersService {
       data: dataToUpdate,
     });
 
+    const existingProfessional = await this.prisma.professional.findUnique({
+      where: { userId },
+      select: { slug: true },
+    });
+
     // PROFESSIONAL
     await this.prisma.professional.updateMany({
       where: {
@@ -122,6 +128,10 @@ export class UsersService {
       },
 
       data: {
+        ...(existingProfessional && !existingProfessional.slug && {
+          slug: this.buildProfessionalSlug(dto.name || dataToUpdate.name || userId),
+        }),
+
         ...(dto.name !== undefined && {
           name: dto.name,
         }),
@@ -308,7 +318,6 @@ export class UsersService {
         { profession: { slug: { contains: search, mode: 'insensitive' } } },
         { profession: { category: { name: { contains: search, mode: 'insensitive' } } } },
         { user: { name: { contains: search, mode: 'insensitive' } } },
-        { user: { email: { contains: search, mode: 'insensitive' } } },
       ];
     }
 
@@ -383,35 +392,31 @@ export class UsersService {
     return {
       data: data.map((p) => ({
         id: p.userId,
-        email: p.user.email,
-        name: p.name || p.user.name || 'Profesional',
-        specialty: p.specialty,
+        slug: p.slug,
+        name: this.getProtectedProfessionalName(p.name || p.user.name),
+        firstName: this.getFirstName(p.name || p.user.name),
+        lastInitial: this.getLastInitial(p.name || p.user.name),
+        specialty: p.profession?.name || p.specialty,
         professionId: p.professionId,
         professionName: p.profession?.name || null,
         professionSlug: p.profession?.slug || null,
         categoryName: p.profession?.category?.name || null,
         categorySlug: p.profession?.category?.slug || null,
+        city: p.officeCity || null,
+        ratingAverage: 0,
+        reviewsCount: 0,
+        shortDescription: this.truncateText(p.description, 140),
         price: p.price,
         duration: p.duration,
         image: p.image,
         documentAutomationEnabled: p.documentAutomationEnabled,
         manualDocumentMode: p.manualDocumentMode,
-        taxId: p.taxId,
-        taxName: p.taxName,
-        taxEmail: p.taxEmail,
-        taxAddress: p.taxAddress,
-        taxCountry: p.taxCountry,
-        taxCity: p.taxCity,
+        taxDocumentReady: this.isProfessionalTaxReady(p),
         attentionMode: p.attentionMode,
-        officeAddress: p.officeAddress,
         officeCity: p.officeCity,
         officeRegion: p.officeRegion,
         officeCountry: p.officeCountry,
-        officeLatitude: p.officeLatitude,
-        officeLongitude: p.officeLongitude,
-        arrivalInstructions: p.arrivalInstructions,
         videoProvider: p.videoProvider,
-        customVideoUrl: p.customVideoUrl,
       })),
       total,
       page,
@@ -421,6 +426,139 @@ export class UsersService {
         .map((item) => item.specialty)
         .filter(Boolean),
     };
+  }
+
+  async getPublicProfessionalBySlug(slug: string) {
+    const professional = await this.prisma.professional.findUnique({
+      where: { slug },
+      include: {
+        user: true,
+        profession: {
+          include: {
+            category: true,
+          },
+        },
+      },
+    });
+
+    if (!professional) return null;
+
+    return {
+      id: professional.userId,
+      slug: professional.slug,
+      name: this.getProtectedProfessionalName(professional.name || professional.user.name),
+      firstName: this.getFirstName(professional.name || professional.user.name),
+      lastInitial: this.getLastInitial(professional.name || professional.user.name),
+      specialty: professional.profession?.name || professional.specialty || 'Profesional',
+      professionId: professional.professionId,
+      professionName: professional.profession?.name || null,
+      professionSlug: professional.profession?.slug || null,
+      categoryName: professional.profession?.category?.name || null,
+      categorySlug: professional.profession?.category?.slug || null,
+      city: professional.officeCity || null,
+      region: professional.officeRegion || null,
+      country: professional.officeCountry || null,
+      ratingAverage: 0,
+      reviewsCount: 0,
+      shortDescription: this.truncateText(professional.description, 140),
+      description: professional.description || '',
+      experience: professional.description || '',
+      specialties: [
+        professional.profession?.name,
+        professional.specialty,
+      ].filter(Boolean),
+      price: professional.price,
+      duration: professional.duration,
+      image: professional.image,
+      documentAutomationEnabled: professional.documentAutomationEnabled,
+      manualDocumentMode: professional.manualDocumentMode,
+      taxDocumentReady: this.isProfessionalTaxReady(professional),
+      attentionMode: professional.attentionMode,
+      officeCity: professional.officeCity,
+      officeRegion: professional.officeRegion,
+      officeCountry: professional.officeCountry,
+      videoProvider: professional.videoProvider,
+    };
+  }
+
+  async recordProfessionalProfileEvent(slug: string, type: 'VIEW' | 'COPY_LINK' | 'SHARE') {
+    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT "id" FROM "Professional" WHERE "slug" = ${slug} LIMIT 1
+    `;
+    const professional = rows[0];
+
+    if (!professional) return null;
+
+    const eventId = randomUUID();
+
+    await this.prisma.$executeRaw`
+      INSERT INTO "ProfessionalProfileEvent" ("id", "professionalId", "type", "createdAt")
+      VALUES (${eventId}, ${professional.id}, ${type}::"ProfileEventType", NOW())
+    `;
+
+    return { id: eventId };
+  }
+
+  private getProtectedProfessionalName(name?: string | null): string {
+    const firstName = this.getFirstName(name);
+    const lastInitial = this.getLastInitial(name);
+
+    return lastInitial ? `${firstName} ${lastInitial}.` : firstName;
+  }
+
+  private getFirstName(name?: string | null): string {
+    const parts = String(name || 'Profesional')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    return parts[0] || 'Profesional';
+  }
+
+  private getLastInitial(name?: string | null): string {
+    const parts = String(name || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    return parts.length > 1 ? parts[parts.length - 1][0]?.toUpperCase() || '' : '';
+  }
+
+  private truncateText(value?: string | null, max = 140): string {
+    const cleaned = String(value || '').trim();
+
+    if (cleaned.length <= max) return cleaned;
+
+    return `${cleaned.slice(0, max).trim()}...`;
+  }
+
+  private buildProfessionalSlug(name: string): string {
+    const base = String(name || 'profesional')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .slice(0, 70);
+
+    return `${base || 'profesional'}-${Date.now().toString(36)}`;
+  }
+
+  private isProfessionalTaxReady(professional: {
+    taxId?: string | null;
+    taxName?: string | null;
+    taxEmail?: string | null;
+    taxAddress?: string | null;
+    taxCity?: string | null;
+    user?: { email?: string | null } | null;
+  }): boolean {
+    return !!(
+      professional.taxId &&
+      professional.taxName &&
+      (professional.taxEmail || professional.user?.email) &&
+      professional.taxAddress &&
+      professional.taxCity
+    );
   }
 
   // PERFIL ACTUAL
@@ -471,6 +609,7 @@ export class UsersService {
         professional: {
           select: {
             id: true,
+            slug: true,
             name: true,
             specialty: true,
             professionId: true,

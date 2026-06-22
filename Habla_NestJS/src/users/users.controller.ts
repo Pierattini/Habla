@@ -10,6 +10,8 @@ import {
   Delete,
   Patch,
   ForbiddenException,
+  NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -55,7 +57,42 @@ export class UsersController {
     });
   }
 
+
+  @Get('professionals/public/:slug')
+  async getPublicProfessional(@Param('slug') slug: string) {
+    const professional = await this.usersService.getPublicProfessionalBySlug(slug);
+
+    if (!professional) {
+      throw new NotFoundException('Professional not found');
+    }
+
+    return professional;
+  }
   // 🔹 SOLO ADMIN VE TODOS
+
+  @Post('professionals/public/:slug/events')
+  async recordPublicProfessionalEvent(
+    @Param('slug') slug: string,
+    @Body() body: { type?: 'VIEW' | 'COPY_LINK' | 'SHARE' },
+  ) {
+    const allowedEvents = [
+      'VIEW',
+      'COPY_LINK',
+      'SHARE',
+    ];
+
+    if (!body.type || !allowedEvents.includes(body.type)) {
+      throw new BadRequestException('Invalid profile event type');
+    }
+
+    const event = await this.usersService.recordProfessionalProfileEvent(slug, body.type);
+
+    if (!event) {
+      throw new NotFoundException('Professional not found');
+    }
+
+    return { ok: true };
+  }
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Get()

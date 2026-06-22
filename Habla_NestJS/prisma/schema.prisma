@@ -150,6 +150,7 @@ model Professional {
   id     String @id @default(uuid())
   userId String @unique
   user   User   @relation(fields: [userId], references: [id])
+  slug   String? @unique
 
   professionId String?
   profession   Profession? @relation(fields: [professionId], references: [id])
@@ -188,8 +189,29 @@ model Professional {
   taxCountry                String?
   taxCity                   String?
 
+  profileEvents ProfessionalProfileEvent[]
+
   @@index([professionId])
   @@index([attentionMode])
+}
+
+model ProfessionalProfileEvent {
+  id             String           @id @default(uuid())
+  professionalId String
+  type           ProfileEventType
+  createdAt      DateTime         @default(now())
+
+  professional Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([professionalId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+enum ProfileEventType {
+  VIEW
+  COPY_LINK
+  SHARE
 }
 
 model Conversation {
@@ -289,6 +311,14 @@ model TaxDocument {
 
   pdfUrl        String?
   pdfPublicId   String?
+  xmlUrl        String?
+  xmlPublicId   String?
+  dteCode       Int?
+  folio         String?
+  siiTrackId    String?
+  siiStatus     String?
+  siiStatusDetail String?
+  lastProviderSyncAt DateTime?
   fileName      String?
   localFilePath String?
 
@@ -391,6 +421,7 @@ enum DocumentMode {
 
 enum TaxProvider {
   SII
+  LIBREDTE
   AEAT
   QUIPU
   HOLDED

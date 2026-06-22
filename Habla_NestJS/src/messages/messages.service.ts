@@ -243,7 +243,7 @@ export class MessagesService {
             create: {
               senderId: admin.id,
               content:
-                'Hola, somos soporte de Habla. Cuéntanos en qué podemos ayudarte.',
+                'Hola, somos soporte de Conecta. Cuéntanos en qué podemos ayudarte.',
             },
           },
         },
@@ -290,7 +290,7 @@ export class MessagesService {
       otherUser: {
         id: admin.id,
         email: admin.email,
-        name: admin.name || 'Soporte Habla',
+        name: admin.name || 'Soporte Conecta',
       },
       lastMessage: conversation.messages[0] ?? null,
       updatedAt: conversation.updatedAt,
@@ -665,7 +665,7 @@ export class MessagesService {
     this.emailService
       .sendSupportTicketCreatedEmail({
         adminEmail: admin.email,
-        adminName: admin.name || 'Soporte Habla',
+        adminName: admin.name || 'Soporte Conecta',
         customerName: customer.name || customer.email,
         customerEmail: customer.email,
         ticketId,
@@ -712,7 +712,7 @@ export class MessagesService {
 
       await this.emailService.sendSupportTicketMessageEmail({
         adminEmail: ticket.admin.email,
-        adminName: ticket.admin.name || 'Soporte Habla',
+        adminName: ticket.admin.name || 'Soporte Conecta',
         customerName: ticket.customer.name || ticket.customer.email,
         customerEmail: ticket.customer.email,
         ticketId: ticket.id,

@@ -84,6 +84,7 @@ export class AuthService {
           professional: {
             create: {
               name: data.name,
+              slug: this.buildProfessionalSlug(data.name),
               specialty: data.specialty || null,
               professionId: data.professionId || null,
               attentionMode: data.attentionMode ?? AttentionModality.ONLINE,
@@ -123,6 +124,18 @@ export class AuthService {
       where: { id },
       data,
     });
+  }
+
+  private buildProfessionalSlug(name: string): string {
+    const base = String(name || 'profesional')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .slice(0, 70);
+
+    return `${base || 'profesional'}-${Date.now().toString(36)}`;
   }
 }
 

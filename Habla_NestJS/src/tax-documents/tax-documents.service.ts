@@ -4,9 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DocumentMode, DocumentStatus, Prisma, Role } from '@prisma/client';
+import { DocumentMode, DocumentStatus, Prisma, Role, TaxProvider } from '@prisma/client';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { EmailService } from '../email/email.service';
+import { LibreDteService } from '../libredte/libredte.service';
+import { LibreDteDocumentKind, LibreDteResourceFormat } from '../libredte/libredte.types';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaxDocumentDto } from './dto/create-tax-document.dto';
 import { TaxDocumentUser } from './interfaces/tax-document-user.interface';
@@ -31,6 +33,7 @@ export class TaxDocumentsService {
     private readonly prisma: PrismaService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly emailService: EmailService,
+    private readonly libreDteService: LibreDteService,
   ) {}
 
   async createDocument(user: TaxDocumentUser, dto: CreateTaxDocumentDto) {
@@ -475,6 +478,206 @@ export class TaxDocumentsService {
       'DOCUMENT_CANCELLED',
       message,
     );
+  }
+
+  async issueLibreDteDocument(
+    id: string,
+    user: TaxDocumentUser,
+    kind?: LibreDteDocumentKind,
+  ) {
+    const document = await this.prisma.taxDocument.findUnique({
+      where: { id },
+      include: {
+        appointment: true,
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Tax document not found');
+    }
+
+    this.ensureProfessionalAccess(document.appointment, user);
+
+    const result = await this.libreDteService.issueDocument(document, kind);
+    const status = this.libreDteService.getSuccessStatus(result.siiStatus);
+    const issuedAt = new Date();
+    const pdfUrl =
+      result.pdfUrl ||
+      (result.providerDocumentId
+        ? await this.libreDteService.getResourceUrl(
+            result.providerDocumentId,
+            'pdf',
+          )
+        : document.pdfUrl);
+    const xmlUrl =
+      result.xmlUrl ||
+      (result.providerDocumentId
+        ? await this.libreDteService.getResourceUrl(
+            result.providerDocumentId,
+            'xml',
+          )
+        : document.xmlUrl);
+
+    const updatedDocument = await this.prisma.taxDocument.update({
+      where: { id },
+      data: {
+        status,
+        mode: DocumentMode.AUTOMATED,
+        type: this.libreDteService.getDocumentType(kind, document.type),
+        provider: TaxProvider.LIBREDTE,
+        providerDocumentId: result.providerDocumentId,
+        providerPayload: result.providerPayload as Prisma.InputJsonValue,
+        providerResponse: result.providerResponse as Prisma.InputJsonValue,
+        dteCode: result.dteCode,
+        folio: result.folio,
+        siiTrackId: result.siiTrackId,
+        siiStatus: result.siiStatus,
+        siiStatusDetail: result.siiStatusDetail,
+        pdfUrl,
+        xmlUrl,
+        generatedAt:
+          status === DocumentStatus.DOCUMENT_GENERATED
+            ? issuedAt
+            : document.generatedAt,
+        lastProviderSyncAt: issuedAt,
+        fileName: document.fileName || `documento-${result.folio || id}.pdf`,
+        events: {
+          create: {
+            actorId: user.id,
+            type:
+              status === DocumentStatus.DOCUMENT_GENERATED
+                ? 'LIBREDTE_DOCUMENT_ISSUED'
+                : 'LIBREDTE_DOCUMENT_FAILED',
+            message:
+              status === DocumentStatus.DOCUMENT_GENERATED
+                ? 'Documento emitido con LibreDTE'
+                : 'LibreDTE no pudo emitir el documento correctamente',
+            metadata: {
+              folio: result.folio,
+              siiTrackId: result.siiTrackId,
+              siiStatus: result.siiStatus,
+            },
+          },
+        },
+      },
+      include: {
+        appointment: {
+          include: {
+            customer: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+              },
+            },
+          },
+        },
+        events: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    await this.syncAppointmentDocumentStatus(
+      updatedDocument.appointmentId,
+      status,
+    );
+
+    return updatedDocument;
+  }
+
+  async syncLibreDteStatus(id: string, user: TaxDocumentUser) {
+    const document = await this.prisma.taxDocument.findUnique({
+      where: { id },
+      include: {
+        appointment: true,
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Tax document not found');
+    }
+
+    this.ensureProfessionalAccess(document.appointment, user);
+
+    if (!document.providerDocumentId) {
+      throw new BadRequestException('Provider document id is not available');
+    }
+
+    const result = await this.libreDteService.syncStatus(
+      document.providerDocumentId,
+    );
+    const status = this.libreDteService.getSuccessStatus(result.siiStatus);
+
+    const updatedDocument = await this.prisma.taxDocument.update({
+      where: { id },
+      data: {
+        status,
+        siiTrackId: result.siiTrackId || document.siiTrackId,
+        siiStatus: result.siiStatus,
+        siiStatusDetail: result.siiStatusDetail,
+        providerResponse: result.providerResponse as Prisma.InputJsonValue,
+        lastProviderSyncAt: new Date(),
+        events: {
+          create: {
+            actorId: user.id,
+            type: 'LIBREDTE_STATUS_SYNCED',
+            message: 'Estado de LibreDTE sincronizado',
+            metadata: {
+              siiTrackId: result.siiTrackId,
+              siiStatus: result.siiStatus,
+            },
+          },
+        },
+      },
+      include: {
+        events: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    await this.syncAppointmentDocumentStatus(
+      updatedDocument.appointmentId,
+      status,
+    );
+
+    return updatedDocument;
+  }
+
+  async getLibreDteResource(
+    id: string,
+    user: TaxDocumentUser,
+    format: LibreDteResourceFormat,
+  ) {
+    const document = await this.prisma.taxDocument.findUnique({
+      where: { id },
+      include: {
+        appointment: true,
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Tax document not found');
+    }
+
+    this.ensureAppointmentAccess(document.appointment, user.id);
+
+    const existingUrl = format === 'pdf' ? document.pdfUrl : document.xmlUrl;
+    if (existingUrl) {
+      return { url: existingUrl };
+    }
+
+    if (!document.providerDocumentId) {
+      throw new BadRequestException('Provider document id is not available');
+    }
+
+    return {
+      url: await this.libreDteService.getResourceUrl(
+        document.providerDocumentId,
+        format,
+      ),
+    };
   }
 
   async resendTaxDocumentEmail(id: string, user: TaxDocumentUser) {

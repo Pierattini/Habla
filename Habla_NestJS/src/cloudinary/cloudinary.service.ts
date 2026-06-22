@@ -17,7 +17,7 @@ export class CloudinaryService {
         .upload_stream(
           {
             resource_type: 'auto',
-            folder: 'habla-chat-files',
+            folder: 'conecta-chat-files',
           },
           (error, result) => {
             if (error) {
@@ -37,7 +37,7 @@ export class CloudinaryService {
         .upload_stream(
           {
             resource_type: 'auto',
-            folder: `habla-tax-documents/${documentId}`,
+            folder: `conecta-tax-documents/${documentId}`,
             use_filename: true,
             unique_filename: true,
           },

@@ -106,7 +106,9 @@ export class AppointmentsController {
     await this.appointmentsService.confirmPaymentFromLink(id);
 
     // 🔥 REDIRECCIÓN AL FRONT
-    return res.redirect('http://localhost:4200/tabs/appointments?refresh=true');
+    return res.redirect(
+      `${this.getFrontendUrl()}/tabs/appointments?refresh=true`,
+    );
   }
   // 🟡 REAGENDAR CITA (CUSTOMER o PROFESSIONAL)
   @UseGuards(JwtAuthGuard)
@@ -141,6 +143,13 @@ export class AppointmentsController {
   async refundDone(@Param('id') id: string, @Res() res: Response) {
     await this.appointmentsService.refundDone(id);
 
-    return res.redirect('http://localhost:4200/refund-success');
+    return res.redirect(`${this.getFrontendUrl()}/refund-success`);
+  }
+
+  private getFrontendUrl() {
+    return (process.env.PUBLIC_FRONTEND_URL || 'http://localhost:4200').replace(
+      /\/$/,
+      '',
+    );
   }
 }
