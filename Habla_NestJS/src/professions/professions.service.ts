@@ -73,7 +73,10 @@ export class ProfessionsService {
         },
       });
 
-      for (const [professionIndex, profession] of category.professions.entries()) {
+      for (const [
+        professionIndex,
+        profession,
+      ] of category.professions.entries()) {
         await this.prisma.profession.upsert({
           where: { slug: profession.slug },
           update: {

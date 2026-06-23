@@ -51,6 +51,8 @@ model User {
 
   customerAppointments     Appointment[]  @relation("CustomerAppointments")
   professionalAppointments Appointment[]  @relation("ProfessionalAppointments")
+  customerAppointmentRequests     AppointmentRequest[] @relation("CustomerAppointmentRequests")
+  professionalAppointmentRequests AppointmentRequest[] @relation("ProfessionalAppointmentRequests")
   availabilities           Availability[]
   professional             Professional?
 
@@ -189,10 +191,86 @@ model Professional {
   taxCountry                String?
   taxCity                   String?
 
+   // Suscripción Conecta
+  planStatus ProfessionalPlanStatus @default(FREE)
+  firstLeadReceivedAt DateTime?
+  subscriptionStartAt DateTime?
+  subscriptionEndAt DateTime?
+
   profileEvents ProfessionalProfileEvent[]
+  subscription  ProfessionalSubscription?
+  subscriptionPayments ProfessionalSubscriptionPayment[]
 
   @@index([professionId])
   @@index([attentionMode])
+}
+
+model ProfessionalSubscription {
+  id                     String                         @id @default(uuid())
+  professionalId         String                         @unique
+  status                 ProfessionalSubscriptionStatus @default(TRIAL)
+  provider               SubscriptionProvider?
+  providerSubscriptionId String?
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  autoRenew              Boolean                        @default(false)
+  cancelledAt            DateTime?
+  lastPaymentAt          DateTime?
+  createdAt              DateTime                       @default(now())
+  updatedAt              DateTime                       @updatedAt
+
+  professional Professional                      @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  payments     ProfessionalSubscriptionPayment[]
+
+  @@index([status])
+  @@index([currentPeriodEnd])
+}
+
+model ProfessionalSubscriptionPayment {
+  id                String                    @id @default(uuid())
+  professionalId    String
+  subscriptionId    String?
+  provider          SubscriptionProvider
+  providerPaymentId String?
+  amount            Int
+  currency          String                    @default("CLP")
+  status            SubscriptionPaymentStatus
+  paidAt            DateTime?
+  rawPayload        Json?
+  createdAt         DateTime                  @default(now())
+
+  professional Professional              @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  subscription ProfessionalSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([professionalId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AppointmentRequest {
+  id                     String                   @id @default(uuid())
+  customerId             String
+  professionalId         String
+  requestedDate          DateTime?
+  requestedMode          AttentionModality?
+  message                String?
+  status                 AppointmentRequestStatus @default(PENDING)
+  unlockedAt             DateTime?
+  convertedAppointmentId String?
+  conversationId         String?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+
+  customer     User          @relation("CustomerAppointmentRequests", fields: [customerId], references: [id])
+  professional User          @relation("ProfessionalAppointmentRequests", fields: [professionalId], references: [id])
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+
+  @@index([customerId])
+  @@index([professionalId])
+  @@index([status])
+  @@index([conversationId])
+  @@index([createdAt])
 }
 
 model ProfessionalProfileEvent {
@@ -227,6 +305,7 @@ model Conversation {
 
   messages       Message[]
   appointments   Appointment[]
+  appointmentRequests AppointmentRequest[]
   supportTickets SupportTicket[]
 
   @@unique([customerId, professionalId])
@@ -426,6 +505,45 @@ enum TaxProvider {
   QUIPU
   HOLDED
   NUBOX
+}
+
+enum ProfessionalPlanStatus {
+  FREE
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum ProfessionalSubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum SubscriptionProvider {
+  MERCADO_PAGO
+  FLOW
+  WEBPAY
+  MANUAL
+}
+
+enum SubscriptionPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum AppointmentRequestStatus {
+  PENDING
+  LOCKED_PENDING_SUBSCRIPTION
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CANCELLED
 }
 
 enum TaxDocumentType {

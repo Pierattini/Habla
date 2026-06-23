@@ -10,6 +10,8 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { v2 as cloudinary } from 'cloudinary';
 import { MessagesGateway } from './messages.gateway';
 import { EmailService } from '../email/email.service';
+import { ProfessionalAccessService } from '../appointment-requests/professional-access.service';
+import { ContactProtectionService } from './contact-protection.service';
 @Injectable()
 export class MessagesService {
   private readonly supportMessageEmailCooldownMs = 5 * 60 * 1000;
@@ -20,6 +22,8 @@ export class MessagesService {
     private cloudinaryService: CloudinaryService,
     private gateway: MessagesGateway,
     private emailService: EmailService,
+    private professionalAccess: ProfessionalAccessService,
+    private contactProtection: ContactProtectionService,
   ) {}
 
   async getSupportSummary() {
@@ -354,6 +358,16 @@ export class MessagesService {
       throw new ForbiddenException('No appointment exists between these users');
     }
 
+    if (sender.role === Role.PROFESSIONAL) {
+      await this.ensureProfessionalCanReplyToRequest(senderId, customerId);
+    }
+
+    this.ensureMessageDoesNotContainContactInfo(
+      content,
+      sender.id,
+      sender.role,
+    );
+
     let conversation = await this.prisma.conversation.findUnique({
       where: {
         customerId_professionalId: {
@@ -535,6 +549,29 @@ export class MessagesService {
       throw new ForbiddenException('You do not belong to this conversation');
     }
 
+    const sender = await this.prisma.user.findUnique({
+      where: { id: senderId },
+      select: { role: true },
+    });
+
+    if (!sender) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (sender?.role === Role.PROFESSIONAL) {
+      await this.ensureProfessionalCanReplyToRequest(
+        conversation.professionalId,
+        conversation.customerId,
+        conversationId,
+      );
+    }
+
+    this.ensureMessageDoesNotContainContactInfo(
+      content,
+      senderId,
+      sender.role,
+    );
+
     await this.prisma.conversation.update({
       where: { id: conversationId },
       data: {
@@ -634,6 +671,19 @@ export class MessagesService {
       throw new ForbiddenException('You do not belong to this conversation');
     }
 
+    const sender = await this.prisma.user.findUnique({
+      where: { id: senderId },
+      select: { role: true },
+    });
+
+    if (sender?.role === Role.PROFESSIONAL) {
+      await this.ensureProfessionalCanReplyToRequest(
+        conversation.professionalId,
+        conversation.customerId,
+        conversationId,
+      );
+    }
+
     const uploaded: any = await this.cloudinaryService.uploadFile(file);
 
     await this.prisma.conversation.update({
@@ -654,6 +704,72 @@ export class MessagesService {
         fileSize: file.size,
       },
     });
+  }
+
+  private ensureMessageDoesNotContainContactInfo(
+    content: string | undefined,
+    userId: string,
+    role: Role,
+  ) {
+    if (role === Role.ADMIN) return;
+
+    const validation = this.contactProtection.containsRestrictedContent(content);
+
+    if (!validation.blocked) return;
+
+    console.warn('CONTACT_BLOCKED', {
+      userId,
+      role,
+      reason: validation.reason,
+      date: new Date().toISOString(),
+    });
+
+    throw new ForbiddenException({
+      code: 'CONTACT_INFORMATION_BLOCKED',
+      message:
+        'Por seguridad y para proteger a pacientes y profesionales, los datos de contacto se compartirán una vez confirmada la reserva.',
+    });
+  }
+
+  private async ensureProfessionalCanReplyToRequest(
+    professionalId: string,
+    customerId: string,
+    conversationId?: string,
+  ): Promise<void> {
+    const appointmentExists = await this.prisma.appointment.findFirst({
+      where: {
+        customerId,
+        professionalId,
+        status: {
+          not: AppointmentStatus.CANCELLED,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (appointmentExists) return;
+
+    const pendingRequest = await (this.prisma as any).appointmentRequest.findFirst({
+      where: {
+        customerId,
+        professionalId,
+        ...(conversationId ? { conversationId } : {}),
+        status: {
+          in: ['PENDING', 'LOCKED_PENDING_SUBSCRIPTION'],
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!pendingRequest) return;
+
+    const access = await this.professionalAccess.getAccessByUserId(professionalId);
+
+    if (!access.canReplyMessages) {
+      throw new ForbiddenException(
+        'Activa tu plan profesional por $10.000 CLP mensuales para responder solicitudes de pacientes.',
+      );
+    }
   }
 
   private notifySupportTicketCreated(

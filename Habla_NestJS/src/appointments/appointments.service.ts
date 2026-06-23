@@ -68,6 +68,20 @@ export class AppointmentsService {
       throw new NotFoundException('Professional not found');
     }
 
+    console.log('PLAN STATUS:', professional?.planStatus);
+    console.log('FIRST LEAD:', professional?.firstLeadReceivedAt);
+
+    if (
+      professional.planStatus === 'FREE' &&
+      professional.firstLeadReceivedAt
+    ) {
+      throw new ForbiddenException({
+        code: 'PROFESSIONAL_SUBSCRIPTION_REQUIRED',
+        message:
+          'Este profesional debe activar su plan Conecta para recibir nuevas solicitudes',
+      });
+    }
+
     if (professional.user.role !== 'PROFESSIONAL') {
       throw new ForbiddenException('Selected user is not a professional');
     }
@@ -235,6 +249,17 @@ export class AppointmentsService {
       this.ensureTaxDataReady(customer, professional);
     }
 
+    if (
+      professional.planStatus === 'FREE' &&
+      !professional.firstLeadReceivedAt
+    ) {
+      await this.prisma.professional.update({
+        where: { userId: professionalId },
+        data: {
+          firstLeadReceivedAt: new Date(),
+        },
+      });
+    }
     const appointment = await this.prisma.appointment.create({
       data: {
         date,
@@ -302,8 +327,11 @@ export class AppointmentsService {
           customerTaxCity: customer.taxCity,
           professionalTaxId: professional.taxId,
           professionalTaxName:
-            professional.taxName || professional.name || professional.user.email,
-          professionalTaxEmail: professional.taxEmail || professional.user.email,
+            professional.taxName ||
+            professional.name ||
+            professional.user.email,
+          professionalTaxEmail:
+            professional.taxEmail || professional.user.email,
           professionalTaxAddress: professional.taxAddress,
           professionalTaxCountry:
             professional.taxCountry || professional.user.country,
@@ -578,9 +606,16 @@ export class AppointmentsService {
 
         const slotEnd = new Date(slotDate.getTime() + duration * 60000);
         const isBooked = appointments.some((appt) => {
-          const appointmentEnd = new Date(appt.date.getTime() + duration * 60000);
+          const appointmentEnd = new Date(
+            appt.date.getTime() + duration * 60000,
+          );
 
-          return this.rangesOverlap(slotDate, slotEnd, appt.date, appointmentEnd);
+          return this.rangesOverlap(
+            slotDate,
+            slotEnd,
+            appt.date,
+            appointmentEnd,
+          );
         });
 
         if (!isBooked) {
@@ -718,12 +753,7 @@ export class AppointmentsService {
     return startA < endB && endA > startB;
   }
 
-  private rangesOverlap(
-    startA: Date,
-    endA: Date,
-    startB: Date,
-    endB: Date,
-  ) {
+  private rangesOverlap(startA: Date, endA: Date, startB: Date, endB: Date) {
     return startA < endB && endA > startB;
   }
 
@@ -1391,7 +1421,9 @@ export class AppointmentsService {
     const customerMissing = [
       !customer.taxId ? 'RUT cliente' : null,
       !customer.taxName ? 'nombre tributario cliente' : null,
-      !(customer.taxEmail || customer.email) ? 'email tributario cliente' : null,
+      !(customer.taxEmail || customer.email)
+        ? 'email tributario cliente'
+        : null,
       !customer.taxAddress ? 'direccion tributaria cliente' : null,
       !customer.taxCity ? 'ciudad/comuna cliente' : null,
     ].filter(Boolean);
@@ -1399,7 +1431,9 @@ export class AppointmentsService {
     const professionalMissing = [
       !professional.taxId ? 'RUT profesional' : null,
       !professional.taxName ? 'razon social profesional' : null,
-      !(professional.taxEmail || professional.user?.email) ? 'email tributario profesional' : null,
+      !(professional.taxEmail || professional.user?.email)
+        ? 'email tributario profesional'
+        : null,
       !professional.taxAddress ? 'direccion tributaria profesional' : null,
       !professional.taxCity ? 'ciudad/comuna profesional' : null,
     ].filter(Boolean);

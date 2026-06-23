@@ -12,6 +12,8 @@ import { AvailabilityModule } from './availability/availability.module';
 import { MessagesModule } from './messages/messages.module';
 import { TaxDocumentsModule } from './tax-documents/tax-documents.module';
 import { ProfessionsModule } from './professions/professions.module';
+import { AppointmentRequestsModule } from './appointment-requests/appointment-requests.module';
+import { ProfessionalSubscriptionsModule } from './professional-subscriptions/professional-subscriptions.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { ProfessionsModule } from './professions/professions.module';
     MessagesModule,
     TaxDocumentsModule,
     ProfessionsModule,
+    AppointmentRequestsModule,
+    ProfessionalSubscriptionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
