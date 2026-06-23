@@ -114,8 +114,8 @@ export const routes: Routes = [
   {
     path: 'profesional/:slug',
     loadComponent: () =>
-      import('./pages/professional-detail/professional-detail.component')
-        .then(m => m.ProfessionalDetailComponent),
+      import('./pages/public-professional/public-professional.component')
+        .then(m => m.PublicProfessionalComponent),
   },
   // 🔥 INICIO
   {

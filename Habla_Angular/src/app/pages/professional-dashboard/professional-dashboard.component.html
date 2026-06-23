@@ -132,6 +132,162 @@
     </ion-card-content>
   </ion-card>
 
+  <ion-card>
+    <ion-card-content>
+      <div class="documents-title-row">
+        <h2 class="section-title">
+          Plan profesional
+        </h2>
+
+        <span class="document-badge">
+          {{ $any(this).getPlanBadgeLabel() }}
+        </span>
+      </div>
+
+      <div class="document-card">
+        <div class="document-main">
+          <div>
+            <h3>{{ $any(this).getPlanStatusLabel() }}</h3>
+            <p>
+              {{ $any(this).isPlanActive
+                ? 'Tu Plan Conecta esta activo. Puedes gestionar solicitudes y responder pacientes.'
+                : 'Tu perfil puede aparecer en busquedas, pero para gestionar solicitudes y responder pacientes debes activar tu Plan Conecta.' }}
+            </p>
+
+            <p *ngIf="$any(this).isPlanActive && $any(this).getPlanEndDateLabel()">
+              Plan activo hasta {{ $any(this).getPlanEndDateLabel() }}
+            </p>
+          </div>
+        </div>
+
+        <div class="document-actions" *ngIf="!$any(this).isPlanActive">
+          <ion-button
+            size="small"
+            (click)="$any(this).showPlanComingSoon()"
+          >
+            Activar Plan Conecta - $10.000 CLP/mes
+          </ion-button>
+        </div>
+
+        <div class="document-actions" *ngIf="$any(this).isDevelopmentMode">
+          <ion-button
+            *ngIf="!$any(this).isPlanActive"
+            fill="outline"
+            size="small"
+            [disabled]="$any(this).subscriptionActionRunning"
+            (click)="$any(this).activatePlanManualDemo()"
+          >
+            {{ $any(this).subscriptionActionRunning ? 'Activando...' : 'Activar Manualmente (Demo)' }}
+          </ion-button>
+
+          <ion-button
+            *ngIf="$any(this).isPlanActive"
+            fill="outline"
+            size="small"
+            [disabled]="$any(this).subscriptionActionRunning"
+            (click)="$any(this).deactivatePlanManualDemo()"
+          >
+            {{ $any(this).subscriptionActionRunning ? 'Cancelando...' : 'Cancelar Manualmente (Demo)' }}
+          </ion-button>
+        </div>
+
+        <p
+          *ngIf="$any(this).planActionMessage"
+          class="documents-empty"
+        >
+          {{ $any(this).planActionMessage }}
+        </p>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card>
+    <ion-card-content>
+      <h2 class="section-title">
+        Solicitudes de pacientes
+      </h2>
+
+      <div
+        *ngIf="loaded && $any(this).appointmentRequests.length === 0"
+        class="documents-empty"
+      >
+        Aun no tienes solicitudes de pacientes.
+      </div>
+
+      <div
+        *ngFor="let request of $any(this).appointmentRequests"
+        class="document-card"
+      >
+        <div class="document-main">
+          <div>
+            <h3>
+              {{ request.locked ? 'Paciente interesado' : (request.customer?.name || 'Paciente') }}
+            </h3>
+
+            <p>
+              Solicitud recibida {{ request.createdAt | date:'dd/MM/yyyy HH:mm' }}
+            </p>
+          </div>
+
+          <span class="document-badge">
+            {{ $any(this).getRequestStatusLabel(request.status) }}
+          </span>
+        </div>
+
+        <ng-container *ngIf="request.locked || !$any(this).professionalAccess.canManageRequests; else unlockedRequest">
+          <p class="documents-empty">
+            Tienes una solicitud pendiente. Activa tu Plan Conecta por $10.000 CLP mensuales para ver los datos completos del paciente y gestionar esta solicitud.
+          </p>
+
+          <div class="document-actions">
+            <ion-button
+              size="small"
+              (click)="$any(this).showPlanComingSoon()"
+            >
+              Activar Plan Conecta
+            </ion-button>
+          </div>
+        </ng-container>
+
+        <ng-template #unlockedRequest>
+          <div class="document-meta">
+            <span>
+              Fecha solicitada:
+              {{ request.requestedDate ? (request.requestedDate | date:'dd/MM/yyyy HH:mm') : 'Por coordinar' }}
+            </span>
+
+            <span>
+              Modalidad: {{ $any(this).getRequestModeLabel(request.requestedMode) }}
+            </span>
+          </div>
+
+          <p *ngIf="request.message" class="documents-empty">
+            {{ request.message }}
+          </p>
+
+          <div class="document-actions">
+            <ion-button
+              size="small"
+              [disabled]="!$any(this).canManageRequest(request) || $any(this).isRequestActionRunning(request.id)"
+              (click)="$any(this).acceptAppointmentRequest(request)"
+            >
+              Aceptar
+            </ion-button>
+
+            <ion-button
+              fill="outline"
+              size="small"
+              [disabled]="!$any(this).canManageRequest(request) || $any(this).isRequestActionRunning(request.id)"
+              (click)="$any(this).rejectAppointmentRequest(request)"
+            >
+              Rechazar
+            </ion-button>
+          </div>
+        </ng-template>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
   <!-- DOCUMENTOS -->
   <section class="documents-summary">
     <div class="metric-card">

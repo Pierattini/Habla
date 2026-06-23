@@ -14,7 +14,13 @@ import {
   ProfessionalProfileService,
   ScheduleMode
 } from '../../services/professional-profile.service';
+import {
+  ProfessionalAccess,
+  ProfessionalAppointmentRequest,
+  ProfessionalPlanService
+} from '../../services/professional-plan.service';
 import { API_URL } from '../../core/config/api.config';
+import { environment } from '../../../environments/environment';
 
 import {
   IonContent,
@@ -92,6 +98,9 @@ export class ProfessionalDashboardComponent {
   isSaving = false;
   publicProfileUrl = '';
   publicProfileMessage = '';
+  planActionMessage = '';
+  subscriptionActionRunning = false;
+  requestActionIds: Record<string, boolean> = {};
   private professionalUserId = '';
   private dashboardRequestsPending = 0;
   documentFilters = [
@@ -110,6 +119,7 @@ export class ProfessionalDashboardComponent {
   constructor(
     private professionalProfileService: ProfessionalProfileService,
     private taxDocumentsService: TaxDocumentsService,
+    private professionalPlanService: ProfessionalPlanService,
     private http: HttpClient,
     private cdr: ChangeDetectorRef
   ) {
@@ -123,11 +133,13 @@ export class ProfessionalDashboardComponent {
   ionViewWillEnter() {
     this.loading = true;
     this.loaded = false;
-    this.dashboardRequestsPending = 3;
+    this.dashboardRequestsPending = 5;
 
     this.loadProfile();
     this.loadPendingTaxDocuments();
     this.loadTaxDocuments();
+    this.loadProfessionalAccess();
+    this.loadAppointmentRequests();
   }
 
   profile: ProfessionalProfile = {
@@ -219,6 +231,15 @@ export class ProfessionalDashboardComponent {
 
   pendingTaxDocuments: DashboardTaxDocument[] = [];
   taxDocuments: DashboardTaxDocument[] = [];
+  professionalAccess: ProfessionalAccess = {
+    subscriptionStatus: 'TRIAL',
+    canReceiveUnlimitedRequests: false,
+    canManageRequests: false,
+    canReplyMessages: false,
+    canViewStats: false,
+    canUsePremiumTools: false,
+  };
+  appointmentRequests: ProfessionalAppointmentRequest[] = [];
   dashboardView = {
     pendingDocumentsCount: 0,
     sentDocumentsCount: 0,
@@ -278,6 +299,15 @@ export class ProfessionalDashboardComponent {
 
   get shouldShowProfessionalCompletion(): boolean {
     return this.loaded && this.professionalCompletionItems.length > 0;
+  }
+
+  get isPlanActive(): boolean {
+    return this.professionalAccess.subscriptionStatus === 'ACTIVE' &&
+      this.professionalAccess.canManageRequests === true;
+  }
+
+  get isDevelopmentMode(): boolean {
+    return environment.production === false;
   }
 
   saveProfile() {
@@ -687,6 +717,187 @@ onFileSelected(event: Event) {
         this.finishDashboardRequest();
       }
     });
+  }
+
+  loadProfessionalAccess(): void {
+    this.professionalPlanService.getAccess().subscribe({
+      next: (access) => {
+        this.professionalAccess = access;
+      },
+      error: (err) => {
+        console.error('Error cargando plan profesional:', err);
+        this.finishDashboardRequest();
+      },
+      complete: () => {
+        this.finishDashboardRequest();
+      }
+    });
+  }
+
+  loadAppointmentRequests(): void {
+    this.professionalPlanService.getAppointmentRequests().subscribe({
+      next: (requests) => {
+        this.appointmentRequests = Array.isArray(requests) ? requests : [];
+      },
+      error: (err) => {
+        console.error('Error cargando solicitudes de pacientes:', err);
+        this.appointmentRequests = [];
+        this.finishDashboardRequest();
+      },
+      complete: () => {
+        this.finishDashboardRequest();
+      }
+    });
+  }
+
+  showPlanComingSoon(): void {
+    this.planActionMessage = 'Proximamente podras activar tu plan desde la app. Por ahora esta funcion esta en preparacion.';
+    alert(this.planActionMessage);
+  }
+
+  activatePlanManualDemo(): void {
+    if (!this.isDevelopmentMode || this.subscriptionActionRunning) return;
+
+    this.subscriptionActionRunning = true;
+    this.professionalPlanService.activateManual().subscribe({
+      next: () => {
+        this.planActionMessage = 'Plan activado manualmente para demo.';
+        this.refreshPlanAndRequests();
+      },
+      error: (err) => {
+        console.error('Error activando plan manual:', err);
+        alert(err?.error?.message || 'No se pudo activar el plan manualmente');
+      },
+      complete: () => {
+        this.subscriptionActionRunning = false;
+      }
+    });
+  }
+
+  deactivatePlanManualDemo(): void {
+    if (!this.isDevelopmentMode || this.subscriptionActionRunning) return;
+
+    this.subscriptionActionRunning = true;
+    this.professionalPlanService.deactivateManual().subscribe({
+      next: () => {
+        this.planActionMessage = 'Plan cancelado manualmente para demo.';
+        this.refreshPlanAndRequests();
+      },
+      error: (err) => {
+        console.error('Error cancelando plan manual:', err);
+        alert(err?.error?.message || 'No se pudo cancelar el plan manualmente');
+      },
+      complete: () => {
+        this.subscriptionActionRunning = false;
+      }
+    });
+  }
+
+  refreshPlanAndRequests(): void {
+    this.professionalPlanService.getAccess().subscribe({
+      next: (access) => {
+        this.professionalAccess = access;
+      },
+      error: (err) => console.error('Error refrescando plan:', err),
+    });
+
+    this.professionalPlanService.getAppointmentRequests().subscribe({
+      next: (requests) => {
+        this.appointmentRequests = Array.isArray(requests) ? requests : [];
+      },
+      error: (err) => console.error('Error refrescando solicitudes:', err),
+    });
+  }
+
+  acceptAppointmentRequest(request: ProfessionalAppointmentRequest): void {
+    if (!this.canManageRequest(request) || this.requestActionIds[request.id]) return;
+
+    this.requestActionIds[request.id] = true;
+
+    this.professionalPlanService.acceptRequest(request.id).subscribe({
+      next: () => {
+        this.loadAppointmentRequests();
+      },
+      error: (err) => {
+        console.error('Error aceptando solicitud:', err);
+        alert(err?.error?.message || 'No se pudo aceptar la solicitud');
+      },
+      complete: () => {
+        this.requestActionIds[request.id] = false;
+      }
+    });
+  }
+
+  rejectAppointmentRequest(request: ProfessionalAppointmentRequest): void {
+    if (!this.canManageRequest(request) || this.requestActionIds[request.id]) return;
+
+    this.requestActionIds[request.id] = true;
+
+    this.professionalPlanService.rejectRequest(request.id).subscribe({
+      next: () => {
+        this.loadAppointmentRequests();
+      },
+      error: (err) => {
+        console.error('Error rechazando solicitud:', err);
+        alert(err?.error?.message || 'No se pudo rechazar la solicitud');
+      },
+      complete: () => {
+        this.requestActionIds[request.id] = false;
+      }
+    });
+  }
+
+  canManageRequest(request: ProfessionalAppointmentRequest): boolean {
+    return this.professionalAccess.canManageRequests === true &&
+      request.locked !== true &&
+      request.status === 'PENDING';
+  }
+
+  isRequestActionRunning(requestId: string): boolean {
+    return this.requestActionIds[requestId] === true;
+  }
+
+  getPlanStatusLabel(): string {
+    const labels: Record<string, string> = {
+      TRIAL: 'Gratis / Trial',
+      ACTIVE: 'Activo',
+      PAST_DUE: 'Vencido',
+      CANCELLED: 'Cancelado',
+      EXPIRED: 'Vencido',
+    };
+
+    return labels[this.professionalAccess.subscriptionStatus] || 'Gratis / Trial';
+  }
+
+  getPlanBadgeLabel(): string {
+    return this.isPlanActive ? 'Plan activo' : 'Plan gratis';
+  }
+
+  getPlanEndDateLabel(): string {
+    const value = this.professionalAccess.currentPeriodEnd;
+
+    if (!value) return '';
+
+    return new Date(value).toLocaleDateString('es-CL');
+  }
+
+  getRequestStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      PENDING: 'Pendiente',
+      LOCKED_PENDING_SUBSCRIPTION: 'Solicitud bloqueada',
+      ACCEPTED: 'Aceptada',
+      REJECTED: 'Rechazada',
+      EXPIRED: 'Vencida',
+      CANCELLED: 'Cancelada',
+    };
+
+    return labels[status] || status;
+  }
+
+  getRequestModeLabel(mode?: string | null): string {
+    if (mode === 'PRESENTIAL') return 'Presencial';
+    if (mode === 'BOTH') return 'Online o presencial';
+    return 'Online';
   }
 
   finishDashboardRequest(): void {

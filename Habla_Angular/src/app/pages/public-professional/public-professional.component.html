@@ -1,0 +1,149 @@
+<ion-content [fullscreen]="true">
+  <main class="public-profile">
+    <section class="loading-state" *ngIf="loading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Cargando perfil...</p>
+    </section>
+
+    <section class="empty-state" *ngIf="!loading && !professional">
+      <h1>Perfil no disponible</h1>
+      <p>{{ statusMessage || 'No encontramos este perfil profesional.' }}</p>
+      <ion-button (click)="goToLogin()">Ir a Conecta</ion-button>
+    </section>
+
+    <ng-container *ngIf="!loading && professional">
+      <section class="hero">
+        <ion-avatar class="avatar">
+          <img
+            [src]="professional.image || ('https://i.pravatar.cc/180?u=' + professional.id)"
+            [alt]="professional.name"
+          />
+        </ion-avatar>
+
+        <div class="hero-copy">
+          <p class="eyebrow">{{ professional.categoryName || 'Profesional Conecta' }}</p>
+          <h1>{{ professional.name }}</h1>
+          <p class="specialty">{{ professional.specialty }}</p>
+
+          <div class="public-meta">
+            <span *ngIf="getLocationLabel()">{{ getLocationLabel() }}</span>
+            <span>{{ getModeLabel() }}</span>
+            <span>{{ professional.ratingAverage || 0 }} / 5 · {{ professional.reviewsCount || 0 }} opiniones</span>
+          </div>
+        </div>
+
+        <div class="share-actions">
+          <ion-button fill="outline" size="small" (click)="copyProfileLink()">
+            Copiar enlace
+          </ion-button>
+          <ion-button size="small" (click)="shareProfile()">
+            Compartir perfil
+          </ion-button>
+        </div>
+      </section>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Perfil profesional</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p>
+            {{ professional.description || professional.shortDescription || 'Profesional disponible para atender a traves de Conecta.' }}
+          </p>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Experiencia y especialidades</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p>
+            {{ professional.experience || professional.shortDescription || 'Experiencia profesional disponible en Conecta.' }}
+          </p>
+
+          <div class="chips" *ngIf="getSpecialties().length > 0">
+            <span *ngFor="let item of getSpecialties()">{{ item }}</span>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Opiniones</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p>
+            Valoracion promedio: {{ professional.ratingAverage || 0 }} / 5
+          </p>
+          <p>
+            {{ professional.reviewsCount || 0 }} opiniones registradas.
+          </p>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Disponibilidad</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-datetime
+            presentation="date"
+            [(ngModel)]="selectedDate"
+            (ionChange)="onDateChange($event)">
+          </ion-datetime>
+
+          <div class="mode-switch" *ngIf="professional.attentionMode === 'BOTH'">
+            <button
+              type="button"
+              [class.active]="selectedAttentionMode === 'ONLINE'"
+              (click)="onAttentionModeChange('ONLINE')">
+              Online
+            </button>
+            <button
+              type="button"
+              [class.active]="selectedAttentionMode === 'PRESENTIAL'"
+              (click)="onAttentionModeChange('PRESENTIAL')">
+              Presencial
+            </button>
+          </div>
+
+          <p class="safe-note" *ngIf="selectedAttentionMode === 'PRESENTIAL'">
+            Direccion exacta disponible una vez confirmada la reserva.
+          </p>
+
+          <div class="hours-loading" *ngIf="loadingHours">
+            <ion-spinner name="crescent"></ion-spinner>
+          </div>
+
+          <div class="hours-grid" *ngIf="!loadingHours && availableHours.length > 0">
+            <button
+              type="button"
+              *ngFor="let hour of availableHours"
+              [class.active]="selectedHour === hour"
+              [disabled]="isHourDisabled(hour)"
+              (click)="toggleHour(hour)">
+              {{ hour }}
+            </button>
+          </div>
+
+          <p class="safe-note" *ngIf="!loadingHours && availableHours.length === 0">
+            No hay horarios disponibles para esta fecha.
+          </p>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-text color="primary" *ngIf="statusMessage" class="status-message">
+        {{ statusMessage }}
+      </ion-text>
+
+      <ion-button
+        expand="block"
+        class="request-button"
+        [disabled]="!selectedHour || isBooking"
+        (click)="bookAppointment()">
+        {{ isBooking ? 'Solicitando...' : 'Solicitar cita' }}
+      </ion-button>
+    </ng-container>
+  </main>
+</ion-content>
