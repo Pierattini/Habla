@@ -33,6 +33,8 @@ model User {
   createdAt       DateTime @default(now())
   isActive        Boolean  @default(false)
   sessionDuration Int?
+  passwordResetTokenHash String?
+  passwordResetExpiresAt DateTime?
 
   country  String?
   timezone String? @default("America/Santiago")
@@ -283,6 +285,20 @@ model ProfessionalProfileEvent {
 
   @@index([professionalId])
   @@index([type])
+  @@index([createdAt])
+}
+
+model NotificationLog {
+  id            String   @id @default(uuid())
+  type          String
+  channel       String
+  status        String
+  provider      String?
+  reason        String?
+  recipientHash String?
+  createdAt     DateTime @default(now())
+
+  @@index([type, channel])
   @@index([createdAt])
 }
 

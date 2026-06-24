@@ -118,7 +118,7 @@ export class AppointmentRequestsService {
     });
 
     return requests.map((request: any) =>
-      this.toProfessionalView(request, access.canManageRequests),
+      this.toProfessionalView(request, access.canManageRequests, access.activationMessage),
     );
   }
 
@@ -144,7 +144,11 @@ export class AppointmentRequestsService {
       }
 
       const access = await this.professionalAccess.getAccessByUserId(userId);
-      return this.toProfessionalView(request, access.canManageRequests);
+      return this.toProfessionalView(
+        request,
+        access.canManageRequests,
+        access.activationMessage,
+      );
     }
 
     return request;
@@ -217,7 +221,7 @@ export class AppointmentRequestsService {
 
     if (!access.canManageRequests) {
       throw new ForbiddenException(
-        'Activa tu plan profesional por $10.000 CLP mensuales para gestionar solicitudes.',
+        access.activationMessage || 'Activa tu plan profesional para gestionar solicitudes.',
       );
     }
   }
@@ -254,7 +258,11 @@ export class AppointmentRequestsService {
     };
   }
 
-  private toProfessionalView(request: any, unlocked: boolean) {
+  private toProfessionalView(
+    request: any,
+    unlocked: boolean,
+    activationMessage?: string,
+  ) {
     const base = {
       id: request.id,
       requestedDate: request.requestedDate,
@@ -273,7 +281,8 @@ export class AppointmentRequestsService {
         },
         message: request.message ? 'Mensaje disponible al activar tu plan.' : null,
         activationMessage:
-          'Tienes una nueva solicitud de paciente. Activa tu plan profesional por $10.000 CLP mensuales para acceder a los datos de la solicitud y comenzar a recibir pacientes.',
+          activationMessage ||
+          'Tienes una nueva solicitud de paciente. Activa tu plan profesional para acceder a los datos de la solicitud y comenzar a recibir pacientes.',
       };
     }
 

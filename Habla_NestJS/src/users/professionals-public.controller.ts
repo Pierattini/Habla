@@ -7,8 +7,12 @@ import {
   Param,
   Post,
   Query,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
+import type { AuthRequest } from '../auth/auth-request.interface';
 
 type ProfileEventBody = {
   type?: 'VIEW' | 'COPY_LINK' | 'SHARE';
@@ -18,8 +22,10 @@ type ProfileEventBody = {
 export class ProfessionalsPublicController {
   constructor(private readonly usersService: UsersService) {}
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get()
   findPublicProfessionals(
+    @Request() req: AuthRequest,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
@@ -28,6 +34,7 @@ export class ProfessionalsPublicController {
     @Query('professionSlug') professionSlug?: string,
     @Query('categorySlug') categorySlug?: string,
     @Query('attentionMode') attentionMode?: string,
+    @Query('country') country?: string,
   ) {
     return this.usersService.findProfessionals({
       page: Number(page) || 1,
@@ -38,6 +45,13 @@ export class ProfessionalsPublicController {
       professionSlug,
       categorySlug,
       attentionMode,
+      country,
+      viewer: req.user
+        ? {
+            id: req.user.id,
+            role: req.user.role,
+          }
+        : undefined,
     });
   }
 

@@ -20,6 +20,11 @@ type FindProfessionalsParams = {
   professionSlug?: string;
   categorySlug?: string;
   attentionMode?: string;
+  country?: string;
+  viewer?: {
+    id: string;
+    role: Role;
+  };
 };
 
 @Injectable()
@@ -276,6 +281,7 @@ export class UsersService {
     const professionSlug = params.professionSlug?.trim();
     const categorySlug = params.categorySlug?.trim();
     const attentionMode = params.attentionMode?.trim();
+    const country = await this.resolveProfessionalCountryFilter(params);
     const legacyCatalogTerms: string[] = [];
 
     if (professionSlug) {
@@ -365,6 +371,28 @@ export class UsersService {
       where.attentionMode = attentionMode as AttentionModality;
     }
 
+    if (country) {
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
+        {
+          OR: [
+            { officeCountry: country },
+            {
+              AND: [
+                {
+                  OR: [
+                    { officeCountry: null },
+                    { officeCountry: '' },
+                  ],
+                },
+                { user: { country } },
+              ],
+            },
+          ],
+        },
+      ];
+    }
+
     const [total, data, specialtyRows] = await this.prisma.$transaction([
       this.prisma.professional.count({ where }),
       this.prisma.professional.findMany({
@@ -403,6 +431,7 @@ export class UsersService {
         categoryName: p.profession?.category?.name || null,
         categorySlug: p.profession?.category?.slug || null,
         city: p.officeCity || null,
+        country: p.officeCountry || p.user.country || null,
         ratingAverage: 0,
         reviewsCount: 0,
         shortDescription: this.truncateText(p.description, 140),
@@ -415,7 +444,7 @@ export class UsersService {
         attentionMode: p.attentionMode,
         officeCity: p.officeCity,
         officeRegion: p.officeRegion,
-        officeCountry: p.officeCountry,
+        officeCountry: p.officeCountry || p.user.country,
         videoProvider: p.videoProvider,
       })),
       total,
@@ -457,7 +486,7 @@ export class UsersService {
       categorySlug: professional.profession?.category?.slug || null,
       city: professional.officeCity || null,
       region: professional.officeRegion || null,
-      country: professional.officeCountry || null,
+      country: professional.officeCountry || professional.user.country || null,
       ratingAverage: 0,
       reviewsCount: 0,
       shortDescription: this.truncateText(professional.description, 140),
@@ -476,9 +505,40 @@ export class UsersService {
       attentionMode: professional.attentionMode,
       officeCity: professional.officeCity,
       officeRegion: professional.officeRegion,
-      officeCountry: professional.officeCountry,
+      officeCountry: professional.officeCountry || professional.user.country,
       videoProvider: professional.videoProvider,
     };
+  }
+
+  private normalizeSupportedCountry(country?: string | null): 'CL' | 'ES' | null {
+    const value = String(country || '').trim().toUpperCase();
+
+    if (value === 'CL' || value === 'ES') {
+      return value;
+    }
+
+    return null;
+  }
+
+  private async resolveProfessionalCountryFilter(
+    params: FindProfessionalsParams,
+  ): Promise<'CL' | 'ES' | null> {
+    const queryCountry = this.normalizeSupportedCountry(params.country);
+
+    if (params.viewer?.role === Role.ADMIN) {
+      return queryCountry;
+    }
+
+    if (!params.viewer?.id) {
+      return queryCountry || 'CL';
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: params.viewer.id },
+      select: { country: true },
+    });
+
+    return this.normalizeSupportedCountry(user?.country) || queryCountry || 'CL';
   }
 
   async recordProfessionalProfileEvent(slug: string, type: 'VIEW' | 'COPY_LINK' | 'SHARE') {

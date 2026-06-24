@@ -1,4 +1,4 @@
-import { Controller, Post, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -11,6 +11,11 @@ export class ProfessionalSubscriptionsController {
   constructor(
     private readonly professionalSubscriptions: ProfessionalSubscriptionsService,
   ) {}
+
+  @Get('pricing')
+  getPricing(@Query('country') country?: string) {
+    return this.professionalSubscriptions.getPricing(country);
+  }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROFESSIONAL)

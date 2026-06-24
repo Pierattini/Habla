@@ -21,6 +21,16 @@ export class AuthController {
     return this.authService.login(body.email, body.password);
   }
 
+  @Post('request-password-reset')
+  requestPasswordReset(@Body() body: { email: string }) {
+    return this.authService.requestPasswordReset(body.email);
+  }
+
+  @Post('reset-password')
+  resetPassword(@Body() body: { token: string; password: string }) {
+    return this.authService.resetPassword(body.token, body.password);
+  }
+
   // 👤 PERFIL
   @UseGuards(JwtAuthGuard)
   @Get('me')

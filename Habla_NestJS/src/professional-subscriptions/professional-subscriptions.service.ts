@@ -6,7 +6,28 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ProfessionalSubscriptionsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  getPricing(country?: string | null) {
+    const normalizedCountry = this.normalizeSupportedCountry(country);
+
+    if (normalizedCountry === 'ES') {
+      return {
+        country: 'ES',
+        amount: 15,
+        currency: 'EUR',
+        label: '15 EUR/mes',
+      };
+    }
+
+    return {
+      country: 'CL',
+      amount: 10000,
+      currency: 'CLP',
+      label: '$10.000 CLP/mes',
+    };
+  }
+
   async activateManual(userId: string) {
+    this.ensureDemoActionsEnabled();
     const professional = await this.getProfessionalRecord(userId);
     const now = new Date();
     const currentPeriodEnd = new Date(now);
@@ -52,6 +73,7 @@ export class ProfessionalSubscriptionsService {
   }
 
   async deactivateManual(userId: string) {
+    this.ensureDemoActionsEnabled();
     const professional = await this.getProfessionalRecord(userId);
     const now = new Date();
 
@@ -116,5 +138,20 @@ export class ProfessionalSubscriptionsService {
         unlockedAt: new Date(),
       },
     });
+  }
+
+  private normalizeSupportedCountry(country?: string | null): 'CL' | 'ES' {
+    const value = String(country || '').trim().toUpperCase();
+
+    return value === 'ES' ? 'ES' : 'CL';
+  }
+
+  private ensureDemoActionsEnabled() {
+    if (
+      process.env.NODE_ENV === 'production' ||
+      process.env.APP_ENV === 'production'
+    ) {
+      throw new ForbiddenException('Demo subscription actions are disabled');
+    }
   }
 }

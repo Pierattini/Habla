@@ -15,6 +15,8 @@ import {
   WeekDay,
 } from '@prisma/client';
 import * as nodemailer from 'nodemailer';
+import { NotificationService } from '../notifications/notification.service';
+import type { NotificationType } from '../notifications/notification.types';
 
 type AvailabilityConfig = {
   scheduleMode: ScheduleMode;
@@ -32,7 +34,10 @@ type TimeRange = {
 
 @Injectable()
 export class AppointmentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationService: NotificationService,
+  ) {}
   async create(
     customerId: string,
     professionalId: string,
@@ -457,6 +462,11 @@ export class AppointmentsService {
       );
     }
 
+    await this.sendAppointmentNotificationById(
+      updated.id,
+      'APPOINTMENT_CONFIRMATION',
+    );
+
     return updated;
   }
 
@@ -495,34 +505,55 @@ export class AppointmentsService {
     ) {
       const penalty = diffHours < 48 ? price * 0.5 : 0;
 
-      return this.prisma.appointment.update({
+      const updated = await this.prisma.appointment.update({
         where: { id },
         data: {
           status: AppointmentStatus.PENDING_PAYMENT,
           penalty,
         },
       });
+
+      await this.sendAppointmentNotificationById(
+        updated.id,
+        'APPOINTMENT_CANCELLATION',
+      );
+
+      return updated;
     }
 
     // 🔥 NO PAGADA Y MENOS DE 48H
     if (diffHours < 48) {
-      return this.prisma.appointment.update({
+      const updated = await this.prisma.appointment.update({
         where: { id },
         data: {
           status: AppointmentStatus.PENDING_PAYMENT,
           penalty: price * 0.5,
         },
       });
+
+      await this.sendAppointmentNotificationById(
+        updated.id,
+        'APPOINTMENT_CANCELLATION',
+      );
+
+      return updated;
     }
 
     // 🔥 MÁS DE 48H
-    return this.prisma.appointment.update({
+    const updated = await this.prisma.appointment.update({
       where: { id },
       data: {
         status: AppointmentStatus.CANCELLED,
         penalty: 0,
       },
     });
+
+    await this.sendAppointmentNotificationById(
+      updated.id,
+      'APPOINTMENT_CANCELLATION',
+    );
+
+    return updated;
   }
   async getAvailableSlots(professionalId: string, date: Date) {
     const professional = await this.prisma.professional.findUnique({
@@ -1018,6 +1049,11 @@ export class AppointmentsService {
       );
     }
 
+    await this.sendAppointmentNotificationById(
+      updated.id,
+      'APPOINTMENT_CONFIRMATION',
+    );
+
     return updated;
   }
   async sendPaymentEmail(to: string, appointmentId: string) {
@@ -1343,6 +1379,96 @@ export class AppointmentsService {
     }
 
     sendEmails();
+  }
+
+  private async sendAppointmentNotificationById(
+    appointmentId: string,
+    type: NotificationType,
+  ): Promise<void> {
+    try {
+      const appointment = await this.prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        include: {
+          customer: true,
+          professional: {
+            include: {
+              professional: true,
+            },
+          },
+        },
+      });
+
+      if (!appointment) return;
+
+      const timezone =
+        appointment.customer.timezone ||
+        appointment.professional.timezone ||
+        'America/Santiago';
+      const date = new Intl.DateTimeFormat('es-CL', {
+        dateStyle: 'medium',
+        timeZone: timezone,
+      }).format(appointment.date);
+      const time = new Intl.DateTimeFormat('es-CL', {
+        timeStyle: 'short',
+        timeZone: timezone,
+      }).format(appointment.date);
+      const fullAddress = [
+        appointment.appointmentAddress,
+        appointment.appointmentCity,
+        appointment.appointmentRegion,
+        appointment.appointmentCountry,
+      ]
+        .filter(Boolean)
+        .join(', ');
+      const professionalName =
+        appointment.professional.professional?.name ||
+        appointment.professional.name ||
+        'Profesional Conecta';
+
+      const data = {
+        appointmentDate: date,
+        appointmentTime: time,
+        timezone,
+        professionalName,
+        meetingUrl:
+          appointment.attentionMode === AttentionModality.ONLINE
+            ? appointment.meetLink
+            : null,
+        fullAddress:
+          appointment.attentionMode === AttentionModality.PRESENTIAL
+            ? fullAddress
+            : null,
+      };
+
+      await Promise.allSettled([
+        this.notificationService.notify({
+          type,
+          recipient: {
+            email: appointment.customer.email,
+            name: appointment.customer.name || 'Usuario',
+          },
+          channels: ['EMAIL'],
+          data: {
+            ...data,
+            name: appointment.customer.name || 'Usuario',
+          },
+        }),
+        this.notificationService.notify({
+          type,
+          recipient: {
+            email: appointment.professional.email,
+            name: professionalName,
+          },
+          channels: ['EMAIL'],
+          data: {
+            ...data,
+            name: professionalName,
+          },
+        }),
+      ]);
+    } catch {
+      // Las notificaciones no deben bloquear el flujo de citas.
+    }
   }
 
   private resolveAttentionMode(

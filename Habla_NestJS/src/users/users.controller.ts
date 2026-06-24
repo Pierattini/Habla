@@ -18,6 +18,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { Role } from '@prisma/client';
 import type { AuthRequest } from '../auth/auth-request.interface';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -34,8 +35,10 @@ export class UsersController {
   }
 
   // 🔹 LISTAR PROFESIONALES (PARA EL FRONTEND)
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('professionals')
   getProfessionals(
+    @Request() req: AuthRequest,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
@@ -44,6 +47,7 @@ export class UsersController {
     @Query('professionSlug') professionSlug?: string,
     @Query('categorySlug') categorySlug?: string,
     @Query('attentionMode') attentionMode?: string,
+    @Query('country') country?: string,
   ) {
     return this.usersService.findProfessionals({
       page: Number(page) || 1,
@@ -54,6 +58,13 @@ export class UsersController {
       professionSlug,
       categorySlug,
       attentionMode,
+      country,
+      viewer: req.user
+        ? {
+            id: req.user.id,
+            role: req.user.role,
+          }
+        : undefined,
     });
   }
 

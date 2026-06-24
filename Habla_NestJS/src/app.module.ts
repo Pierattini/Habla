@@ -14,6 +14,7 @@ import { TaxDocumentsModule } from './tax-documents/tax-documents.module';
 import { ProfessionsModule } from './professions/professions.module';
 import { AppointmentRequestsModule } from './appointment-requests/appointment-requests.module';
 import { ProfessionalSubscriptionsModule } from './professional-subscriptions/professional-subscriptions.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { ProfessionalSubscriptionsModule } from './professional-subscriptions/pr
     ProfessionsModule,
     AppointmentRequestsModule,
     ProfessionalSubscriptionsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

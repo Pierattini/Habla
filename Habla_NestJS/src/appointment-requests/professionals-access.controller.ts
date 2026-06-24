@@ -16,4 +16,11 @@ export class ProfessionalsAccessController {
   getAccess(@Request() req: AuthRequest) {
     return this.professionalAccess.getAccessByUserId(req.user.id);
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROFESSIONAL)
+  @Get('me/stats')
+  getStats(@Request() req: AuthRequest) {
+    return this.professionalAccess.getStatsByUserId(req.user.id);
+  }
 }

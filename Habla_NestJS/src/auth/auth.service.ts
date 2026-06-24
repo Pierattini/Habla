@@ -1,8 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { AttentionModality, Role } from '@prisma/client';
+import { createHash, randomBytes } from 'crypto';
+import { NotificationService } from '../notifications/notification.service';
 
 type RegisterInput = {
   name: string;
@@ -21,6 +23,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private notificationService: NotificationService,
   ) {}
 
   // ðŸ” LOGIN
@@ -61,6 +64,90 @@ export class AuthService {
     };
   }
 
+  async requestPasswordReset(email: string) {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      throw new BadRequestException('Email is required');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (!user || !user.isActive) {
+      return { ok: true };
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = this.hashResetToken(token);
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 30);
+    const resetUrl = `${this.getFrontendUrl()}/login?resetToken=${token}`;
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetTokenHash: tokenHash,
+        passwordResetExpiresAt: expiresAt,
+      },
+    });
+
+    await this.notificationService.notify({
+      type: 'PASSWORD_RESET',
+      recipient: {
+        email: user.email,
+        name: user.name || 'Usuario',
+      },
+      channels: ['EMAIL'],
+      data: {
+        name: user.name || 'Usuario',
+        resetUrl,
+      },
+    });
+
+    return { ok: true };
+  }
+
+  async resetPassword(token: string, password: string) {
+    const cleanToken = String(token || '').trim();
+
+    if (!cleanToken || !password) {
+      throw new BadRequestException('Token and password are required');
+    }
+
+    if (password.length < 6) {
+      throw new BadRequestException('Password must have at least 6 characters');
+    }
+
+    const tokenHash = this.hashResetToken(cleanToken);
+    const user = await this.prisma.user.findFirst({
+      where: {
+        passwordResetTokenHash: tokenHash,
+        passwordResetExpiresAt: {
+          gt: new Date(),
+        },
+        isActive: true,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        passwordResetTokenHash: null,
+        passwordResetExpiresAt: null,
+      },
+    });
+
+    return { ok: true };
+  }
+
   // REGISTER
   async register(data: RegisterInput) {
     const role = data.role ?? Role.CUSTOMER;
@@ -94,6 +181,8 @@ export class AuthService {
       },
     });
 
+    await this.sendRegistrationNotification(user);
+
     return {
       id: user.id,
       name: user.name,
@@ -107,8 +196,28 @@ export class AuthService {
   async getUserById(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-
-      include: {
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        image: true,
+        role: true,
+        createdAt: true,
+        isActive: true,
+        sessionDuration: true,
+        country: true,
+        timezone: true,
+        taxId: true,
+        taxName: true,
+        taxEmail: true,
+        taxAddress: true,
+        taxCountry: true,
+        taxCity: true,
+        wantsTaxDocumentByDefault: true,
+        customerInterests: true,
+        preferredAttentionMode: true,
+        preferredCity: true,
+        preferredRegion: true,
         professional: true,
       },
     });
@@ -136,6 +245,42 @@ export class AuthService {
       .slice(0, 70);
 
     return `${base || 'profesional'}-${Date.now().toString(36)}`;
+  }
+
+  private hashResetToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private getFrontendUrl(): string {
+    return (process.env.PUBLIC_FRONTEND_URL || 'http://localhost:4200').replace(
+      /\/$/,
+      '',
+    );
+  }
+
+  private async sendRegistrationNotification(user: {
+    email: string;
+    name: string | null;
+    role: Role;
+  }) {
+    try {
+      await this.notificationService.notify({
+        type:
+          user.role === Role.PROFESSIONAL
+            ? 'PROFESSIONAL_WELCOME'
+            : 'CUSTOMER_WELCOME',
+        recipient: {
+          email: user.email,
+          name: user.name || 'Usuario',
+        },
+        channels: ['EMAIL'],
+        data: {
+          name: user.name || 'Usuario',
+        },
+      });
+    } catch {
+      // El registro no debe fallar si el proveedor de correo no responde.
+    }
   }
 }
 
