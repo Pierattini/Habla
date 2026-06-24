@@ -17,6 +17,8 @@ import {
 import {
   ProfessionalAccess,
   ProfessionalAppointmentRequest,
+  ProfessionalPlanPricing,
+  ProfessionalStats,
   ProfessionalPlanService
 } from '../../services/professional-plan.service';
 import { API_URL } from '../../core/config/api.config';
@@ -100,6 +102,13 @@ export class ProfessionalDashboardComponent {
   publicProfileMessage = '';
   planActionMessage = '';
   subscriptionActionRunning = false;
+  statsLoading = false;
+  planPricing: ProfessionalPlanPricing = {
+    country: 'CL',
+    amount: 10000,
+    currency: 'CLP',
+    label: '$10.000 CLP/mes',
+  };
   requestActionIds: Record<string, boolean> = {};
   private professionalUserId = '';
   private dashboardRequestsPending = 0;
@@ -240,6 +249,14 @@ export class ProfessionalDashboardComponent {
     canUsePremiumTools: false,
   };
   appointmentRequests: ProfessionalAppointmentRequest[] = [];
+  professionalStats: ProfessionalStats = {
+    profileViews: 0,
+    profileShares: 0,
+    linkCopies: 0,
+    appointmentRequests: 0,
+    acceptedRequests: 0,
+    conversionRate: 0,
+  };
   dashboardView = {
     pendingDocumentsCount: 0,
     sentDocumentsCount: 0,
@@ -420,6 +437,7 @@ onFileSelected(event: Event) {
         customVideoUrl: res.professional?.customVideoUrl || ''
       };
       this.publicProfileUrl = this.buildPublicProfileUrl(this.profile.slug || '');
+      this.loadPlanPricing(this.profile.officeCountry || 'CL');
 
       this.loadAvailability(() => this.finishDashboardRequest());
 
@@ -723,9 +741,15 @@ onFileSelected(event: Event) {
     this.professionalPlanService.getAccess().subscribe({
       next: (access) => {
         this.professionalAccess = access;
+        if (access.canViewStats) {
+          this.loadProfessionalStats();
+        } else {
+          this.resetProfessionalStats();
+        }
       },
       error: (err) => {
         console.error('Error cargando plan profesional:', err);
+        this.resetProfessionalStats();
         this.finishDashboardRequest();
       },
       complete: () => {
@@ -753,6 +777,17 @@ onFileSelected(event: Event) {
   showPlanComingSoon(): void {
     this.planActionMessage = 'Proximamente podras activar tu plan desde la app. Por ahora esta funcion esta en preparacion.';
     alert(this.planActionMessage);
+  }
+
+  loadPlanPricing(country?: string | null): void {
+    this.professionalPlanService.getPricing(country || 'CL').subscribe({
+      next: (pricing) => {
+        this.planPricing = pricing;
+      },
+      error: (err) => {
+        console.error('Error cargando precio del plan:', err);
+      }
+    });
   }
 
   activatePlanManualDemo(): void {
@@ -797,6 +832,11 @@ onFileSelected(event: Event) {
     this.professionalPlanService.getAccess().subscribe({
       next: (access) => {
         this.professionalAccess = access;
+        if (access.canViewStats) {
+          this.loadProfessionalStats();
+        } else {
+          this.resetProfessionalStats();
+        }
       },
       error: (err) => console.error('Error refrescando plan:', err),
     });
@@ -807,6 +847,35 @@ onFileSelected(event: Event) {
       },
       error: (err) => console.error('Error refrescando solicitudes:', err),
     });
+  }
+
+  loadProfessionalStats(): void {
+    this.statsLoading = true;
+
+    this.professionalPlanService.getStats().subscribe({
+      next: (stats) => {
+        this.professionalStats = stats;
+      },
+      error: (err) => {
+        console.error('Error cargando estadisticas:', err);
+        this.resetProfessionalStats();
+      },
+      complete: () => {
+        this.statsLoading = false;
+      }
+    });
+  }
+
+  resetProfessionalStats(): void {
+    this.statsLoading = false;
+    this.professionalStats = {
+      profileViews: 0,
+      profileShares: 0,
+      linkCopies: 0,
+      appointmentRequests: 0,
+      acceptedRequests: 0,
+      conversionRate: 0,
+    };
   }
 
   acceptAppointmentRequest(request: ProfessionalAppointmentRequest): void {

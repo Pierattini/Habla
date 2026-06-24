@@ -165,7 +165,7 @@
             size="small"
             (click)="$any(this).showPlanComingSoon()"
           >
-            Activar Plan Conecta - $10.000 CLP/mes
+            Activar Plan Conecta - {{ $any(this).planPricing.label }}
           </ion-button>
         </div>
 
@@ -198,6 +198,69 @@
           {{ $any(this).planActionMessage }}
         </p>
       </div>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card>
+    <ion-card-content>
+      <div class="documents-title-row">
+        <h2 class="section-title">
+          Estadisticas
+        </h2>
+
+        <span class="document-badge">
+          {{ $any(this).isPlanActive ? 'Premium' : 'Plan Conecta' }}
+        </span>
+      </div>
+
+      <div
+        *ngIf="!$any(this).isPlanActive"
+        class="documents-empty"
+      >
+        Las estadisticas estan disponibles para profesionales con Plan Conecta activo.
+      </div>
+
+      <div
+        *ngIf="$any(this).isPlanActive"
+        class="documents-summary"
+      >
+        <div class="metric-card">
+          <span>Visitas al perfil</span>
+          <strong>{{ $any(this).professionalStats.profileViews }}</strong>
+        </div>
+
+        <div class="metric-card">
+          <span>Compartidos</span>
+          <strong>{{ $any(this).professionalStats.profileShares }}</strong>
+        </div>
+
+        <div class="metric-card">
+          <span>Copias de enlace</span>
+          <strong>{{ $any(this).professionalStats.linkCopies }}</strong>
+        </div>
+
+        <div class="metric-card">
+          <span>Solicitudes recibidas</span>
+          <strong>{{ $any(this).professionalStats.appointmentRequests }}</strong>
+        </div>
+
+        <div class="metric-card">
+          <span>Solicitudes aceptadas</span>
+          <strong>{{ $any(this).professionalStats.acceptedRequests }}</strong>
+        </div>
+
+        <div class="metric-card">
+          <span>Conversion</span>
+          <strong>{{ $any(this).professionalStats.conversionRate }}%</strong>
+        </div>
+      </div>
+
+      <p
+        *ngIf="$any(this).isPlanActive && $any(this).statsLoading"
+        class="documents-empty"
+      >
+        Cargando estadisticas...
+      </p>
     </ion-card-content>
   </ion-card>
 
@@ -236,7 +299,7 @@
 
         <ng-container *ngIf="request.locked || !$any(this).professionalAccess.canManageRequests; else unlockedRequest">
           <p class="documents-empty">
-            Tienes una solicitud pendiente. Activa tu Plan Conecta por $10.000 CLP mensuales para ver los datos completos del paciente y gestionar esta solicitud.
+            Tienes una solicitud pendiente. Activa tu Plan Conecta por {{ $any(this).planPricing.label }} para ver los datos completos del paciente y gestionar esta solicitud.
           </p>
 
           <div class="document-actions">

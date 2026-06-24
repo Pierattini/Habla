@@ -253,6 +253,12 @@
       </p>
       }
 
+      @if ($any(this).successMessage) {
+      <p class="form-success">
+        {{ $any(this).successMessage }}
+      </p>
+      }
+
       <button
         type="button"
         class="login-button"
@@ -260,6 +266,117 @@
         (click)="$any(this).login()"
       >
         {{ $any(this).isSubmitting ? 'Ingresando...' : 'Iniciar sesion' }}
+      </button>
+
+      <button
+        type="button"
+        class="text-button"
+        [disabled]="$any(this).isSubmitting"
+        (click)="$any(this).showForgotPassword()"
+      >
+        Olvide mi contrasena
+      </button>
+    }
+
+    @if ($any(this).mode === 'forgot') {
+      <header class="login-heading compact">
+        <span>Recuperar acceso</span>
+        <h1>Restablece tu contrasena</h1>
+        <p>Te enviaremos un enlace temporal si el correo existe en Conecta.</p>
+      </header>
+
+      <label class="field">
+        <span>Email</span>
+        <input
+          type="email"
+          autocomplete="email"
+          placeholder="tu@email.com"
+          [ngModel]="$any(this).resetEmail"
+          (ngModelChange)="$any(this).resetEmail = $event"
+        />
+      </label>
+
+      @if ($any(this).errorMessage) {
+      <p class="form-error">
+        {{ $any(this).errorMessage }}
+      </p>
+      }
+
+      @if ($any(this).successMessage) {
+      <p class="form-success">
+        {{ $any(this).successMessage }}
+      </p>
+      }
+
+      <div class="wizard-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          [disabled]="$any(this).isSubmitting"
+          (click)="$any(this).showLogin()"
+        >
+          Volver
+        </button>
+
+        <button
+          type="button"
+          class="login-button"
+          [disabled]="$any(this).isSubmitting"
+          (click)="$any(this).requestPasswordReset()"
+        >
+          {{ $any(this).isSubmitting ? 'Enviando...' : 'Enviar enlace' }}
+        </button>
+      </div>
+    }
+
+    @if ($any(this).mode === 'reset') {
+      <header class="login-heading compact">
+        <span>Nuevo acceso</span>
+        <h1>Crea una nueva contrasena</h1>
+        <p>Usa una contrasena segura para volver a entrar a Conecta.</p>
+      </header>
+
+      <label class="field">
+        <span>Nueva contrasena</span>
+        <input
+          type="password"
+          autocomplete="new-password"
+          placeholder="Minimo 6 caracteres"
+          [ngModel]="$any(this).resetPasswordValue"
+          (ngModelChange)="$any(this).resetPasswordValue = $event"
+        />
+      </label>
+
+      <label class="field">
+        <span>Confirmar contrasena</span>
+        <input
+          type="password"
+          autocomplete="new-password"
+          placeholder="Repite tu contrasena"
+          [ngModel]="$any(this).resetPasswordConfirm"
+          (ngModelChange)="$any(this).resetPasswordConfirm = $event"
+        />
+      </label>
+
+      @if ($any(this).errorMessage) {
+      <p class="form-error">
+        {{ $any(this).errorMessage }}
+      </p>
+      }
+
+      @if ($any(this).successMessage) {
+      <p class="form-success">
+        {{ $any(this).successMessage }}
+      </p>
+      }
+
+      <button
+        type="button"
+        class="login-button"
+        [disabled]="$any(this).isSubmitting"
+        (click)="$any(this).resetPassword()"
+      >
+        {{ $any(this).isSubmitting ? 'Actualizando...' : 'Actualizar contrasena' }}
       </button>
     }
 

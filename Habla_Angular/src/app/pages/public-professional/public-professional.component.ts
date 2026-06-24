@@ -248,7 +248,13 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
 
   getLocationLabel(): string {
     if (!this.professional) return '';
-    return [this.professional.city, this.professional.region]
+    const countryLabel = this.professional.country === 'ES'
+      ? 'Espana'
+      : this.professional.country === 'CL'
+        ? 'Chile'
+        : this.professional.country;
+
+    return [this.professional.city, this.professional.region, countryLabel]
       .filter(Boolean)
       .join(', ');
   }

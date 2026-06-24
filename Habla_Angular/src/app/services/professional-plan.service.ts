@@ -47,6 +47,22 @@ export interface ProfessionalAppointmentRequest {
   activationMessage?: string;
 }
 
+export interface ProfessionalStats {
+  profileViews: number;
+  profileShares: number;
+  linkCopies: number;
+  appointmentRequests: number;
+  acceptedRequests: number;
+  conversionRate: number;
+}
+
+export interface ProfessionalPlanPricing {
+  country: 'CL' | 'ES';
+  amount: number;
+  currency: 'CLP' | 'EUR';
+  label: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -62,6 +78,18 @@ export class ProfessionalPlanService {
   getAppointmentRequests() {
     return this.http.get<ProfessionalAppointmentRequest[]>(
       `${this.api}/appointment-requests/professional`
+    );
+  }
+
+  getStats() {
+    return this.http.get<ProfessionalStats>(`${this.api}/professionals/me/stats`);
+  }
+
+  getPricing(country?: 'CL' | 'ES' | string | null) {
+    const suffix = country ? `?country=${encodeURIComponent(country)}` : '';
+
+    return this.http.get<ProfessionalPlanPricing>(
+      `${this.api}/professional-subscriptions/pricing${suffix}`
     );
   }
 

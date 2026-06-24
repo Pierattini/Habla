@@ -1,9 +1,9 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
-type OnboardingMode = 'intro' | 'login' | 'register';
+type OnboardingMode = 'intro' | 'login' | 'register' | 'forgot' | 'reset';
 type AccountRole = 'CUSTOMER' | 'PROFESSIONAL';
 type AttentionMode = 'ONLINE' | 'PRESENTIAL' | 'BOTH';
 
@@ -23,9 +23,14 @@ export class LoginComponent implements OnInit {
   public registerStep = 1;
   public isSubmitting = false;
   public errorMessage = '';
+  public successMessage = '';
 
   public email = '';
   public password = '';
+  public resetEmail = '';
+  public resetToken = '';
+  public resetPasswordValue = '';
+  public resetPasswordConfirm = '';
 
   public registerForm = {
     name: '',
@@ -70,11 +75,20 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private auth: AuthService,
+    private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    const resetToken = this.route.snapshot.queryParamMap.get('resetToken');
+
+    if (resetToken) {
+      this.resetToken = resetToken;
+      this.mode = 'reset';
+      return;
+    }
+
     window.setTimeout(() => {
       if (this.mode === 'intro') {
         this.mode = 'register';
@@ -93,12 +107,21 @@ export class LoginComponent implements OnInit {
   public showLogin(): void {
     this.mode = 'login';
     this.errorMessage = '';
+    this.successMessage = '';
   }
 
   public showRegister(): void {
     this.mode = 'register';
     this.registerStep = 1;
     this.errorMessage = '';
+    this.successMessage = '';
+  }
+
+  public showForgotPassword(): void {
+    this.mode = 'forgot';
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.resetEmail = this.email;
   }
 
   public onCountryChange(): void {
@@ -156,6 +179,69 @@ export class LoginComponent implements OnInit {
         this.errorMessage = err?.error?.message || 'No pudimos crear la cuenta.';
         this.isSubmitting = false;
       }
+    });
+  }
+
+  public requestPasswordReset(): void {
+    if (this.isSubmitting) return;
+
+    if (!this.resetEmail.trim()) {
+      this.errorMessage = 'Ingresa tu email.';
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.auth.requestPasswordReset(this.resetEmail.trim()).subscribe({
+      next: () => {
+        this.successMessage = 'Si el email existe, enviaremos un enlace para restablecer tu contrasena.';
+        this.isSubmitting = false;
+      },
+      error: () => {
+        this.errorMessage = 'No pudimos procesar la solicitud. Intenta nuevamente.';
+        this.isSubmitting = false;
+      },
+    });
+  }
+
+  public resetPassword(): void {
+    if (this.isSubmitting) return;
+
+    if (!this.resetPasswordValue || !this.resetPasswordConfirm) {
+      this.errorMessage = 'Ingresa y confirma tu nueva contrasena.';
+      return;
+    }
+
+    if (this.resetPasswordValue.length < 6) {
+      this.errorMessage = 'La contrasena debe tener al menos 6 caracteres.';
+      return;
+    }
+
+    if (this.resetPasswordValue !== this.resetPasswordConfirm) {
+      this.errorMessage = 'Las contrasenas no coinciden.';
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.auth.resetPassword(this.resetToken, this.resetPasswordValue).subscribe({
+      next: () => {
+        this.successMessage = 'Contrasena actualizada. Ya puedes iniciar sesion.';
+        this.mode = 'login';
+        this.password = '';
+        this.resetPasswordValue = '';
+        this.resetPasswordConfirm = '';
+        this.router.navigate(['/login'], { replaceUrl: true });
+        this.isSubmitting = false;
+      },
+      error: (err) => {
+        this.errorMessage = err?.error?.message || 'El enlace no es valido o expiro.';
+        this.isSubmitting = false;
+      },
     });
   }
 

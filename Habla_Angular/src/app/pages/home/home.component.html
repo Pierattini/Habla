@@ -262,8 +262,8 @@
             {{ getProfessionalSpecialty(prof) }}
           </p>
 
-          <p *ngIf="prof.city" class="specialty">
-            {{ prof.city }}
+          <p *ngIf="getProfessionalLocation(prof)" class="specialty">
+            {{ getProfessionalLocation(prof) }}
           </p>
 
           <p class="specialty">

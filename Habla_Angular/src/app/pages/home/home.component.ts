@@ -47,6 +47,7 @@ export class HomePage implements OnInit {
   savingPreferences = false;
   userRole = '';
   selectedMode: 'ALL' | 'ONLINE' | 'PRESENTIAL' | 'BOTH' = 'ALL';
+  selectedCountry: 'CL' | 'ES' = 'CL';
   selectedInterests: string[] = [];
   preferredCity = '';
   preferredRegion = '';
@@ -83,7 +84,6 @@ export class HomePage implements OnInit {
     { label: 'Presencial', value: 'PRESENTIAL' },
     { label: 'Mixto', value: 'BOTH' },
   ];
-
   constructor(
     private auth: AuthService,
     private professionService: ProfessionService,
@@ -123,11 +123,13 @@ export class HomePage implements OnInit {
           ? user.customerInterests
           : [];
         this.selectedMode = user?.preferredAttentionMode || 'ALL';
+        this.selectedCountry = user?.country === 'ES' ? 'ES' : 'CL';
         this.preferredCity = user?.preferredCity || '';
         this.preferredRegion = user?.preferredRegion || '';
         this.profileCompletionItems = this.getCustomerProfileMissingItems(user);
         this.updateQuickFilters();
-        this.applyFilters();
+        this.currentPage = 1;
+        this.loadProfessionals();
       },
       error: () => {
         this.userRole = '';
@@ -374,6 +376,16 @@ export class HomePage implements OnInit {
 
   getProfessionalSpecialty(prof: any): string {
     return prof?.professionName || prof?.specialty || 'Especialidad por definir';
+  }
+
+  getProfessionalLocation(prof: any): string {
+    const countryLabel = prof?.country === 'ES'
+      ? 'Espana'
+      : prof?.country === 'CL'
+        ? 'Chile'
+        : prof?.country;
+
+    return [prof?.city, countryLabel].filter(Boolean).join(', ');
   }
 
   isInterestSelected(interest: string): boolean {

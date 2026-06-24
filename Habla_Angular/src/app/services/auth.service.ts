@@ -20,6 +20,17 @@ export class AuthService {
     });
   }
 
+  requestPasswordReset(email: string) {
+    return this.http.post(`${this.api}/auth/request-password-reset`, { email });
+  }
+
+  resetPassword(token: string, password: string) {
+    return this.http.post(`${this.api}/auth/reset-password`, {
+      token,
+      password,
+    });
+  }
+
   register(data: {
     name: string;
     email: string;
@@ -66,6 +77,7 @@ export class AuthService {
     professionSlug?: string;
     categorySlug?: string;
     attentionMode?: string;
+    country?: 'CL' | 'ES';
   }) {
     const query = new URLSearchParams();
 
@@ -77,6 +89,7 @@ export class AuthService {
     if (params?.professionSlug) query.set('professionSlug', params.professionSlug);
     if (params?.categorySlug) query.set('categorySlug', params.categorySlug);
     if (params?.attentionMode) query.set('attentionMode', params.attentionMode);
+    if (params?.country) query.set('country', params.country);
 
     const suffix = query.toString() ? `?${query.toString()}` : '';
 
