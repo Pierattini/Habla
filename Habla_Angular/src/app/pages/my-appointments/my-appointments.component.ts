@@ -61,6 +61,7 @@ getHeaders() {
 
  role: string | null = null;
  loadingId: string | null = null;
+ videoContinuationLoadingId: string | null = null;
  selectedFilter = 'today';
 
 
@@ -678,6 +679,64 @@ openVideoCall(appt: any): void {
   }
 
   window.open(appt.meetLink, '_blank', 'noopener');
+}
+
+async askContinueVideoCall(appt: any): Promise<void> {
+  if (!this.canJoinVideoCall(appt)) {
+    await this.presentToast('La videollamada estara disponible cuando la cita este confirmada', 'warning');
+    return;
+  }
+
+  const alert = await this.alertCtrl.create({
+    header: 'Termino la sesion?',
+    message:
+      'Si aun necesitan continuar, Conecta generara un nuevo enlace gratuito y lo enviara por correo al paciente y al profesional.',
+    buttons: [
+      {
+        text: 'Si, termino',
+        role: 'cancel',
+      },
+      {
+        text: 'No, continuar',
+        handler: () => {
+          this.generateContinuationLink(appt);
+        },
+      },
+    ],
+  });
+
+  await alert.present();
+}
+
+generateContinuationLink(appt: any): void {
+  if (!appt?.id || this.videoContinuationLoadingId) return;
+
+  this.videoContinuationLoadingId = appt.id;
+
+  this.http
+    .post<{ meetLink: string; message: string }>(
+      `${API_URL}/appointments/${appt.id}/continue-video-call`,
+      {},
+      { headers: this.getHeaders() },
+    )
+    .subscribe({
+      next: async (response) => {
+        appt.meetLink = response.meetLink;
+        this.videoContinuationLoadingId = null;
+        await this.presentToast(
+          'Nuevo enlace generado y enviado por correo',
+          'success',
+        );
+        window.open(response.meetLink, '_blank', 'noopener');
+      },
+      error: async () => {
+        this.videoContinuationLoadingId = null;
+        await this.presentToast(
+          'No se pudo generar el nuevo enlace',
+          'danger',
+        );
+      },
+    });
 }
 async openPayment(appt: any) {
 

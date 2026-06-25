@@ -179,19 +179,14 @@ ion-textarea {
   font-size: 15px;
 }
 
-ion-textarea {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
-  border-radius: var(--app-radius-md);
-  background: #fcfaff;
-}
-
 ion-item:focus-within,
 ion-textarea:focus-within {
   border-color: var(--app-primary-light);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--app-primary) 12%, transparent);
 }
+
+.profile-field { --min-height: auto; --padding-top: 10px; align-items: stretch; }
+.profile-field-textarea ion-textarea { --highlight-color-focused: transparent; --highlight-height: 0; }
 
 .day-card {
   margin-bottom: 16px;

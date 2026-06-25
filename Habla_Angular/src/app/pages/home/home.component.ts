@@ -65,6 +65,7 @@ export class HomePage implements OnInit {
   selectedProfessionSlug = '';
   private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private professionalsRequestId = 0;
+  private initialized = false;
 
   quickFilters: string[] = [];
   interestOptions = [
@@ -92,15 +93,53 @@ export class HomePage implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.initializeHome();
+  }
+
+  ionViewWillEnter() {
+    this.initializeHome();
+
+    if (!this.professionCategories.length) {
+      this.loadProfessionCatalog();
+    }
+
+    if (!this.loading && this.filteredProfessionals.length === 0 && this.totalProfessionals === 0) {
+      this.loadProfessionals();
+    }
+  }
+
+  private initializeHome() {
+    if (this.initialized) return;
+
+    this.initialized = true;
     this.loadProfessionCatalog();
-    this.loadProfilePreferences();
     this.loadProfessionals();
+
+    if (localStorage.getItem('token')) {
+      this.loadProfilePreferences();
+      return;
+    }
   }
 
   loadProfessionCatalog() {
+    const cachedCategories = localStorage.getItem('professionCategoriesCache');
+
+    if (cachedCategories && this.professionCategories.length === 0) {
+      try {
+        this.professionCategories = JSON.parse(cachedCategories) || [];
+        this.updateQuickFilters();
+      } catch {
+        localStorage.removeItem('professionCategoriesCache');
+      }
+    }
+
     this.professionService.getCategories().subscribe({
       next: (categories) => {
         this.professionCategories = categories || [];
+        localStorage.setItem(
+          'professionCategoriesCache',
+          JSON.stringify(this.professionCategories),
+        );
         this.updateQuickFilters();
       },
       error: (err) => {
@@ -118,6 +157,9 @@ export class HomePage implements OnInit {
 
     this.auth.getProfile().subscribe({
       next: (user: any) => {
+        const previousMode = this.selectedMode;
+        const previousCountry = this.selectedCountry;
+
         this.userRole = user?.role || '';
         this.selectedInterests = Array.isArray(user?.customerInterests)
           ? user.customerInterests
@@ -128,8 +170,11 @@ export class HomePage implements OnInit {
         this.preferredRegion = user?.preferredRegion || '';
         this.profileCompletionItems = this.getCustomerProfileMissingItems(user);
         this.updateQuickFilters();
-        this.currentPage = 1;
-        this.loadProfessionals();
+
+        if (previousMode !== this.selectedMode || previousCountry !== this.selectedCountry) {
+          this.currentPage = 1;
+          this.loadProfessionals();
+        }
       },
       error: () => {
         this.userRole = '';
@@ -158,6 +203,7 @@ export class HomePage implements OnInit {
         ? this.selectedCategorySlug
         : undefined,
       attentionMode: this.selectedMode,
+      country: this.selectedCountry,
     }).subscribe({
       next: (res: any) => {
         if (requestId !== this.professionalsRequestId) return;

@@ -86,11 +86,10 @@ ion-button[fill="solid"] {
   height: 140px;
   object-fit: contain;
 
-  background: #ffffff;
-  border-radius: 50%;
-  padding: 20px;
-
-  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
 }
 
 /* ===== TEXTO ===== */

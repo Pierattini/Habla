@@ -633,33 +633,40 @@
         Perfil profesional
       </h2>
 
-      <ion-item>
+      <ion-item class="profile-field" lines="none">
         <ion-label position="stacked">
           Nombre
         </ion-label>
 
         <ion-input
+          placeholder="Nombre visible para tus pacientes"
+          maxlength="80"
           [(ngModel)]="profile.name">
         </ion-input>
       </ion-item>
 
-      <ion-item>
+      <ion-item class="profile-field" lines="none">
         <ion-label position="stacked">
           Especialidad
         </ion-label>
 
         <ion-input
+          placeholder="Ej: Psicologia, nutricion, estetica..."
+          maxlength="80"
           [(ngModel)]="profile.specialty">
         </ion-input>
       </ion-item>
 
-      <ion-item>
+      <ion-item class="profile-field profile-field-textarea" lines="none">
         <ion-label position="stacked">
           Descripción
         </ion-label>
 
         <ion-textarea
           rows="5"
+          maxlength="600"
+          [counter]="true"
+          placeholder="Cuenta brevemente tu experiencia, enfoque y como ayudas a tus pacientes."
           [(ngModel)]="profile.description">
         </ion-textarea>
       </ion-item>
@@ -677,31 +684,46 @@
         Modalidad de atencion
       </h2>
 
-      <ion-item>
-        <ion-label>
-          Tipo de atencion
-        </ion-label>
-
-        <select [(ngModel)]="profile.attentionMode">
-          <option value="ONLINE">Online</option>
-          <option value="PRESENTIAL">Presencial</option>
-          <option value="BOTH">Online y presencial</option>
-        </select>
-      </ion-item>
+      <div class="choice-field">
+        <p class="subsection-title">Tipo de atencion</p>
+        <div class="mode-selector">
+          <label>
+            <input type="radio" name="attentionMode" value="ONLINE" [(ngModel)]="profile.attentionMode">
+            Online
+          </label>
+          <label>
+            <input type="radio" name="attentionMode" value="PRESENTIAL" [(ngModel)]="profile.attentionMode">
+            Presencial
+          </label>
+          <label>
+            <input type="radio" name="attentionMode" value="BOTH" [(ngModel)]="profile.attentionMode">
+            Mixta
+          </label>
+        </div>
+      </div>
 
       <ng-container *ngIf="profile.attentionMode !== 'PRESENTIAL'">
-        <ion-item>
-          <ion-label>
-            Videollamada
-          </ion-label>
-
-          <select [(ngModel)]="profile.videoProvider">
-            <option value="JITSI">Generar sala automaticamente</option>
-            <option value="GOOGLE_MEET">Google Meet</option>
-            <option value="ZOOM">Zoom</option>
-            <option value="CUSTOM">Enlace personalizado</option>
-          </select>
-        </ion-item>
+        <div class="choice-field">
+          <p class="subsection-title">Videollamada</p>
+          <div class="mode-selector">
+            <label>
+              <input type="radio" name="videoProvider" value="JITSI" [(ngModel)]="profile.videoProvider">
+              Sala automatica
+            </label>
+            <label>
+              <input type="radio" name="videoProvider" value="GOOGLE_MEET" [(ngModel)]="profile.videoProvider">
+              Google Meet
+            </label>
+            <label>
+              <input type="radio" name="videoProvider" value="ZOOM" [(ngModel)]="profile.videoProvider">
+              Zoom
+            </label>
+            <label>
+              <input type="radio" name="videoProvider" value="CUSTOM" [(ngModel)]="profile.videoProvider">
+              Enlace propio
+            </label>
+          </div>
+        </div>
 
         <ion-item *ngIf="profile.videoProvider !== 'JITSI'">
           <ion-label position="stacked">
@@ -1050,6 +1072,9 @@
 
       <ion-textarea
         rows="5"
+        maxlength="2000"
+        [counter]="true"
+        placeholder="Indica condiciones de cancelacion, puntualidad, reprogramaciones u otras reglas importantes para tus pacientes."
         [(ngModel)]="profile.rules">
       </ion-textarea>
 

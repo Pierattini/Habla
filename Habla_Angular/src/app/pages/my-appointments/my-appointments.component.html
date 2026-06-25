@@ -45,6 +45,17 @@
     color="primary"
     size="small"
     class="btn-sec"
+    *ngIf="$any(this).canJoinVideoCall(appt)"
+    [disabled]="$any(this).videoContinuationLoadingId === appt.id"
+    (click)="$any(this).askContinueVideoCall(appt)">
+    Continuar sesion
+  </ion-button>
+
+  <ion-button
+    fill="outline"
+    color="primary"
+    size="small"
+    class="btn-sec"
     *ngIf="$any(this).canAddToCalendar(appt)"
     (click)="$any(this).addToCalendar(appt)">
     Calendario

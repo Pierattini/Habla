@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { PushNotificationService } from '../../services/push-notification.service';
 
 type OnboardingMode = 'intro' | 'login' | 'register' | 'forgot' | 'reset';
 type AccountRole = 'CUSTOMER' | 'PROFESSIONAL';
@@ -75,6 +76,7 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private auth: AuthService,
+    private pushNotifications: PushNotificationService,
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef
@@ -141,6 +143,7 @@ export class LoginComponent implements OnInit {
     this.auth.login(this.email, this.password).subscribe({
       next: (res: any) => {
         this.saveSession(res);
+        void this.pushNotifications.registerDevice();
         this.router.navigateByUrl('/tabs/home');
       },
       error: () => {
@@ -249,6 +252,7 @@ export class LoginComponent implements OnInit {
     this.auth.login(this.registerForm.email.trim(), this.registerForm.password).subscribe({
       next: (res: any) => {
         this.saveSession(res);
+        void this.pushNotifications.registerDevice();
         this.completeOnboardingProfile();
       },
       error: () => {
