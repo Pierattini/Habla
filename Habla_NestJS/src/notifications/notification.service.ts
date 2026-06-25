@@ -69,14 +69,11 @@ export class NotificationService {
     }
 
     if (channel === 'PUSH') {
-      if (!payload.recipient.phone && !payload.recipient.email) {
-        return this.skipped('PUSH', 'MISSING_RECIPIENT');
+      if (!payload.recipient.userId) {
+        return this.skipped('PUSH', 'MISSING_USER_ID');
       }
 
-      return this.pushService.send(
-        payload.recipient.phone || payload.recipient.email || '',
-        template,
-      );
+      return this.pushService.send(payload.recipient.userId, template);
     }
 
     if (!payload.recipient.phone) {

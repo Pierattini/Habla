@@ -53,9 +53,25 @@ export function buildNotificationTemplate(
           : `Hola ${shared.name}, puedes recuperar tu contrasena desde este enlace:<br>${button(shared.resetUrl, 'Restablecer contrasena')}`,
       ),
     },
+    APPOINTMENT_BOOKED: appointmentTemplate(
+      isEnglish ? 'Your appointment request was scheduled' : 'Tu cita fue agendada',
+      isEnglish ? 'Appointment scheduled' : 'Cita agendada',
+      shared,
+      appointmentDetails,
+      isEnglish,
+    ),
     APPOINTMENT_CONFIRMATION: appointmentTemplate(
       isEnglish ? 'Your appointment was confirmed' : 'Tu cita fue confirmada',
       isEnglish ? 'Appointment confirmed' : 'Cita confirmada',
+      shared,
+      appointmentDetails,
+      isEnglish,
+    ),
+    APPOINTMENT_CONTINUATION_LINK: appointmentTemplate(
+      isEnglish
+        ? 'New link to continue your session'
+        : 'Nuevo enlace para continuar tu sesion',
+      isEnglish ? 'Continue your session' : 'Continua tu sesion',
       shared,
       appointmentDetails,
       isEnglish,
@@ -70,6 +86,13 @@ export function buildNotificationTemplate(
     APPOINTMENT_RESCHEDULE: appointmentTemplate(
       isEnglish ? 'Your appointment was rescheduled' : 'Tu cita fue reprogramada',
       isEnglish ? 'Appointment rescheduled' : 'Cita reprogramada',
+      shared,
+      appointmentDetails,
+      isEnglish,
+    ),
+    APPOINTMENT_REMINDER_SAME_DAY: appointmentTemplate(
+      isEnglish ? 'Today you have an appointment' : 'Hoy tienes una cita',
+      isEnglish ? 'Appointment today' : 'Cita para hoy',
       shared,
       appointmentDetails,
       isEnglish,

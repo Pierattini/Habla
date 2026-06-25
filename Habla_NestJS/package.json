@@ -37,6 +37,7 @@
     "cloudinary": "^2.9.0",
     "countries-and-timezones": "^3.9.0",
     "dotenv": "^17.3.1",
+    "firebase-admin": "^13.10.0",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.5",
     "passport": "^0.7.0",

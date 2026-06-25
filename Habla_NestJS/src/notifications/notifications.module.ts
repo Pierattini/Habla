@@ -5,9 +5,11 @@ import { NotificationService } from './notification.service';
 import { NotificationPushService } from './push.service';
 import { NotificationSmsService } from './sms.service';
 import { NotificationWhatsappService } from './whatsapp.service';
+import { NotificationsController } from './notifications.controller';
 
 @Module({
   imports: [PrismaModule],
+  controllers: [NotificationsController],
   providers: [
     NotificationEmailService,
     NotificationWhatsappService,

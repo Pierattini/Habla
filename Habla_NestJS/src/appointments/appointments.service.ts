@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   AttentionModality,
@@ -16,7 +17,10 @@ import {
 } from '@prisma/client';
 import * as nodemailer from 'nodemailer';
 import { NotificationService } from '../notifications/notification.service';
-import type { NotificationType } from '../notifications/notification.types';
+import type {
+  NotificationChannel,
+  NotificationType,
+} from '../notifications/notification.types';
 
 type AvailabilityConfig = {
   scheduleMode: ScheduleMode;
@@ -357,6 +361,14 @@ export class AppointmentsService {
         },
       });
     }
+
+    await this.sendAppointmentNotificationById(appointment.id, 'APPOINTMENT_BOOKED', [
+      'EMAIL',
+    ]);
+    await this.prisma.appointment.update({
+      where: { id: appointment.id },
+      data: { bookedEmailSentAt: new Date() },
+    });
 
     return appointment;
   }
@@ -972,6 +984,68 @@ export class AppointmentsService {
 
     return updatedAppointment;
   }
+
+  async continueVideoCall(id: string, userId: string) {
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        customer: true,
+        professional: {
+          include: {
+            professional: true,
+          },
+        },
+      },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException('Cita no encontrada');
+    }
+
+    const isParticipant =
+      appointment.customerId === userId || appointment.professionalId === userId;
+
+    if (!isParticipant) {
+      throw new ForbiddenException('No puedes modificar esta cita');
+    }
+
+    if (appointment.attentionMode !== AttentionModality.ONLINE) {
+      throw new BadRequestException('Esta cita no es online');
+    }
+
+    if (
+      appointment.status !== AppointmentStatus.CONFIRMED &&
+      appointment.status !== AppointmentStatus.RESCHEDULED
+    ) {
+      throw new BadRequestException(
+        'Solo se puede generar un nuevo enlace para citas confirmadas',
+      );
+    }
+
+    const continuationRoomId = `${appointment.id}-continuacion-${Date.now()}`;
+    const meetLink = this.buildVideoConferenceLink(continuationRoomId, {
+      videoProvider: VideoProvider.JITSI,
+      customVideoUrl: null,
+    });
+
+    const updated = await this.prisma.appointment.update({
+      where: { id },
+      data: { meetLink },
+    });
+
+    await this.sendAppointmentNotificationById(
+      updated.id,
+      'APPOINTMENT_CONTINUATION_LINK',
+      ['EMAIL'],
+    );
+
+    return {
+      meetLink,
+      message:
+        'Nuevo enlace generado y enviado por correo al paciente y al profesional',
+    };
+  }
+
   async releaseExpiredPayments() {
     const expired = await this.prisma.appointment.findMany({
       where: {
@@ -1381,9 +1455,64 @@ export class AppointmentsService {
     sendEmails();
   }
 
+  @Cron('*/15 * * * *')
+  async sendSameDayAppointmentReminders() {
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const appointments = await this.prisma.appointment.findMany({
+      where: {
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        status: {
+          in: [AppointmentStatus.CONFIRMED, AppointmentStatus.RESCHEDULED],
+        },
+        OR: [
+          { sameDayEmailSentAt: null },
+          { sameDayPushSentAt: null },
+        ],
+      },
+      select: {
+        id: true,
+        sameDayEmailSentAt: true,
+        sameDayPushSentAt: true,
+      },
+      take: 50,
+    });
+
+    for (const appointment of appointments) {
+      const channels: NotificationChannel[] = [];
+
+      if (!appointment.sameDayEmailSentAt) channels.push('EMAIL');
+      if (!appointment.sameDayPushSentAt) channels.push('PUSH');
+      if (channels.length === 0) continue;
+
+      await this.sendAppointmentNotificationById(
+        appointment.id,
+        'APPOINTMENT_REMINDER_SAME_DAY',
+        channels,
+      );
+
+      const sentAt = new Date();
+      await this.prisma.appointment.update({
+        where: { id: appointment.id },
+        data: {
+          ...(channels.includes('EMAIL') && { sameDayEmailSentAt: sentAt }),
+          ...(channels.includes('PUSH') && { sameDayPushSentAt: sentAt }),
+        },
+      });
+    }
+  }
+
   private async sendAppointmentNotificationById(
     appointmentId: string,
     type: NotificationType,
+    channels: NotificationChannel[] = ['EMAIL'],
   ): Promise<void> {
     try {
       const appointment = await this.prisma.appointment.findUnique({
@@ -1444,10 +1573,11 @@ export class AppointmentsService {
         this.notificationService.notify({
           type,
           recipient: {
+            userId: appointment.customer.id,
             email: appointment.customer.email,
             name: appointment.customer.name || 'Usuario',
           },
-          channels: ['EMAIL'],
+          channels,
           data: {
             ...data,
             name: appointment.customer.name || 'Usuario',
@@ -1456,10 +1586,11 @@ export class AppointmentsService {
         this.notificationService.notify({
           type,
           recipient: {
+            userId: appointment.professional.id,
             email: appointment.professional.email,
             name: professionalName,
           },
-          channels: ['EMAIL'],
+          channels,
           data: {
             ...data,
             name: professionalName,

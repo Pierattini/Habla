@@ -3,9 +3,12 @@ export type NotificationChannel = 'EMAIL' | 'WHATSAPP' | 'SMS' | 'PUSH';
 export type NotificationType =
   | 'REGISTRATION_SUCCESS'
   | 'PASSWORD_RESET'
+  | 'APPOINTMENT_BOOKED'
   | 'APPOINTMENT_CONFIRMATION'
+  | 'APPOINTMENT_CONTINUATION_LINK'
   | 'APPOINTMENT_CANCELLATION'
   | 'APPOINTMENT_RESCHEDULE'
+  | 'APPOINTMENT_REMINDER_SAME_DAY'
   | 'APPOINTMENT_REMINDER_24H'
   | 'APPOINTMENT_REMINDER_2H'
   | 'APPOINTMENT_REMINDER_15M'
@@ -17,6 +20,7 @@ export type NotificationLocale = 'es' | 'en';
 export interface NotificationRecipient {
   email?: string;
   phone?: string;
+  userId?: string;
   name?: string;
 }
 

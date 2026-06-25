@@ -101,6 +101,13 @@ export class AppointmentsController {
   markAsPaid(@Param('id') id: string, @Request() req: AuthRequest) {
     return this.appointmentsService.markAsPaid(id, req.user.id);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/continue-video-call')
+  continueVideoCall(@Param('id') id: string, @Request() req: AuthRequest) {
+    return this.appointmentsService.continueVideoCall(id, req.user.id);
+  }
+
   @Get(':id/confirm-payment-link')
   async confirmFromEmail(@Param('id') id: string, @Res() res: Response) {
     await this.appointmentsService.confirmPaymentFromLink(id);
