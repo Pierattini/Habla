@@ -144,7 +144,7 @@ ion-button {
 
 .quick-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   padding: 0 16px;
 }
@@ -194,27 +194,55 @@ ion-button {
   background: var(--app-surface);
   border: 1px solid rgba(168, 85, 247, 0.12);
   border-radius: var(--app-radius-lg);
-  padding: 16px 8px;
-  text-align: center;
   box-shadow: 0 10px 24px rgba(31, 41, 55, 0.07);
   transition: transform 0.2s ease, background 0.2s ease;
+
+  height: 120px;
+  padding: 12px 8px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .quick-card .icon {
-  margin-bottom: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  margin-bottom: 12px;
+  font-size: 28px;
   color: var(--app-primary);
-  font-size: 23px;
 }
 
 .quick-card .label {
-  color: var(--app-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 1;
+
+  text-align: center;
+  line-height: 1.2;
+
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--app-text);
+
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
 }
 
-.quick-card:active {
-  transform: scale(0.96);
-  background: var(--app-secondary);
+.quick-card:hover,
+.quick-card:active{
+    transform:translateY(-3px);
+}
+
+.quick-card.active {
+  border: 2px solid var(--app-primary);
+  background: color-mix(in srgb, var(--app-primary-light) 12%, var(--app-surface));
 }
 
 .cta-content h4 {

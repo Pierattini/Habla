@@ -377,18 +377,28 @@ export class HomePage implements OnInit {
   }
 
   updateQuickFilters(): void {
-    this.quickFilters = [
-      ...this.selectedInterests.filter(Boolean),
-      ...this.getCategoriesFromData(),
-      ...this.interestOptions,
-    ].filter((item, index, list) =>
-      item && list.findIndex((value) => this.normalizeText(value) === this.normalizeText(item)) === index
+  const items = [
+    ...this.selectedInterests.filter(Boolean),
+    ...this.getCategoriesFromData(),
+    ...this.interestOptions,
+  ]
+    .filter(
+      (item, index, list) =>
+        item &&
+        list.findIndex(
+          value => this.normalizeText(value) === this.normalizeText(item)
+        ) === index
     )
-      .filter(item => !this.dismissedQuickFilters.some(
-        dismissed => this.normalizeText(dismissed) === this.normalizeText(item)
-      ))
-      .slice(0, 9);
-  }
+    .filter(
+      item =>
+        !this.dismissedQuickFilters.some(
+          dismissed =>
+            this.normalizeText(dismissed) === this.normalizeText(item)
+        )
+    );
+
+  this.quickFilters = items.slice(0, 6);
+}
 
   getFilteredInterestOptions(): string[] {
     const query = this.normalizeText(this.interestSearch);
