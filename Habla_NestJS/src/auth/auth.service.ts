@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AttentionModality, Role } from '@prisma/client';
 import { createHash, randomBytes } from 'crypto';
 import { NotificationService } from '../notifications/notification.service';
+import { RecaptchaService } from './recaptcha.service';
 
 type RegisterInput = {
   name: string;
@@ -15,7 +16,10 @@ type RegisterInput = {
   preferredAttentionMode?: AttentionModality;
   specialty?: string;
   professionId?: string;
+  customProfession?: string;
   attentionMode?: AttentionModality;
+  acceptedTerms?: boolean;
+  recaptchaToken?: string;
 };
 
 @Injectable()
@@ -24,6 +28,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private notificationService: NotificationService,
+    private recaptchaService: RecaptchaService,
   ) {}
 
   // ðŸ” LOGIN
@@ -148,18 +153,59 @@ export class AuthService {
     return { ok: true };
   }
 
+  async checkEmailAvailability(email: string) {
+    const normalizedEmail = this.normalizeEmail(email);
+
+    if (!this.isValidEmail(normalizedEmail)) {
+      throw new BadRequestException('Email invalido');
+    }
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: { id: true },
+    });
+
+    return {
+      available: !existingUser,
+    };
+  }
+
   // REGISTER
   async register(data: RegisterInput) {
+    const normalizedName = this.normalizeName(data.name);
+    const normalizedEmail = this.normalizeEmail(data.email);
+
+    this.validateRegisterPayload({
+      ...data,
+      name: normalizedName,
+      email: normalizedEmail,
+    });
+
+    await this.recaptchaService.verify(data.recaptchaToken, 'register');
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: { id: true },
+    });
+
+    if (existingUser) {
+      throw new BadRequestException('Este correo ya esta registrado.');
+    }
+
     const role = data.role ?? Role.CUSTOMER;
     const hashedPassword = await bcrypt.hash(data.password, 10);
     const customerInterests = Array.isArray(data.customerInterests)
       ? data.customerInterests.filter(Boolean)
       : [];
+    const customProfession = this.normalizeProfessionText(data.customProfession || '');
+    const professionalSpecialty = role === Role.PROFESSIONAL
+      ? this.normalizeProfessionText(data.professionId ? data.specialty || '' : customProfession || data.specialty || '')
+      : '';
 
     const user = await this.prisma.user.create({
       data: {
-        name: data.name,
-        email: data.email,
+        name: normalizedName,
+        email: normalizedEmail,
         password: hashedPassword,
         role,
         isActive: true,
@@ -170,10 +216,11 @@ export class AuthService {
         ...(role === Role.PROFESSIONAL && {
           professional: {
             create: {
-              name: data.name,
-              slug: this.buildProfessionalSlug(data.name),
-              specialty: data.specialty || null,
+              name: normalizedName,
+              slug: this.buildProfessionalSlug(normalizedName),
+              specialty: professionalSpecialty || null,
               professionId: data.professionId || null,
+              customProfession: data.professionId ? null : customProfession || null,
               attentionMode: data.attentionMode ?? AttentionModality.ONLINE,
             },
           },
@@ -245,6 +292,92 @@ export class AuthService {
       .slice(0, 70);
 
     return `${base || 'profesional'}-${Date.now().toString(36)}`;
+  }
+
+  private validateRegisterPayload(data: RegisterInput): void {
+    if (!this.isValidFullName(data.name)) {
+      throw new BadRequestException('Debes ingresar nombre y apellido.');
+    }
+
+    if (!this.isValidEmail(data.email)) {
+      throw new BadRequestException('Correo electronico invalido.');
+    }
+
+    if (!this.isStrongPassword(data.password)) {
+      throw new BadRequestException(
+        'La contrasena debe tener minimo 8 caracteres, mayuscula, minuscula, numero y caracter especial.',
+      );
+    }
+
+    if (data.acceptedTerms !== true) {
+      throw new BadRequestException(
+        'Debes aceptar terminos y politica de privacidad.',
+      );
+    }
+
+    if (data.role === Role.PROFESSIONAL) {
+      const professionId = String(data.professionId || '').trim();
+      const customProfession = this.normalizeProfessionText(data.customProfession || '');
+      const specialty = this.normalizeProfessionText(data.specialty || '');
+
+      if (!professionId && !customProfession && !specialty) {
+        throw new BadRequestException('Selecciona o escribe el servicio que ofreces.');
+      }
+
+      if (!professionId && !this.isValidCustomProfession(customProfession || specialty)) {
+        throw new BadRequestException(
+          'La profesion personalizada debe tener entre 3 y 50 caracteres y solo puede incluir letras, espacios, tildes y guiones.',
+        );
+      }
+    }
+  }
+
+  private normalizeName(value: string): string {
+    return String(value || '').trim().replace(/\s+/g, ' ');
+  }
+
+  private normalizeEmail(value: string): string {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  private normalizeProfessionText(value: string): string {
+    return String(value || '').trim().replace(/\s+/g, ' ');
+  }
+
+  private isValidFullName(value: string): boolean {
+    const name = this.normalizeName(value);
+
+    if (name.length < 5 || name.length > 80) {
+      return false;
+    }
+
+    if (!/^[A-Za-zÀ-ÿÑñ]+(?:[ -][A-Za-zÀ-ÿÑñ]+)+$/.test(name)) {
+      return false;
+    }
+
+    return name.split(/\s+/).length >= 2;
+  }
+
+  private isValidEmail(value: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(this.normalizeEmail(value));
+  }
+
+  private isStrongPassword(value: string): boolean {
+    const password = String(value || '');
+
+    return password.length >= 8 &&
+      /[A-Z]/.test(password) &&
+      /[a-z]/.test(password) &&
+      /\d/.test(password) &&
+      /[^A-Za-z0-9]/.test(password);
+  }
+
+  private isValidCustomProfession(value: string): boolean {
+    const profession = this.normalizeProfessionText(value);
+
+    return profession.length >= 3 &&
+      profession.length <= 50 &&
+      /^[\p{L}\s-]+$/u.test(profession);
   }
 
   private hashResetToken(token: string): string {

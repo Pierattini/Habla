@@ -68,6 +68,25 @@ export class UsersController {
     });
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
+  @Get('search-suggestions')
+  getSearchSuggestions(
+    @Request() req: AuthRequest,
+    @Query('q') q?: string,
+    @Query('country') country?: string,
+  ) {
+    return this.usersService.getSearchSuggestions({
+      q,
+      country,
+      viewer: req.user
+        ? {
+            id: req.user.id,
+            role: req.user.role,
+          }
+        : undefined,
+    });
+  }
+
 
   @Get('professionals/public/:slug')
   async getPublicProfessional(@Param('slug') slug: string) {

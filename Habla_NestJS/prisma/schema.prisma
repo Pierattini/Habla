@@ -53,6 +53,8 @@ model User {
 
   customerAppointments     Appointment[]  @relation("CustomerAppointments")
   professionalAppointments Appointment[]  @relation("ProfessionalAppointments")
+  customerReviews          Review[]       @relation("CustomerReviews")
+  professionalReviews      Review[]       @relation("ProfessionalReviews")
   customerAppointmentRequests     AppointmentRequest[] @relation("CustomerAppointmentRequests")
   professionalAppointmentRequests AppointmentRequest[] @relation("ProfessionalAppointmentRequests")
   availabilities           Availability[]
@@ -80,6 +82,9 @@ model Appointment {
   bookedEmailSentAt     DateTime?
   sameDayEmailSentAt    DateTime?
   sameDayPushSentAt     DateTime?
+  reminder24hSentAt     DateTime?
+  reminder1hSentAt      DateTime?
+  reminder15mSentAt     DateTime?
 
   // 🔥 PENALIZACIÓN
   penalty         Float?
@@ -96,6 +101,12 @@ model Appointment {
 
   // 🔥 OTROS
   meetLink String?
+  meetingProvider     VideoProvider?
+  meetingUrl          String?
+  meetingId           String?
+  meetingAccessToken  String?
+  meetingCreatedAt    DateTime?
+  calendarEventId     String?
   attentionMode        AttentionModality @default(ONLINE)
   appointmentAddress   String?
   appointmentCity      String?
@@ -119,6 +130,27 @@ model Appointment {
   conversation   Conversation? @relation(fields: [conversationId], references: [id])
   conversationId String?
   taxDocument    TaxDocument?
+  review         Review?
+}
+
+model Review {
+  id             String   @id @default(uuid())
+  appointmentId  String   @unique
+  customerId     String
+  professionalId String
+  rating         Int
+  comment        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  appointment  Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  customer     User        @relation("CustomerReviews", fields: [customerId], references: [id])
+  professional User        @relation("ProfessionalReviews", fields: [professionalId], references: [id])
+
+  @@index([customerId])
+  @@index([professionalId])
+  @@index([rating])
+  @@index([createdAt])
 }
 
 model ProfessionalCategory {
@@ -162,6 +194,7 @@ model Professional {
 
   professionId String?
   profession   Profession? @relation(fields: [professionId], references: [id])
+  customProfession String?
   specialty   String?
   description String?
   name        String?
@@ -177,7 +210,7 @@ model Professional {
   officeLatitude      Float?
   officeLongitude     Float?
   arrivalInstructions String?
-  videoProvider       VideoProvider @default(JITSI)
+  videoProvider       VideoProvider @default(CONNECTA_AUTO)
   customVideoUrl      String?
 
   // Datos Bancarios
@@ -290,6 +323,48 @@ model ProfessionalProfileEvent {
   @@index([professionalId])
   @@index([type])
   @@index([createdAt])
+}
+
+model GoogleCalendarConnection {
+  id                   String   @id @default(uuid())
+  professionalUserId   String   @unique
+  googleAccountId      String
+  googleEmail          String
+  encryptedAccessToken String
+  encryptedRefreshToken String?
+  tokenExpiresAt       DateTime?
+  connectedAt          DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([professionalUserId])
+}
+
+model ZoomConnection {
+  id                    String   @id @default(uuid())
+  professionalUserId    String   @unique
+  zoomUserId            String
+  zoomEmail             String
+  encryptedAccessToken  String
+  encryptedRefreshToken String?
+  tokenExpiresAt        DateTime?
+  connectedAt           DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([professionalUserId])
+}
+
+model MicrosoftTeamsConnection {
+  id                    String   @id @default(uuid())
+  professionalUserId    String   @unique
+  microsoftAccountId    String
+  microsoftEmail        String
+  encryptedAccessToken  String
+  encryptedRefreshToken String?
+  tokenExpiresAt        DateTime?
+  connectedAt           DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([professionalUserId])
 }
 
 model NotificationLog {
@@ -494,6 +569,7 @@ enum AppointmentStatus {
   PENDING_PAYMENT
   PAYMENT_REVIEW
   CONFIRMED
+  COMPLETED
   CANCELLED
   RESCHEDULED
   REFUNDED
@@ -506,9 +582,11 @@ enum AttentionModality {
 }
 
 enum VideoProvider {
+  CONNECTA_AUTO
   JITSI
   GOOGLE_MEET
   ZOOM
+  MICROSOFT_TEAMS
   CUSTOM
 }
 

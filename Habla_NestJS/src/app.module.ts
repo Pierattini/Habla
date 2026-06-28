@@ -15,6 +15,9 @@ import { ProfessionsModule } from './professions/professions.module';
 import { AppointmentRequestsModule } from './appointment-requests/appointment-requests.module';
 import { ProfessionalSubscriptionsModule } from './professional-subscriptions/professional-subscriptions.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { MeetingsModule } from './meetings/meetings.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -33,6 +36,9 @@ import { NotificationsModule } from './notifications/notifications.module';
     AppointmentRequestsModule,
     ProfessionalSubscriptionsModule,
     NotificationsModule,
+    MeetingsModule,
+    ReviewsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

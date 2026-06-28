@@ -20,9 +20,12 @@ export function buildNotificationTemplate(
     appointmentTime: values.appointmentTime || '',
     timezone: values.timezone || 'America/Santiago',
     professionalName: values.professionalName || (isEnglish ? 'your professional' : 'tu profesional'),
+    customerName: values.customerName || (isEnglish ? 'patient' : 'paciente'),
+    modality: values.modality || '',
     resetUrl: values.resetUrl || '',
     meetingUrl: values.meetingUrl || '',
     fullAddress: values.fullAddress || '',
+    arrivalInstructions: values.arrivalInstructions || '',
     mapsUrl: values.mapsUrl || buildMapsUrl(values.fullAddress),
   };
 
@@ -111,6 +114,13 @@ export function buildNotificationTemplate(
       appointmentDetails,
       isEnglish,
     ),
+    APPOINTMENT_REMINDER_1H: appointmentTemplate(
+      isEnglish ? 'Reminder: appointment in 1 hour' : 'Recordatorio: cita en 1 hora',
+      isEnglish ? 'Appointment in 1 hour' : 'Cita en 1 hora',
+      shared,
+      appointmentDetails,
+      isEnglish,
+    ),
     APPOINTMENT_REMINDER_15M: appointmentTemplate(
       isEnglish ? 'Reminder: appointment in 15 minutes' : 'Recordatorio: cita en 15 minutos',
       isEnglish ? 'Appointment in 15 minutes' : 'Cita en 15 minutos',
@@ -170,15 +180,28 @@ function buildAppointmentDetails(
   isEnglish: boolean,
 ): string {
   if (shared.meetingUrl) {
-    return button(
-      shared.meetingUrl,
-      isEnglish ? 'Join video call' : 'Unirse a la videollamada',
-    );
+    return `
+      <p><strong>${isEnglish ? 'Professional' : 'Profesional'}:</strong> ${escapeHtml(shared.professionalName)}</p>
+      <p><strong>${isEnglish ? 'Patient' : 'Paciente'}:</strong> ${escapeHtml(shared.customerName)}</p>
+      <p><strong>${isEnglish ? 'Modality' : 'Modalidad'}:</strong> ${escapeHtml(shared.modality || (isEnglish ? 'Online' : 'Online'))}</p>
+      ${button(
+        shared.meetingUrl,
+        isEnglish ? 'Join video call' : 'Unirse a la videollamada',
+      )}
+    `;
   }
 
   if (shared.fullAddress) {
     return `
+      <p><strong>${isEnglish ? 'Professional' : 'Profesional'}:</strong> ${escapeHtml(shared.professionalName)}</p>
+      <p><strong>${isEnglish ? 'Patient' : 'Paciente'}:</strong> ${escapeHtml(shared.customerName)}</p>
+      <p><strong>${isEnglish ? 'Modality' : 'Modalidad'}:</strong> ${escapeHtml(shared.modality || (isEnglish ? 'In person' : 'Presencial'))}</p>
       <p><strong>${isEnglish ? 'Address' : 'Direccion'}:</strong><br>${escapeHtml(shared.fullAddress)}</p>
+      ${
+        shared.arrivalInstructions
+          ? `<p><strong>${isEnglish ? 'Arrival instructions' : 'Indicaciones'}:</strong><br>${escapeHtml(shared.arrivalInstructions)}</p>`
+          : ''
+      }
       ${button(shared.mapsUrl, isEnglish ? 'Open in Google Maps' : 'Abrir en Google Maps')}
     `;
   }

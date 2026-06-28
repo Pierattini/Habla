@@ -21,6 +21,10 @@ import type {
   NotificationChannel,
   NotificationType,
 } from '../notifications/notification.types';
+import { MeetingService } from '../meetings/meeting.service';
+import { GoogleCalendarService } from '../meetings/google-calendar.service';
+import { MicrosoftTeamsService } from '../meetings/microsoft-teams.service';
+import { ZoomService } from '../meetings/zoom.service';
 
 type AvailabilityConfig = {
   scheduleMode: ScheduleMode;
@@ -41,6 +45,10 @@ export class AppointmentsService {
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationService,
+    private meetingService: MeetingService,
+    private googleCalendarService: GoogleCalendarService,
+    private zoomService: ZoomService,
+    private microsoftTeamsService: MicrosoftTeamsService,
   ) {}
   async create(
     customerId: string,
@@ -397,6 +405,7 @@ export class AppointmentsService {
             id: true,
             email: true,
             name: true,
+            image: true,
           },
         },
         professional: {
@@ -404,6 +413,7 @@ export class AppointmentsService {
             professional: true,
           },
         },
+        review: true,
       },
       orderBy: {
         date: 'asc',
@@ -422,6 +432,7 @@ export class AppointmentsService {
             professional: true,
           },
         },
+        review: true,
       },
       orderBy: {
         date: 'asc',
@@ -449,21 +460,20 @@ export class AppointmentsService {
       throw new ForbiddenException('You cannot confirm this appointment');
     }
 
-    const meetLink =
-      appointment.attentionMode === AttentionModality.ONLINE
-        ? this.buildVideoConferenceLink(
-            appointment.id,
-            appointment.professional.professional,
-          )
-        : null;
-
-    const updated = await this.prisma.appointment.update({
+    let updated = await this.prisma.appointment.update({
       where: { id },
       data: {
         status: AppointmentStatus.CONFIRMED,
-        meetLink,
       },
     });
+
+    if (appointment.attentionMode === AttentionModality.ONLINE) {
+      updated = await this.meetingService.generateMeetingForAppointment(
+        updated.id,
+      );
+    }
+
+    const meetLink = updated.meetingUrl || updated.meetLink;
 
     if (meetLink) {
       this.scheduleVideoConferenceEmails(
@@ -480,6 +490,67 @@ export class AppointmentsService {
     );
 
     return updated;
+  }
+
+  async completeAppointment(id: string, professionalId: string) {
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        professional: {
+          include: {
+            professional: true,
+          },
+        },
+      },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException('Cita no encontrada');
+    }
+
+    if (appointment.professionalId !== professionalId) {
+      throw new ForbiddenException('No puedes finalizar esta cita');
+    }
+
+    if (
+      appointment.status !== AppointmentStatus.CONFIRMED &&
+      appointment.status !== AppointmentStatus.RESCHEDULED
+    ) {
+      throw new BadRequestException('Solo se pueden finalizar citas confirmadas');
+    }
+
+    const duration =
+      appointment.professional.professional?.duration ??
+      appointment.professional.sessionDuration ??
+      60;
+    const endsAt = new Date(appointment.date.getTime() + duration * 60000);
+
+    if (endsAt > new Date()) {
+      throw new BadRequestException('La cita aun no ha finalizado');
+    }
+
+    return this.prisma.appointment.update({
+      where: { id },
+      data: {
+        status: AppointmentStatus.COMPLETED,
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            image: true,
+          },
+        },
+        professional: {
+          include: {
+            professional: true,
+          },
+        },
+        review: true,
+      },
+    });
   }
 
   async cancelAppointment(id: string, userId: string) {
@@ -529,6 +600,7 @@ export class AppointmentsService {
         updated.id,
         'APPOINTMENT_CANCELLATION',
       );
+      await this.deleteExternalMeetingIfNeeded(appointment);
 
       return updated;
     }
@@ -547,6 +619,7 @@ export class AppointmentsService {
         updated.id,
         'APPOINTMENT_CANCELLATION',
       );
+      await this.deleteExternalMeetingIfNeeded(appointment);
 
       return updated;
     }
@@ -564,6 +637,7 @@ export class AppointmentsService {
       updated.id,
       'APPOINTMENT_CANCELLATION',
     );
+    await this.deleteExternalMeetingIfNeeded(appointment);
 
     return updated;
   }
@@ -927,7 +1001,7 @@ export class AppointmentsService {
       const price = professional.price || 0;
       const penalty = price * 0.5;
 
-      return this.prisma.appointment.update({
+      const updated = await this.prisma.appointment.update({
         where: { id },
         data: {
           date: newDate,
@@ -935,10 +1009,18 @@ export class AppointmentsService {
           penalty,
         },
       });
+
+      await this.sendAppointmentNotificationById(
+        updated.id,
+        'APPOINTMENT_RESCHEDULE',
+      );
+      await this.syncExternalMeetingRescheduleIfNeeded(updated.id);
+
+      return updated;
     }
 
     // 🔥 CASO >48h → GRATIS
-    return this.prisma.appointment.update({
+    const updated = await this.prisma.appointment.update({
       where: { id },
       data: {
         date: newDate,
@@ -946,6 +1028,14 @@ export class AppointmentsService {
         penalty: 0,
       },
     });
+
+    await this.sendAppointmentNotificationById(
+      updated.id,
+      'APPOINTMENT_RESCHEDULE',
+    );
+    await this.syncExternalMeetingRescheduleIfNeeded(updated.id);
+
+    return updated;
   }
   async markAsPaid(id: string, userId: string) {
     const appointment = await this.prisma.appointment.findUnique({
@@ -1024,7 +1114,7 @@ export class AppointmentsService {
 
     const continuationRoomId = `${appointment.id}-continuacion-${Date.now()}`;
     const meetLink = this.buildVideoConferenceLink(continuationRoomId, {
-      videoProvider: VideoProvider.JITSI,
+      videoProvider: VideoProvider.CONNECTA_AUTO,
       customVideoUrl: null,
     });
 
@@ -1096,23 +1186,20 @@ export class AppointmentsService {
       throw new ForbiddenException('No puedes confirmar este pago');
     }
 
-    const meetLink =
-      appointment.attentionMode === AttentionModality.ONLINE
-        ? this.buildVideoConferenceLink(
-            appointment.id,
-            appointment.professional.professional,
-          )
-        : null;
-
-    // 🔥 actualizar BD
-    const updated = await this.prisma.appointment.update({
+    let updated = await this.prisma.appointment.update({
       where: { id },
       data: {
         status: AppointmentStatus.CONFIRMED,
-        meetLink,
       },
     });
 
+    if (appointment.attentionMode === AttentionModality.ONLINE) {
+      updated = await this.meetingService.generateMeetingForAppointment(
+        updated.id,
+      );
+    }
+
+    const meetLink = updated.meetingUrl || updated.meetLink;
     // 🔥 CALCULAR ENVÍO 10 MIN ANTES
     if (meetLink) {
       this.scheduleVideoConferenceEmails(
@@ -1211,19 +1298,31 @@ export class AppointmentsService {
       throw new NotFoundException('Cita no encontrada');
     }
 
-    return this.prisma.appointment.update({
+    const updated = await this.prisma.appointment.update({
       where: { id },
       data: {
         status: AppointmentStatus.CONFIRMED,
-        meetLink:
-          appointment.attentionMode === AttentionModality.ONLINE
-            ? this.buildVideoConferenceLink(
-                appointment.id,
-                appointment.professional.professional,
-              )
-            : null,
       },
     });
+
+    if (appointment.attentionMode === AttentionModality.ONLINE) {
+      const meetingAppointment =
+        await this.meetingService.generateMeetingForAppointment(updated.id);
+
+      await this.sendAppointmentNotificationById(
+        meetingAppointment.id,
+        'APPOINTMENT_CONFIRMATION',
+      );
+
+      return meetingAppointment;
+    }
+
+    await this.sendAppointmentNotificationById(
+      updated.id,
+      'APPOINTMENT_CONFIRMATION',
+    );
+
+    return updated;
   }
   async resolvePenalty(
     id: string,
@@ -1509,6 +1608,145 @@ export class AppointmentsService {
     }
   }
 
+  @Cron('*/5 * * * *')
+  async sendAppointmentTimeReminders() {
+    await this.sendReminderWindow({
+      type: 'APPOINTMENT_REMINDER_24H',
+      sentField: 'reminder24hSentAt',
+      fromMs: 23.75 * 60 * 60 * 1000,
+      toMs: 24 * 60 * 60 * 1000,
+    });
+
+    await this.sendReminderWindow({
+      type: 'APPOINTMENT_REMINDER_1H',
+      sentField: 'reminder1hSentAt',
+      fromMs: 55 * 60 * 1000,
+      toMs: 60 * 60 * 1000,
+    });
+
+    await this.sendReminderWindow({
+      type: 'APPOINTMENT_REMINDER_15M',
+      sentField: 'reminder15mSentAt',
+      fromMs: 10 * 60 * 1000,
+      toMs: 15 * 60 * 1000,
+    });
+  }
+
+  private async sendReminderWindow(options: {
+    type: NotificationType;
+    sentField: 'reminder24hSentAt' | 'reminder1hSentAt' | 'reminder15mSentAt';
+    fromMs: number;
+    toMs: number;
+  }) {
+    const now = new Date();
+    const fromDate = new Date(now.getTime() + options.fromMs);
+    const toDate = new Date(now.getTime() + options.toMs);
+
+    const appointments = await this.prisma.appointment.findMany({
+      where: {
+        date: {
+          gte: fromDate,
+          lte: toDate,
+        },
+        status: {
+          in: [AppointmentStatus.CONFIRMED, AppointmentStatus.RESCHEDULED],
+        },
+        [options.sentField]: null,
+      },
+      select: {
+        id: true,
+      },
+      take: 50,
+    });
+
+    for (const appointment of appointments) {
+      await this.sendAppointmentNotificationById(appointment.id, options.type, [
+        'EMAIL',
+      ]);
+
+      await this.prisma.appointment.update({
+        where: { id: appointment.id },
+        data: {
+          [options.sentField]: new Date(),
+        },
+      });
+    }
+  }
+
+  private async syncExternalMeetingRescheduleIfNeeded(appointmentId: string) {
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        customer: true,
+        professional: {
+          include: {
+            professional: true,
+          },
+        },
+      },
+    });
+
+    if (!appointment) {
+      return;
+    }
+
+    if (
+      appointment.meetingProvider === VideoProvider.GOOGLE_MEET &&
+      appointment.calendarEventId
+    ) {
+      await this.googleCalendarService
+        .updateCalendarEventForAppointment(appointment)
+        .catch(() => undefined);
+    }
+
+    if (appointment.meetingProvider === VideoProvider.ZOOM && appointment.meetingId) {
+      await this.zoomService
+        .updateMeetingForAppointment(appointment)
+        .catch(() => undefined);
+    }
+
+    if (
+      appointment.meetingProvider === VideoProvider.MICROSOFT_TEAMS &&
+      appointment.calendarEventId
+    ) {
+      await this.microsoftTeamsService
+        .updateTeamsEventForAppointment(appointment)
+        .catch(() => undefined);
+    }
+  }
+
+  private async deleteExternalMeetingIfNeeded(appointment: {
+    id: string;
+    professionalId: string;
+    meetingProvider?: VideoProvider | null;
+    calendarEventId: string | null;
+    meetingId: string | null;
+  }) {
+    if (
+      appointment.meetingProvider === VideoProvider.GOOGLE_MEET &&
+      appointment.calendarEventId
+    ) {
+      await this.googleCalendarService
+        .deleteCalendarEventForAppointment(appointment)
+        .catch(() => undefined);
+    }
+
+    if (appointment.meetingProvider === VideoProvider.ZOOM && appointment.meetingId) {
+      await this.zoomService
+        .deleteMeetingForAppointment(appointment)
+        .catch(() => undefined);
+    }
+
+    if (
+      appointment.meetingProvider === VideoProvider.MICROSOFT_TEAMS &&
+      appointment.calendarEventId
+    ) {
+      await this.microsoftTeamsService
+        .deleteTeamsEventForAppointment(appointment)
+        .catch(() => undefined);
+    }
+  }
+
   private async sendAppointmentNotificationById(
     appointmentId: string,
     type: NotificationType,
@@ -1553,19 +1791,34 @@ export class AppointmentsService {
         appointment.professional.professional?.name ||
         appointment.professional.name ||
         'Profesional Conecta';
+      const customerName =
+        appointment.customer.name || appointment.customer.email || 'Paciente';
+      const meetingUrl = appointment.meetingUrl || appointment.meetLink || null;
+      const modality =
+        appointment.attentionMode === AttentionModality.ONLINE
+          ? 'Online'
+          : appointment.attentionMode === AttentionModality.PRESENTIAL
+            ? 'Presencial'
+            : 'Online o presencial';
 
       const data = {
         appointmentDate: date,
         appointmentTime: time,
         timezone,
         professionalName,
+        customerName,
+        modality,
         meetingUrl:
           appointment.attentionMode === AttentionModality.ONLINE
-            ? appointment.meetLink
+            ? meetingUrl
             : null,
         fullAddress:
           appointment.attentionMode === AttentionModality.PRESENTIAL
             ? fullAddress
+            : null,
+        arrivalInstructions:
+          appointment.attentionMode === AttentionModality.PRESENTIAL
+            ? appointment.arrivalInstructions
             : null,
       };
 
@@ -1654,7 +1907,7 @@ export class AppointmentsService {
   ): string {
     if (
       professional?.customVideoUrl &&
-      professional.videoProvider !== VideoProvider.JITSI
+      professional.videoProvider === VideoProvider.CUSTOM
     ) {
       return professional.customVideoUrl;
     }
@@ -1704,3 +1957,4 @@ export class AppointmentsService {
     }
   }
 }
+

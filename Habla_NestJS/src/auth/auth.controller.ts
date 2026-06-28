@@ -4,6 +4,7 @@ import {
   Body,
   Get,
   Patch,
+  Query,
   UseGuards,
   Request,
 } from '@nestjs/common';
@@ -19,6 +20,11 @@ export class AuthController {
   @Post('login')
   login(@Body() body: { email: string; password: string }) {
     return this.authService.login(body.email, body.password);
+  }
+
+  @Get('email-available')
+  emailAvailable(@Query('email') email: string) {
+    return this.authService.checkEmailAvailability(email);
   }
 
   @Post('request-password-reset')
@@ -64,7 +70,10 @@ export class AuthController {
       preferredAttentionMode?: AttentionModality;
       specialty?: string;
       professionId?: string;
+      customProfession?: string;
       attentionMode?: AttentionModality;
+      acceptedTerms?: boolean;
+      recaptchaToken?: string;
     },
   ) {
     return this.authService.register(body);

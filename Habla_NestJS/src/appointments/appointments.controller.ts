@@ -78,6 +78,13 @@ export class AppointmentsController {
     return this.appointmentsService.confirmAppointment(id, req.user.id);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROFESSIONAL)
+  @Patch(':id/complete')
+  complete(@Param('id') id: string, @Request() req: AuthRequest) {
+    return this.appointmentsService.completeAppointment(id, req.user.id);
+  }
+
   // 🟢 PROFESSIONAL → cancelar cita
   @UseGuards(JwtAuthGuard)
   @Patch(':id/cancel')

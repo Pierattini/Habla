@@ -27,6 +27,15 @@ type FindProfessionalsParams = {
   };
 };
 
+type SearchSuggestionsParams = {
+  q?: string;
+  country?: string;
+  viewer?: {
+    id: string;
+    role: Role;
+  };
+};
+
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
@@ -291,7 +300,13 @@ export class UsersService {
       });
 
       if (profession) {
-        legacyCatalogTerms.push(profession.name, profession.slug, ...profession.aliases);
+        legacyCatalogTerms.push(
+          ...this.getLegacySearchTerms([
+            profession.name,
+            profession.slug,
+            ...profession.aliases,
+          ]),
+        );
       }
     }
 
@@ -305,11 +320,13 @@ export class UsersService {
       });
 
       legacyCatalogTerms.push(
-        ...professions.flatMap((profession) => [
-          profession.name,
-          profession.slug,
-          ...profession.aliases,
-        ]),
+        ...this.getLegacySearchTerms(
+          professions.flatMap((profession) => [
+            profession.name,
+            profession.slug,
+            ...profession.aliases,
+          ]),
+        ),
       );
     }
 
@@ -319,6 +336,7 @@ export class UsersService {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { specialty: { contains: search, mode: 'insensitive' } },
+        { customProfession: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
         { profession: { name: { contains: search, mode: 'insensitive' } } },
         { profession: { slug: { contains: search, mode: 'insensitive' } } },
@@ -331,6 +349,7 @@ export class UsersService {
       where.OR = [
         ...(where.OR || []),
         { specialty: { contains: specialty, mode: 'insensitive' } },
+        { customProfession: { contains: specialty, mode: 'insensitive' } },
         { profession: { name: { contains: specialty, mode: 'insensitive' } } },
         { profession: { slug: { contains: specialty, mode: 'insensitive' } } },
       ];
@@ -385,7 +404,17 @@ export class UsersService {
                     { officeCountry: '' },
                   ],
                 },
-                { user: { country } },
+                {
+                  OR: [
+                    { user: { country } },
+                    ...(country === 'CL'
+                      ? [
+                          { user: { country: null } },
+                          { user: { country: '' } },
+                        ]
+                      : []),
+                  ],
+                },
               ],
             },
           ],
@@ -416,24 +445,34 @@ export class UsersService {
         orderBy: { specialty: 'asc' },
       }),
     ]);
+    const reviewSummaries = await this.getReviewSummaries(
+      data.map((professional) => professional.userId),
+    );
 
     return {
-      data: data.map((p) => ({
+      data: data.map((p) => {
+        const reviewSummary = reviewSummaries.get(p.userId) || {
+          ratingAverage: 0,
+          reviewsCount: 0,
+        };
+
+        return {
         id: p.userId,
         slug: p.slug,
         name: this.getProtectedProfessionalName(p.name || p.user.name),
         firstName: this.getFirstName(p.name || p.user.name),
         lastInitial: this.getLastInitial(p.name || p.user.name),
         specialty: p.profession?.name || p.specialty,
+        customProfession: p.customProfession,
         professionId: p.professionId,
         professionName: p.profession?.name || null,
         professionSlug: p.profession?.slug || null,
         categoryName: p.profession?.category?.name || null,
         categorySlug: p.profession?.category?.slug || null,
         city: p.officeCity || null,
-        country: p.officeCountry || p.user.country || null,
-        ratingAverage: 0,
-        reviewsCount: 0,
+        country: p.officeCountry || p.user.country || country || null,
+        ratingAverage: reviewSummary.ratingAverage,
+        reviewsCount: reviewSummary.reviewsCount,
         shortDescription: this.truncateText(p.description, 140),
         price: p.price,
         duration: p.duration,
@@ -444,9 +483,10 @@ export class UsersService {
         attentionMode: p.attentionMode,
         officeCity: p.officeCity,
         officeRegion: p.officeRegion,
-        officeCountry: p.officeCountry || p.user.country,
+        officeCountry: p.officeCountry || p.user.country || country,
         videoProvider: p.videoProvider,
-      })),
+        };
+      }),
       total,
       page,
       limit,
@@ -472,6 +512,25 @@ export class UsersService {
 
     if (!professional) return null;
 
+    const reviewSummary = await this.getReviewSummary(professional.userId);
+    const reviews = await this.prisma.review.findMany({
+      where: { professionalId: professional.userId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+        customer: {
+          select: {
+            name: true,
+            image: true,
+          },
+        },
+      },
+    });
+
     return {
       id: professional.userId,
       slug: professional.slug,
@@ -479,6 +538,7 @@ export class UsersService {
       firstName: this.getFirstName(professional.name || professional.user.name),
       lastInitial: this.getLastInitial(professional.name || professional.user.name),
       specialty: professional.profession?.name || professional.specialty || 'Profesional',
+      customProfession: professional.customProfession,
       professionId: professional.professionId,
       professionName: professional.profession?.name || null,
       professionSlug: professional.profession?.slug || null,
@@ -487,13 +547,15 @@ export class UsersService {
       city: professional.officeCity || null,
       region: professional.officeRegion || null,
       country: professional.officeCountry || professional.user.country || null,
-      ratingAverage: 0,
-      reviewsCount: 0,
+      ratingAverage: reviewSummary.ratingAverage,
+      reviewsCount: reviewSummary.reviewsCount,
+      reviews,
       shortDescription: this.truncateText(professional.description, 140),
       description: professional.description || '',
       experience: professional.description || '',
       specialties: [
         professional.profession?.name,
+        professional.customProfession,
         professional.specialty,
       ].filter(Boolean),
       price: professional.price,
@@ -518,6 +580,217 @@ export class UsersService {
     }
 
     return null;
+  }
+
+  private async getReviewSummaries(professionalIds: string[]) {
+    const uniqueIds = Array.from(new Set(professionalIds.filter(Boolean)));
+    const summaries = new Map<string, { ratingAverage: number; reviewsCount: number }>();
+
+    if (uniqueIds.length === 0) {
+      return summaries;
+    }
+
+    const rows = await this.prisma.review.groupBy({
+      by: ['professionalId'],
+      where: {
+        professionalId: {
+          in: uniqueIds,
+        },
+      },
+      _avg: {
+        rating: true,
+      },
+      _count: {
+        rating: true,
+      },
+    });
+
+    for (const row of rows) {
+      summaries.set(row.professionalId, {
+        ratingAverage: Number((row._avg.rating || 0).toFixed(1)),
+        reviewsCount: row._count.rating,
+      });
+    }
+
+    return summaries;
+  }
+
+  private async getReviewSummary(professionalId: string) {
+    const summary = await this.prisma.review.aggregate({
+      where: { professionalId },
+      _avg: {
+        rating: true,
+      },
+      _count: {
+        rating: true,
+      },
+    });
+
+    return {
+      ratingAverage: Number((summary._avg.rating || 0).toFixed(1)),
+      reviewsCount: summary._count.rating,
+    };
+  }
+
+  async getSearchSuggestions(params: SearchSuggestionsParams) {
+    const query = String(params.q || '').trim();
+
+    if (query.length < 2) {
+      return [];
+    }
+
+    const country = await this.resolveProfessionalCountryFilter({
+      page: 1,
+      limit: 8,
+      country: params.country,
+      viewer: params.viewer,
+    });
+    const legacyTerms = this.getLegacySearchTerms([query]);
+    const textFilters = Array.from(new Set([query, ...legacyTerms]))
+      .filter((term) => term.length >= 2);
+    const professionalCountryFilter: Prisma.ProfessionalWhereInput = country
+      ? {
+          OR: [
+            { officeCountry: country },
+            {
+              AND: [
+                {
+                  OR: [
+                    { officeCountry: null },
+                    { officeCountry: '' },
+                  ],
+                },
+                {
+                  OR: [
+                    { user: { country } },
+                    ...(country === 'CL'
+                      ? [
+                          { user: { country: null } },
+                          { user: { country: '' } },
+                        ]
+                      : []),
+                  ],
+                },
+              ],
+            },
+          ],
+        }
+      : {};
+
+    const [professions, professionals] = await this.prisma.$transaction([
+      this.prisma.profession.findMany({
+        where: {
+          isActive: true,
+          OR: textFilters.flatMap((term) => [
+            { name: { contains: term, mode: 'insensitive' as const } },
+            { slug: { contains: term, mode: 'insensitive' as const } },
+            { aliases: { has: term } },
+            { category: { name: { contains: term, mode: 'insensitive' as const } } },
+            { category: { slug: { contains: term, mode: 'insensitive' as const } } },
+          ]),
+        },
+        take: 5,
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        include: { category: true },
+      }),
+      this.prisma.professional.findMany({
+        where: {
+          AND: [
+            professionalCountryFilter,
+            {
+              OR: textFilters.flatMap((term) => [
+                { name: { contains: term, mode: 'insensitive' as const } },
+                { specialty: { contains: term, mode: 'insensitive' as const } },
+                { customProfession: { contains: term, mode: 'insensitive' as const } },
+                { description: { contains: term, mode: 'insensitive' as const } },
+                { officeCity: { contains: term, mode: 'insensitive' as const } },
+                { user: { name: { contains: term, mode: 'insensitive' as const } } },
+                { profession: { name: { contains: term, mode: 'insensitive' as const } } },
+                { profession: { slug: { contains: term, mode: 'insensitive' as const } } },
+                { profession: { category: { name: { contains: term, mode: 'insensitive' as const } } } },
+              ]),
+            },
+          ],
+        },
+        take: 8,
+        orderBy: [{ name: 'asc' }, { user: { name: 'asc' } }],
+        include: {
+          user: true,
+          profession: {
+            include: {
+              category: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const professionSuggestions = professions.map((profession) => ({
+      type: 'profession' as const,
+      id: profession.id,
+      label: profession.name,
+      specialty: profession.name,
+      slug: profession.slug,
+      categoryName: profession.category?.name || null,
+      categorySlug: profession.category?.slug || null,
+      city: null,
+    }));
+    const professionalSuggestions = professionals.map((professional) => ({
+      type: 'professional' as const,
+      id: professional.userId,
+      slug: professional.slug,
+      label: this.getProtectedProfessionalName(professional.name || professional.user.name),
+      specialty: professional.profession?.name || professional.customProfession || professional.specialty || 'Profesional',
+      categoryName: professional.profession?.category?.name || null,
+      categorySlug: professional.profession?.category?.slug || null,
+      city: professional.officeCity || null,
+    }));
+
+    return [...professionSuggestions, ...professionalSuggestions].slice(0, 8);
+  }
+
+  private getLegacySearchTerms(terms: Array<string | null | undefined>): string[] {
+    const accentMap: Record<string, string[]> = {
+      psicologo: ['Psicólogo', 'Psicologia', 'Psicología'],
+      psicologia: ['Psicólogo', 'Psicología'],
+      kinesiologo: ['Kinesiólogo'],
+      cardiologo: ['Cardiólogo'],
+      medico: ['Médico'],
+      'medico general': ['Médico General'],
+      fonoaudiologo: ['Fonoaudiólogo'],
+      estetica: ['Estética'],
+      cosmetica: ['Cosmética'],
+      nutricion: ['Nutrición'],
+    };
+
+    const values = terms
+      .flatMap((term) => {
+        const value = String(term || '').trim();
+        const normalized = this.normalizeSearchText(value);
+        const spaced = value.replace(/-/g, ' ');
+        const normalizedSpaced = this.normalizeSearchText(spaced);
+
+        return [
+          value,
+          spaced,
+          normalized,
+          normalizedSpaced,
+          ...(accentMap[normalized] || []),
+          ...(accentMap[normalizedSpaced] || []),
+        ];
+      })
+      .map((term) => term.trim())
+      .filter(Boolean);
+
+    return Array.from(new Set(values));
+  }
+
+  private normalizeSearchText(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
   }
 
   private async resolveProfessionalCountryFilter(
