@@ -33,6 +33,47 @@
   ></ion-icon>
 
 </div>
+      <input
+        type="file"
+        #profileImageInput
+        accept="image/*"
+        (change)="$any(this).onProfileImageSelected($event)"
+        hidden
+      />
+
+      <div class="avatar-actions" *ngIf="role !== 'PROFESSIONAL'">
+        <ion-button
+          fill="outline"
+          size="small"
+          (click)="profileImageInput.click()"
+        >
+          <ion-icon name="image-outline" slot="start"></ion-icon>
+          Cambiar imagen
+        </ion-button>
+
+        <ion-button
+          *ngIf="image"
+          fill="clear"
+          size="small"
+          class="avatar-clear"
+          (click)="$any(this).clearProfileImage()"
+        >
+          Quitar
+        </ion-button>
+      </div>
+
+      <div class="default-avatar-picker" *ngIf="role !== 'PROFESSIONAL'">
+        <button
+          type="button"
+          *ngFor="let avatar of $any(this).defaultAvatars"
+          [class.active]="image === avatar"
+          (click)="$any(this).selectDefaultAvatar(avatar)"
+          aria-label="Seleccionar avatar por defecto"
+        >
+          <img [src]="avatar" alt="" />
+        </button>
+      </div>
+
       <h2 *ngIf="name">{{ name }}</h2>
       <p class="subtitle">{{ email }}</p>
     </div>

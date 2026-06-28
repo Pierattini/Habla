@@ -1,0 +1,43 @@
+<main class="admin-shell">
+  <aside class="admin-sidebar" aria-label="Navegacion administrativa">
+    <div class="admin-brand">
+      <span class="brand-mark">C</span>
+      <div>
+        <strong>Conecta</strong>
+        <small>Administrador</small>
+      </div>
+    </div>
+
+    <nav>
+      <a
+        *ngFor="let item of navItems"
+        [routerLink]="item.route"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: item.route === '/admin/dashboard' }"
+      >
+        <span>{{ item.icon }}</span>
+        {{ item.label }}
+      </a>
+    </nav>
+
+    <button type="button" class="logout-button" (click)="logout()">
+      Cerrar sesion
+    </button>
+  </aside>
+
+  <section class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <span>Panel administrativo</span>
+        <h1>Operacion Conecta</h1>
+      </div>
+
+      <div class="admin-status">
+        <span></span>
+        ADMIN
+      </div>
+    </header>
+
+    <router-outlet></router-outlet>
+  </section>
+</main>

@@ -35,7 +35,9 @@ import {
   mailOutline,
   shieldOutline,
   logOutOutline,
-  createOutline
+  createOutline,
+  imageOutline,
+  closeCircleOutline
 } from 'ionicons/icons';
 
 @Component({
@@ -78,6 +80,13 @@ export class ProfileComponent {
   wantsTaxDocumentByDefault = false;
   documentAutomationEnabled = false;
   manualDocumentMode = true;
+  defaultAvatars = [
+    this.buildDefaultAvatar('#a855f7', '#ec4899'),
+    this.buildDefaultAvatar('#7c3aed', '#38bdf8'),
+    this.buildDefaultAvatar('#14b8a6', '#a855f7'),
+    this.buildDefaultAvatar('#f97316', '#facc15'),
+    this.buildDefaultAvatar('#2563eb', '#22c55e'),
+  ];
 
   availableCountries = [
   { label: 'Chile', value: 'CL' },
@@ -106,7 +115,9 @@ export class ProfileComponent {
   'mail-outline': mailOutline,
   'shield-outline': shieldOutline,
   'log-out-outline': logOutOutline,
-  'create-outline': createOutline
+  'create-outline': createOutline,
+  'image-outline': imageOutline,
+  'close-circle-outline': closeCircleOutline
 });
   }
 
@@ -122,13 +133,9 @@ export class ProfileComponent {
     // 👤 PERFIL
     this.auth.getProfile().subscribe({
       next: (user: any) => {
-  console.log('PROFILE CARGADO:', user);
-
   this.name = user.professional?.name || user.name;
 
-console.log('IMAGEN:', user.professional?.image);
-
-this.image = user.professional?.image || '';
+this.image = user.professional?.image || user.image || '';
 
 this.email = user.email;
 this.role = user.role;
@@ -219,6 +226,58 @@ async editName() {
   });
 
   await alert.present();
+}
+
+onProfileImageSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    window.alert('Selecciona una imagen valida.');
+    input.value = '';
+    return;
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    window.alert('La imagen no puede superar 2 MB.');
+    input.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = (e: ProgressEvent<FileReader>) => {
+    const image = String(e.target?.result || '');
+
+    if (!image) return;
+
+    this.saveProfileImage(image);
+    input.value = '';
+  };
+
+  reader.readAsDataURL(file);
+}
+
+selectDefaultAvatar(avatar: string) {
+  this.saveProfileImage(avatar);
+}
+
+clearProfileImage() {
+  this.saveProfileImage('');
+}
+
+private saveProfileImage(image: string) {
+  this.auth.updateProfile({ image }).subscribe({
+    next: (updatedUser: any) => {
+      this.image = updatedUser.professional?.image || updatedUser.image || image;
+      this.cdr.detectChanges();
+    },
+    error: () => {
+      window.alert('No se pudo actualizar la imagen. Intenta nuevamente.');
+    },
+  });
 }
 
 async editEmail() {
@@ -327,36 +386,54 @@ async editTimezone() {
 async editTaxInfo() {
   const alert = await this.alertCtrl.create({
     header: this.role === 'PROFESSIONAL' ? 'Datos tributarios emisor' : 'Datos para boleta',
+    message: 'Usa datos reales para documentos tributarios. RUT/NIF/DNI: 6 a 20 caracteres. Nombre: 3 a 120. Email valido. Ciudad: 2 a 80. Direccion: 5 a 160.',
     inputs: [
       {
         name: 'taxId',
         type: 'text',
         value: this.taxId,
         placeholder: this.role === 'PROFESSIONAL' ? 'RUT emisor' : 'RUT',
+        attributes: {
+          maxlength: 20,
+          inputmode: 'text',
+        },
       },
       {
         name: 'taxName',
         type: 'text',
         value: this.taxName,
         placeholder: this.role === 'PROFESSIONAL' ? 'Razon social' : 'Nombre tributario',
+        attributes: {
+          maxlength: 120,
+        },
       },
       {
         name: 'taxEmail',
         type: 'email',
         value: this.taxEmail,
         placeholder: 'Email tributario',
+        attributes: {
+          maxlength: 120,
+          inputmode: 'email',
+        },
       },
       {
         name: 'taxCity',
         type: 'text',
         value: this.taxCity,
         placeholder: 'Ciudad o comuna',
+        attributes: {
+          maxlength: 80,
+        },
       },
       {
         name: 'taxAddress',
         type: 'text',
         value: this.taxAddress,
         placeholder: 'Direccion tributaria',
+        attributes: {
+          maxlength: 160,
+        },
       },
     ],
     buttons: [
@@ -372,6 +449,13 @@ async editTaxInfo() {
             taxCountry: this.taxCountry || this.country,
             taxCity: this.cleanOptional(data.taxCity),
           };
+
+          const validationError = this.validateTaxPayload(payload);
+
+          if (validationError) {
+            window.alert(validationError);
+            return false;
+          }
 
           this.auth.updateProfile(payload).subscribe((updatedUser: any) => {
             const professionalTax = updatedUser.professional || {};
@@ -503,5 +587,57 @@ getDocumentPreferenceLabel(): string {
 private cleanOptional(value: string): string | undefined {
   const cleaned = value?.trim();
   return cleaned ? cleaned : undefined;
+}
+
+private validateTaxPayload(payload: {
+  taxId?: string;
+  taxName?: string;
+  taxEmail?: string;
+  taxAddress?: string;
+  taxCity?: string;
+}): string | null {
+  const taxIdPattern = /^[a-zA-Z0-9.\-\s]{6,20}$/;
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  if (payload.taxId && !taxIdPattern.test(payload.taxId)) {
+    return 'El RUT / NIF / DNI debe tener entre 6 y 20 caracteres. Usa solo letras, numeros, puntos, guion o espacios.';
+  }
+
+  if (payload.taxName && (payload.taxName.length < 3 || payload.taxName.length > 120)) {
+    return 'El nombre tributario debe tener entre 3 y 120 caracteres.';
+  }
+
+  if (payload.taxEmail && (payload.taxEmail.length > 120 || !emailPattern.test(payload.taxEmail))) {
+    return 'Ingresa un email tributario valido.';
+  }
+
+  if (payload.taxCity && (payload.taxCity.length < 2 || payload.taxCity.length > 80)) {
+    return 'La ciudad o comuna debe tener entre 2 y 80 caracteres.';
+  }
+
+  if (payload.taxAddress && (payload.taxAddress.length < 5 || payload.taxAddress.length > 160)) {
+    return 'La direccion tributaria debe tener entre 5 y 160 caracteres.';
+  }
+
+  return null;
+}
+
+private buildDefaultAvatar(primary: string, secondary: string): string {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+      <defs>
+        <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="${primary}"/>
+          <stop offset="100%" stop-color="${secondary}"/>
+        </linearGradient>
+      </defs>
+      <rect width="160" height="160" rx="44" fill="#fbf7ff"/>
+      <circle cx="80" cy="62" r="28" fill="url(#g)"/>
+      <path d="M38 132c6-30 22-46 42-46s36 16 42 46" fill="url(#g)"/>
+      <circle cx="80" cy="80" r="70" fill="none" stroke="url(#g)" stroke-width="8"/>
+    </svg>
+  `;
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 }

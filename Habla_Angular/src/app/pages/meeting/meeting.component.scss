@@ -1,0 +1,100 @@
+.meeting-page {
+  --background: var(--app-bg);
+}
+
+.meeting-shell {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.meeting-card {
+  width: min(100%, 520px);
+  padding: 28px;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(160, 84, 255, 0.16);
+}
+
+.brand-mark {
+  margin-bottom: 22px;
+  color: var(--app-primary);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.eyebrow {
+  color: var(--app-primary);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+h1 {
+  margin: 8px 0 18px;
+  color: var(--app-text);
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.meeting-status {
+  margin-bottom: 18px;
+  padding: 14px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--app-primary-light) 18%, #fff);
+  color: var(--app-muted);
+  font-weight: 800;
+}
+
+.meeting-status.available {
+  color: var(--app-primary);
+}
+
+.meeting-details {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.meeting-details div {
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--app-bg) 64%, #fff);
+}
+
+.meeting-details span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.meeting-details strong {
+  color: var(--app-text);
+  font-size: 15px;
+}
+
+.meeting-note {
+  margin: 14px 0 0;
+  color: var(--app-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.center-state {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.center-state p {
+  margin: 0;
+  color: var(--app-muted);
+  font-weight: 700;
+}

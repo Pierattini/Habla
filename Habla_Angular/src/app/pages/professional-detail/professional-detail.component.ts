@@ -351,37 +351,54 @@ async openCustomerTaxDataModal(): Promise<boolean> {
 
     taxAlert = await this.alertCtrl.create({
       header: 'Datos para documento',
-      message: 'Completa estos datos una sola vez. Los guardaremos en tu perfil para emitir la boleta o factura.',
+      message: 'Completa estos datos una sola vez. RUT/NIF/DNI: 6 a 20 caracteres. Nombre: 3 a 120. Email valido. Ciudad: 2 a 80. Direccion: 5 a 160.',
       inputs: [
         {
           name: 'taxName',
           type: 'text',
           value: current.taxName || current.name || '',
           placeholder: 'Nombre completo o razon social',
+          attributes: {
+            maxlength: 120,
+          },
         },
         {
           name: 'taxId',
           type: 'text',
           value: current.taxId || '',
           placeholder: 'RUT / NIF / DNI',
+          attributes: {
+            maxlength: 20,
+            inputmode: 'text',
+          },
         },
         {
           name: 'taxEmail',
           type: 'email',
           value: current.taxEmail || fallbackEmail,
           placeholder: 'Correo para documento',
+          attributes: {
+            maxlength: 120,
+            inputmode: 'email',
+          },
         },
         {
           name: 'taxCity',
           type: 'text',
           value: current.taxCity || '',
           placeholder: 'Ciudad o comuna',
+          attributes: {
+            maxlength: 80,
+          },
         },
         {
           name: 'taxAddress',
           type: 'text',
           value: current.taxAddress || '',
           placeholder: 'Direccion tributaria',
+          attributes: {
+            maxlength: 160,
+          },
         },
       ],
       buttons: [
@@ -411,6 +428,13 @@ async openCustomerTaxDataModal(): Promise<boolean> {
 
             if (missing.length > 0) {
               alert(`Faltan datos para el documento: ${missing.join(', ')}.`);
+              return false;
+            }
+
+            const validationError = this.validateTaxPayload(payload);
+
+            if (validationError) {
+              alert(validationError);
               return false;
             }
 
@@ -514,10 +538,11 @@ getAttentionModeLabel(): string {
 }
 
 getVideoProviderLabel(): string {
-  const provider = this.professional?.videoProvider || 'JITSI';
+  const provider = this.professional?.videoProvider || 'CONNECTA_AUTO';
 
   if (provider === 'GOOGLE_MEET') return 'Google Meet';
   if (provider === 'ZOOM') return 'Zoom';
+  if (provider === 'MICROSOFT_TEAMS') return 'Microsoft Teams';
   if (provider === 'CUSTOM') return 'Enlace personalizado';
 
   return 'Sala online generada por Conecta';
@@ -538,6 +563,39 @@ getDocumentModeLabel(): string {
 private cleanOptional(value: string): string | undefined {
   const cleaned = value?.trim();
   return cleaned ? cleaned : undefined;
+}
+
+private validateTaxPayload(payload: {
+  taxId?: string;
+  taxName?: string;
+  taxEmail?: string;
+  taxAddress?: string;
+  taxCity?: string;
+}): string | null {
+  const taxIdPattern = /^[a-zA-Z0-9.\-\s]{6,20}$/;
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  if (!payload.taxId || !taxIdPattern.test(payload.taxId)) {
+    return 'El RUT / NIF / DNI debe tener entre 6 y 20 caracteres. Usa solo letras, numeros, puntos, guion o espacios.';
+  }
+
+  if (!payload.taxName || payload.taxName.length < 3 || payload.taxName.length > 120) {
+    return 'El nombre tributario debe tener entre 3 y 120 caracteres.';
+  }
+
+  if (!payload.taxEmail || payload.taxEmail.length > 120 || !emailPattern.test(payload.taxEmail)) {
+    return 'Ingresa un email tributario valido.';
+  }
+
+  if (!payload.taxCity || payload.taxCity.length < 2 || payload.taxCity.length > 80) {
+    return 'La ciudad o comuna debe tener entre 2 y 80 caracteres.';
+  }
+
+  if (!payload.taxAddress || payload.taxAddress.length < 5 || payload.taxAddress.length > 160) {
+    return 'La direccion tributaria debe tener entre 5 y 160 caracteres.';
+  }
+
+  return null;
 }
 
 private recordProfileView(): void {

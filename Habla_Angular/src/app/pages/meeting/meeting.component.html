@@ -1,0 +1,67 @@
+<ion-content class="meeting-page">
+  <section class="meeting-shell">
+    <div class="meeting-card">
+      <div class="brand-mark">Conecta</div>
+
+      <ng-container *ngIf="loading">
+        <div class="center-state">
+          <ion-spinner></ion-spinner>
+          <p>Cargando sala...</p>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="!loading && errorMessage">
+        <div class="center-state">
+          <h1>Acceso no disponible</h1>
+          <p>{{ errorMessage }}</p>
+          <ion-button *ngIf="errorMessage.includes('iniciar sesion')" (click)="goToLogin()">
+            Iniciar sesion
+          </ion-button>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="!loading && room && !errorMessage">
+        <span class="eyebrow">Sala privada</span>
+        <h1>Videollamada Conecta</h1>
+
+        <div class="meeting-status" [class.available]="room.isAvailable">
+          {{ room.availabilityMessage }}
+        </div>
+
+        <div class="meeting-details">
+          <div>
+            <span>Profesional</span>
+            <strong>{{ room.professionalName }}</strong>
+          </div>
+
+          <div>
+            <span>Paciente</span>
+            <strong>{{ room.customerName }}</strong>
+          </div>
+
+          <div>
+            <span>Fecha y hora</span>
+            <strong>{{ formattedDate }}</strong>
+          </div>
+
+          <div>
+            <span>Estado</span>
+            <strong>{{ room.status }}</strong>
+          </div>
+        </div>
+
+        <ion-button
+          expand="block"
+          [disabled]="!room.isAvailable || !room.isConfirmed"
+          (click)="joinMeeting()"
+        >
+          Unirse a la videollamada
+        </ion-button>
+
+        <p class="meeting-note">
+          Esta sala solo es visible para el paciente y el profesional de la cita.
+        </p>
+      </ng-container>
+    </div>
+  </section>
+</ion-content>

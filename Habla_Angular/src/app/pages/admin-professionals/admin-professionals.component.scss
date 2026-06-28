@@ -1,0 +1,17 @@
+@import '../admin-shared/admin-table';
+
+.professionals-filters {
+  grid-template-columns: minmax(230px, 1fr) 140px 150px 160px 210px 130px;
+}
+
+@media (max-width: 1100px) {
+  .professionals-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .professionals-filters {
+    grid-template-columns: 1fr;
+  }
+}

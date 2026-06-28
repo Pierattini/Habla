@@ -63,6 +63,27 @@
 
   <ion-button
     fill="outline"
+    color="primary"
+    size="small"
+    class="btn-sec"
+    *ngIf="$any(this).canReviewAppointment(appt)"
+    (click)="$any(this).openReviewModal(appt)">
+    Valorar profesional
+  </ion-button>
+
+  <ion-button
+    fill="solid"
+    color="primary"
+    size="small"
+    class="btn-sec btn-video"
+    *ngIf="$any(this).canCompleteAppointment(appt)"
+    [disabled]="$any(this).loadingId === appt.id"
+    (click)="$any(this).completeAppointment(appt)">
+    Finalizar cita
+  </ion-button>
+
+  <ion-button
+    fill="outline"
     color="medium"
     size="small"
     class="btn-sec"
@@ -91,115 +112,126 @@
     class="documento-tributario"
     *ngIf="role !== 'PROFESSIONAL'"
   >
-    <div class="documento-header">
+    <button
+      type="button"
+      class="documento-toggle"
+      (click)="$any(this).toggleTaxDocument(appt.id)"
+      [attr.aria-expanded]="$any(this).isTaxDocumentExpanded(appt.id)"
+    >
       <div>
-        <h4>Documento tributario</h4>
+        <span>Documento tributario</span>
         <p>{{ $any(appt).documentView?.emptyMessage }}</p>
       </div>
 
-      <span class="documento-badge">
-        {{ $any(appt).documentView?.statusLabel || 'Sin estado' }}
-      </span>
-    </div>
-
-    <div class="documento-grid">
-      <div>
-        <span>Documento solicitado</span>
-        <strong>{{ $any(appt).documentView?.requestedLabel || 'No' }}</strong>
-      </div>
-
-      <div>
-        <span>Estado documento</span>
+      <span class="documento-toggle-side">
         <strong>{{ $any(appt).documentView?.statusLabel || 'Sin estado' }}</strong>
-      </div>
+        <i>{{ $any(this).isTaxDocumentExpanded(appt.id) ? 'Ocultar' : 'Ver' }}</i>
+      </span>
+    </button>
 
-      <div>
-        <span>Tipo documento</span>
-        <strong>{{ $any(appt).documentView?.typeLabel || 'Documento' }}</strong>
-      </div>
-
-      <div>
-        <span>Fecha emision</span>
-        <strong>
-          {{
-            $any(appt).documentView?.issueDate
-              ? ($any(appt).documentView.issueDate | date:'dd/MM/yyyy HH:mm')
-              : 'Pendiente'
-          }}
-        </strong>
-      </div>
-
-      <div>
-        <span>Fecha envio</span>
-        <strong>
-          {{
-            $any(appt).documentView?.sentDate
-              ? ($any(appt).documentView.sentDate | date:'dd/MM/yyyy HH:mm')
-              : 'Pendiente'
-          }}
-        </strong>
-      </div>
-
-      <div>
-        <span>Archivo</span>
-        <strong>{{ $any(appt).documentView?.fileName || 'Sin archivo' }}</strong>
-      </div>
-    </div>
-
-    <div class="documento-timeline">
-      <div
-        *ngFor="let item of $any(appt).documentView?.timeline"
-        class="timeline-item"
-        [class.active]="item.active"
-        [class.failed]="item.failed"
-      >
-        <span class="timeline-dot"></span>
+    <div
+      class="documento-panel"
+      *ngIf="$any(this).isTaxDocumentExpanded(appt.id)"
+    >
+      <div class="documento-grid">
+        <div>
+          <span>Solicitado</span>
+          <strong>{{ $any(appt).documentView?.requestedLabel || 'No' }}</strong>
+        </div>
 
         <div>
-          <strong>{{ item.label }}</strong>
-          <small>
+          <span>Estado</span>
+          <strong>{{ $any(appt).documentView?.statusLabel || 'Sin estado' }}</strong>
+        </div>
+
+        <div>
+          <span>Tipo</span>
+          <strong>{{ $any(appt).documentView?.typeLabel || 'Documento' }}</strong>
+        </div>
+
+        <div>
+          <span>Emision</span>
+          <strong>
             {{
-              item.date
-                ? (item.date | date:'dd/MM/yyyy HH:mm')
+              $any(appt).documentView?.issueDate
+                ? ($any(appt).documentView.issueDate | date:'dd/MM/yyyy HH:mm')
                 : 'Pendiente'
             }}
-          </small>
+          </strong>
+        </div>
+
+        <div>
+          <span>Envio</span>
+          <strong>
+            {{
+              $any(appt).documentView?.sentDate
+                ? ($any(appt).documentView.sentDate | date:'dd/MM/yyyy HH:mm')
+                : 'Pendiente'
+            }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Archivo</span>
+          <strong>{{ $any(appt).documentView?.fileName || 'Sin archivo' }}</strong>
         </div>
       </div>
-    </div>
 
-    <div
-      class="documento-correo"
-      *ngIf="$any(appt).documentView?.emailSent"
-    >
-      Documento enviado por correo
-      <span *ngIf="$any(appt).documentView?.emailSentAt">
-        - {{ $any(appt).documentView.emailSentAt | date:'dd/MM/yyyy HH:mm' }}
-      </span>
-    </div>
+      <div class="documento-timeline">
+        <div
+          *ngFor="let item of $any(appt).documentView?.timeline"
+          class="timeline-item"
+          [class.active]="item.active"
+          [class.failed]="item.failed"
+        >
+          <span class="timeline-dot"></span>
 
-    <div
-      class="documento-actions"
-      *ngIf="$any(appt).documentView?.pdfUrl"
-    >
-      <a
-        class="documento-link"
-        [href]="$any(appt).documentView.pdfUrl"
-        target="_blank"
-        rel="noopener"
+          <div>
+            <strong>{{ item.label }}</strong>
+            <small>
+              {{
+                item.date
+                  ? (item.date | date:'dd/MM/yyyy HH:mm')
+                  : 'Pendiente'
+              }}
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="documento-correo"
+        *ngIf="$any(appt).documentView?.emailSent"
       >
-        Ver Documento
-      </a>
+        Documento enviado por correo
+        <span *ngIf="$any(appt).documentView?.emailSentAt">
+          - {{ $any(appt).documentView.emailSentAt | date:'dd/MM/yyyy HH:mm' }}
+        </span>
+      </div>
 
-      <a
-        class="documento-link documento-download"
-        [href]="$any(appt).documentView.pdfUrl"
-        [download]="$any(appt).documentView.fileName || 'documento-tributario'"
-        target="_blank"
-        rel="noopener"
+      <div
+        class="documento-actions"
+        *ngIf="$any(appt).documentView?.pdfUrl"
       >
-        Descargar Documento
-      </a>
+        <a
+          class="documento-link"
+          [href]="$any(appt).documentView.pdfUrl"
+          target="_blank"
+          rel="noopener"
+        >
+          Ver Documento
+        </a>
+
+        <a
+          class="documento-link documento-download"
+          [href]="$any(appt).documentView.pdfUrl"
+          [download]="$any(appt).documentView.fileName || 'documento-tributario'"
+          target="_blank"
+          rel="noopener"
+        >
+          Descargar Documento
+        </a>
+      </div>
     </div>
   </div>
 </ng-template>
@@ -317,6 +349,7 @@
 
   {{
     appt.status === 'CONFIRMED' ? '✔ ' :
+    appt.status === 'COMPLETED' ? '✔ ' :
     appt.status === 'CANCELLED' ? '✖ ' :
     appt.status === 'RESCHEDULED' ? '🔁 ' :
     appt.status === 'REFUNDED' ? '💸 ' :
@@ -512,6 +545,125 @@
     No tienes citas
   </p>
 </ng-template>
+</div>
+
+<app-appointment-review-modal
+  *ngIf="$any(this).reviewAppointment"
+  [submitting]="$any(this).reviewSubmitting"
+  (close)="$any(this).closeReviewModal()"
+  (submitReview)="$any(this).submitReview($event)"
+></app-appointment-review-modal>
+
+<div
+  class="calendar-modal-backdrop"
+  *ngIf="$any(this).calendarModalAppointment"
+  (click)="$any(this).closeCalendarModal()"
+>
+  <div
+    class="calendar-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="calendar-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <button
+      type="button"
+      class="calendar-close"
+      aria-label="Cerrar"
+      (click)="$any(this).closeCalendarModal()"
+    >
+      x
+    </button>
+
+    <div class="calendar-modal-icon" aria-hidden="true">
+      <span></span>
+    </div>
+
+    <h2 id="calendar-modal-title">Agregar al calendario</h2>
+
+    <p class="calendar-intro">
+      Tu cita ya quedo registrada en Conecta.
+      Conecta enviara automaticamente recordatorios de tu cita.
+      Si lo deseas, tambien puedes agregarla a tu calendario personal.
+    </p>
+
+    <div class="calendar-options">
+      <button
+        type="button"
+        class="calendar-option primary"
+        (click)="$any(this).addSelectedAppointmentToGoogleCalendar()"
+      >
+        <span class="option-icon">G</span>
+        <span>
+          <strong>Agregar a Google Calendar</strong>
+          <small>Abre Google Calendar con todos los datos listos para guardar.</small>
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="calendar-option"
+        (click)="$any(this).addSelectedAppointmentToSystemCalendar()"
+      >
+        <span class="option-icon calendar"></span>
+        <span>
+          <strong>Agregar a otro calendario</strong>
+          <small>Compatible con Apple Calendar, Outlook, Samsung Calendar y otros.</small>
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="calendar-option quiet"
+        (click)="$any(this).closeCalendarModal()"
+      >
+        <span class="option-icon check">✓</span>
+        <span>
+          <strong>Mantener solo en Conecta</strong>
+          <small>La cita seguira guardada y recibiras recordatorios automaticos.</small>
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div
+  class="penalty-modal-backdrop"
+  *ngIf="$any(this).penaltyCancelAppointmentId"
+  (click)="$any(this).closePenaltyModal()"
+>
+  <div
+    class="penalty-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="penalty-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <button
+      type="button"
+      class="penalty-close"
+      aria-label="Cerrar"
+      (click)="$any(this).closePenaltyModal()"
+    >
+      x
+    </button>
+
+    <h2 id="penalty-modal-title">Cancelacion con penalizacion</h2>
+    <p>
+      Cancelaste con menos de 48 horas. Se retendra el 50%.
+      Que deseas hacer?
+    </p>
+
+    <div class="penalty-actions">
+      <button type="button" (click)="$any(this).choosePenaltyCredit()">
+        <span>Credito</span>
+      </button>
+
+      <button type="button" (click)="$any(this).choosePenaltyRefund()">
+        <span>Reembolso</span>
+      </button>
+    </div>
+  </div>
 </div>
 </ion-content>
 

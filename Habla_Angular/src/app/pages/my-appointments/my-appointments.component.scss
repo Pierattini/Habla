@@ -217,28 +217,285 @@ ion-card {
   font-weight: 800;
 }
 
+.calendar-modal-backdrop,
+.penalty-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: color-mix(in srgb, #111827 42%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.calendar-modal,
+.penalty-modal {
+  position: relative;
+  width: min(340px, 100%);
+  padding: 26px 26px 20px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: var(--app-radius-md);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.calendar-modal {
+  width: min(420px, 100%);
+  padding: 26px 20px 20px;
+}
+
+.calendar-close,
+.penalty-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-primary-light) 18%, #fff);
+  color: var(--app-primary);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.calendar-modal-icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  box-shadow: 0 16px 30px color-mix(in srgb, var(--app-primary) 25%, transparent);
+}
+
+.calendar-modal-icon span {
+  position: relative;
+  width: 27px;
+  height: 25px;
+  display: block;
+  border: 2px solid #fff;
+  border-radius: 7px;
+}
+
+.calendar-modal-icon span::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: 6px;
+  border-top: 2px solid #fff;
+}
+
+.calendar-modal h2,
+.penalty-modal h2 {
+  max-width: 240px;
+  margin: 0 0 14px;
+  color: var(--app-text);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.calendar-modal h2 {
+  max-width: none;
+}
+
+.calendar-intro,
+.penalty-modal p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.calendar-intro {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.calendar-options {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.calendar-option {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 76px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: var(--app-radius-lg);
+  background: color-mix(in srgb, var(--app-primary-light) 7%, var(--app-surface));
+  color: var(--app-text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.calendar-option.primary {
+  border-color: color-mix(in srgb, var(--app-primary) 32%, transparent);
+  background: color-mix(in srgb, var(--app-primary-light) 13%, var(--app-surface));
+}
+
+.calendar-option.quiet {
+  background: var(--app-surface);
+}
+
+.calendar-option strong,
+.calendar-option small {
+  display: block;
+}
+
+.calendar-option strong {
+  color: var(--app-text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.calendar-option small {
+  margin-top: 4px;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.option-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  color: #fff;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.option-icon.calendar {
+  position: relative;
+  background: color-mix(in srgb, var(--app-primary-light) 18%, #fff);
+}
+
+.option-icon.calendar::before {
+  content: '';
+  width: 21px;
+  height: 19px;
+  border: 2px solid var(--app-primary);
+  border-radius: 6px;
+}
+
+.option-icon.calendar::after {
+  content: '';
+  position: absolute;
+  top: 17px;
+  width: 21px;
+  border-top: 2px solid var(--app-primary);
+}
+
+.option-icon.check {
+  background: color-mix(in srgb, var(--app-success) 14%, #fff);
+  color: var(--app-success);
+}
+
+.penalty-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 26px;
+}
+
+.penalty-actions button {
+  border: 0;
+  background: transparent;
+  color: var(--app-primary);
+  font-size: 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+
 .documento-tributario {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
   border-radius: var(--app-radius-lg);
-  background: color-mix(in srgb, var(--app-primary-light) 8%, var(--app-bg));
+  background: color-mix(in srgb, var(--app-primary-light) 6%, var(--app-surface));
 }
 
-.documento-header {
+.documento-toggle {
+  width: 100%;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  padding: 12px;
+  border: 0;
+  border-radius: var(--app-radius-md);
+  background: var(--app-surface);
+  color: inherit;
+  text-align: left;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--app-primary) 8%, transparent);
 }
 
-.documento-header h4 {
+.documento-toggle span {
+  display: block;
   margin: 0 0 4px;
   color: var(--app-text);
-  font-size: 14px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.documento-toggle p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.documento-toggle-side {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.documento-toggle-side strong {
+  max-width: 130px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-primary-light) 18%, var(--app-bg));
+  color: var(--app-primary);
+  font-size: 10px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.documento-toggle-side i {
+  color: var(--app-primary);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.documento-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 4px 4px;
 }
 
 .appointment-modality {
@@ -302,14 +559,18 @@ ion-card {
 
 .documento-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .documento-grid div {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-primary-light) 6%, var(--app-bg));
 }
 
 .documento-grid span {

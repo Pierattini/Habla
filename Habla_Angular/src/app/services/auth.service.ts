@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { API_URL } from '../core/config/api.config';
 
@@ -12,7 +12,7 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
-  // 🔐 LOGIN
+  // ðŸ” LOGIN
   login(email: string, password: string) {
     return this.http.post(`${this.api}/auth/login`, {
       email,
@@ -31,6 +31,14 @@ export class AuthService {
     });
   }
 
+  checkEmailAvailability(email: string) {
+    const params = new URLSearchParams({ email });
+
+    return this.http.get<{ available: boolean }>(
+      `${this.api}/auth/email-available?${params.toString()}`
+    );
+  }
+
   register(data: {
     name: string;
     email: string;
@@ -39,12 +47,16 @@ export class AuthService {
     customerInterests?: string[];
     preferredAttentionMode?: 'ONLINE' | 'PRESENTIAL' | 'BOTH';
     specialty?: string;
+    professionId?: string;
+    customProfession?: string;
     attentionMode?: 'ONLINE' | 'PRESENTIAL' | 'BOTH';
+    acceptedTerms: boolean;
+    recaptchaToken?: string;
   }) {
     return this.http.post(`${this.api}/auth/register`, data);
   }
 
-  // 🔥 HEADERS CON TOKEN
+  // ðŸ”¥ HEADERS CON TOKEN
   getHeaders() {
     const token = localStorage.getItem('token');
 
@@ -53,21 +65,21 @@ export class AuthService {
     });
   }
 
-  // 👤 PERFIL (🔥 ESTE ES CLAVE)
+  // ðŸ‘¤ PERFIL (ðŸ”¥ ESTE ES CLAVE)
   getProfile() {
     return this.http.get(`${this.api}/auth/me`, {
       headers: this.getHeaders()
     });
   }
 
-  // 📅 CITAS DEL USUARIO
+  // ðŸ“… CITAS DEL USUARIO
   getMyAppointments() {
   return this.http.get<any[]>(`${this.api}/appointments/mine`, {
     headers: this.getHeaders()
   });
 }
 
-  // 👨‍⚕️ PROFESIONALES
+  // ðŸ‘¨â€âš•ï¸ PROFESIONALES
   getProfessionals(params?: {
     page?: number;
     limit?: number;
@@ -92,18 +104,39 @@ export class AuthService {
     if (params?.country) query.set('country', params.country);
 
     const suffix = query.toString() ? `?${query.toString()}` : '';
+    const url = `${this.api}/users/professionals${suffix}`;
 
-    return this.http.get(`${this.api}/users/professionals${suffix}`, {
+    return this.http.get(url, {
       headers: this.getHeaders()
     });
   }
-  // ✏️ ACTUALIZAR PERFIL
+
+  getSearchSuggestions(params: { q: string; country?: 'CL' | 'ES' }) {
+    const query = new URLSearchParams();
+
+    query.set('q', params.q);
+    if (params.country) query.set('country', params.country);
+
+    return this.http.get<Array<{
+      type: 'profession' | 'professional';
+      id: string;
+      slug?: string;
+      label: string;
+      specialty?: string;
+      categoryName?: string | null;
+      categorySlug?: string | null;
+      city?: string | null;
+    }>>(`${this.api}/users/search-suggestions?${query.toString()}`, {
+      headers: this.getHeaders()
+    });
+  }
+// ACTUALIZAR PERFIL
 updateProfile(data: any) {
   return this.http.patch(`${this.api}/users/me`, data, {
     headers: this.getHeaders()
   });
 }
-// ⏰ SLOTS DISPONIBLES (🔥 ESTE FALTABA)
+// â° SLOTS DISPONIBLES (ðŸ”¥ ESTE FALTABA)
 getAvailableSlots(professionalId: string, date: string) {
   return this.http.get<string[]>(
     `${this.api}/appointments/available-slots?professionalId=${professionalId}&date=${date}`,
@@ -113,3 +146,4 @@ getAvailableSlots(professionalId: string, date: string) {
   );
 }
 }
+

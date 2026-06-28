@@ -57,11 +57,7 @@ export class TabsComponent implements OnInit {
 
   const payload = JSON.parse(atob(token.split('.')[1]));
 
-  console.log('PAYLOAD JWT:', payload);
-
   this.userRole = payload.role;
-
-  console.log('ROLE:', this.userRole);
 }
 
 }

@@ -9,16 +9,38 @@ ion-content {
   --overflow: auto;
 }
 
-ion-toolbar {
-  --background: var(--app-surface);
+.detail-toolbar {
+  --background: color-mix(in srgb, var(--app-primary-light) 8%, var(--app-surface));
   --color: var(--app-text);
-  border-bottom: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
+  --min-height: 58px;
+  border-bottom: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--app-primary) 10%, transparent);
 }
 
 ion-title {
   text-align: center;
-  font-weight: 800;
+  color: var(--app-text);
+  font-size: 18px;
+  font-weight: 900;
   letter-spacing: 0;
+}
+
+.back-button {
+  --color: var(--app-text);
+  --background-hover: color-mix(in srgb, var(--app-primary-light) 14%, transparent);
+  --border-radius: 999px;
+  margin-left: 6px;
+  height: 36px;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: none;
+}
+
+.back-button span {
+  margin-right: 6px;
+  color: var(--app-primary);
+  font-size: 18px;
+  line-height: 1;
 }
 
 .detail-shell {
@@ -72,8 +94,34 @@ ion-title {
   background: var(--app-surface);
   box-shadow: 0 12px 26px color-mix(in srgb, var(--app-primary) 18%, transparent);
   cursor: pointer;
-  font-size: 18px;
   z-index: 2;
+}
+
+.message-icon span {
+  position: relative;
+  width: 18px;
+  height: 14px;
+  display: block;
+  border: 2px solid var(--app-primary);
+  border-radius: 7px;
+}
+
+.message-icon span::after {
+  content: '';
+  position: absolute;
+  right: 2px;
+  bottom: -6px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--app-primary);
+  border-bottom: 2px solid var(--app-primary);
+  background: var(--app-surface);
+  transform: rotate(45deg);
+}
+
+.message-icon:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-primary-light) 45%, transparent);
+  outline-offset: 3px;
 }
 
 .professional-info h2 {

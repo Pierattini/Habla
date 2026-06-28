@@ -265,6 +265,75 @@ ion-textarea:focus-within {
   font-weight: 900;
 }
 
+.helper-text,
+.provider-action {
+  margin: 6px 0 16px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-primary-light) 18%, #fff);
+  color: var(--app-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.provider-action p {
+  margin: 0 0 10px;
+}
+
+.connected-provider {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.connected-provider strong {
+  color: var(--app-text);
+  font-size: 14px;
+}
+
+.connected-provider span,
+.connected-provider small {
+  color: var(--app-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.presence-rules {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 14px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-primary-light) 16%, #fff);
+}
+
+.presence-rules strong {
+  color: var(--app-text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.presence-rules span,
+.field-rule {
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.field-rule {
+  margin: -8px 2px 14px;
+  padding: 0 14px;
+}
+
+.required-mark {
+  color: var(--app-primary);
+  font-weight: 900;
+}
+
 .schedule-row,
 .specific-slot-row {
   gap: 10px;

@@ -41,6 +41,7 @@ export function getStatusLabel(status: string): string {
     PENDING_PAYMENT: 'Pendiente de pago',
     PAYMENT_REVIEW: 'Pago en revisiÃ³n',
     CONFIRMED: 'Confirmada',
+    COMPLETED: 'Finalizada',
     CANCELLED: 'Cancelada',
     RESCHEDULED: 'Reagendada',
     REFUNDED: 'Reembolsado'
@@ -55,6 +56,7 @@ export function getStatusColor(status: string): string {
     PENDING_PAYMENT: 'medium',
     PAYMENT_REVIEW: 'warning',
     CONFIRMED: 'success',
+    COMPLETED: 'success',
     CANCELLED: 'danger',
     RESCHEDULED: 'tertiary',
     REFUNDED: 'medium'
@@ -74,7 +76,8 @@ export function canShowPaymentWaiting(appt: any): boolean {
 export function canReschedule(appt: any): boolean {
   if (
     appt.status === 'CANCELLED' ||
-    appt.status === 'REFUNDED'
+    appt.status === 'REFUNDED' ||
+    appt.status === 'COMPLETED'
   ) {
     return false;
   }
@@ -85,7 +88,8 @@ export function canReschedule(appt: any): boolean {
 export function canCancel(appt: any): boolean {
   if (
     appt.status === 'CANCELLED' ||
-    appt.status === 'REFUNDED'
+    appt.status === 'REFUNDED' ||
+    appt.status === 'COMPLETED'
   ) {
     return false;
   }

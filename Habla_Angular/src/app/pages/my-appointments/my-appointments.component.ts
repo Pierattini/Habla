@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+﻿import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ToastController, IonicModule, ModalController } from '@ionic/angular';
@@ -11,6 +11,7 @@ import { RescheduleModalComponent } from '../reschedule-modal/reschedule-modal.c
 import { ViewWillEnter } from '@ionic/angular';
 import { AppointmentsService } from '../../services/appointments.service';
 import { TaxDocumentsService } from '../../services/tax-documents.service';
+import { ReviewsService } from '../../services/reviews.service';
 import { API_URL } from '../../core/config/api.config';
 import {
   canCancel as canCancelHelper,
@@ -22,6 +23,7 @@ import {
   getStatusLabel as getStatusLabelHelper,
   groupByDate as groupByDateHelper
 } from './my-appointments.helpers';
+import { AppointmentReviewModalComponent, ReviewSubmitEvent } from './appointment-review-modal.component';
 @Component({
   selector: 'app-my-appointments',
   standalone: true,
@@ -30,6 +32,7 @@ import {
     CommonModule,
     IonicModule,
     FormsModule,
+    AppointmentReviewModalComponent,
     
   ]
 })
@@ -38,6 +41,7 @@ export class MyAppointmentsComponent {
   appointments: any[] = [];
   loading = true;
   loaded = false;
+  expandedTaxDocuments: Record<string, boolean> = {};
 
   constructor(
   private http: HttpClient,
@@ -48,7 +52,8 @@ export class MyAppointmentsComponent {
   private modalCtrl: ModalController,
   private route: ActivatedRoute,
   private appointmentsService: AppointmentsService,
-  private taxDocumentsService: TaxDocumentsService
+  private taxDocumentsService: TaxDocumentsService,
+  private reviewsService: ReviewsService
 ) {}
 
 getHeaders() {
@@ -60,13 +65,25 @@ getHeaders() {
 }
 
  role: string | null = null;
- loadingId: string | null = null;
- videoContinuationLoadingId: string | null = null;
- selectedFilter = 'today';
+  loadingId: string | null = null;
+  videoContinuationLoadingId: string | null = null;
+  penaltyCancelAppointmentId: string | null = null;
+  calendarModalAppointment: any | null = null;
+  reviewAppointment: any | null = null;
+  reviewSubmitting = false;
+  selectedFilter = 'today';
 
 
 setFilter(filter: string) {
   this.selectedFilter = filter;
+}
+
+toggleTaxDocument(appointmentId: string) {
+  this.expandedTaxDocuments[appointmentId] = !this.expandedTaxDocuments[appointmentId];
+}
+
+isTaxDocumentExpanded(appointmentId: string): boolean {
+  return this.expandedTaxDocuments[appointmentId] === true;
 }
 //ngOnInit() {
  // this.role = localStorage.getItem('role');
@@ -93,8 +110,6 @@ async presentToast(message: string, color: string = 'success') {
 
   this.appointmentsService.getAppointmentsByRole(this.role).subscribe({
   next: (res: any[]) => {
-    console.log('RESPUESTA REAL:', res);
-
     this.appointments = res ?? [];
 this.appointments = [...(res ?? [])];
 
@@ -159,7 +174,7 @@ finishAppointmentsLoad() {
 
       this.loadingId = null;
 
-      // 🔥 SI ES MENOS DE 48H → MOSTRAR OPCIONES
+      // ðŸ”¥ SI ES MENOS DE 48H â†’ MOSTRAR OPCIONES
      if (
   res.status === 'PENDING_PAYMENT' ||
   res.penalty !== undefined
@@ -179,12 +194,13 @@ finishAppointmentsLoad() {
   });
 }
 resolvePenalty(id: string, option: 'CREDIT' | 'REFUND', data?: any) {
+  this.closePenaltyModal();
 
   this.appointmentsService.resolvePenalty(id, option, data).subscribe({
     next: async () => {
       await this.presentToast(
         option === 'CREDIT'
-          ? 'Saldo guardado como crédito'
+          ? 'Saldo guardado como crÃ©dito'
           : 'Solicitud de reembolso enviada',
         'success'
       );
@@ -192,35 +208,30 @@ resolvePenalty(id: string, option: 'CREDIT' | 'REFUND', data?: any) {
       this.loadAppointments();
     },
     error: async () => {
-      await this.presentToast('Error en la operación', 'danger');
+      await this.presentToast('Error en la operaciÃ³n', 'danger');
     }
   });
 }
 async showCancelOptions(id: string) {
-  const alert = await this.alertCtrl.create({
-    header: 'Cancelación con penalización',
-    message: `
-      Cancelaste con menos de 48 horas.
-      Se retendrá el 50%.
-      ¿Qué deseas hacer?
-    `,
-    buttons: [
-      {
-        text: '💰 Crédito',
-        handler: () => {
-          this.resolvePenalty(id, 'CREDIT');
-        }
-      },
-      {
-        text: '💸 Reembolso',
-        handler: () => {
-          this.askRefundData(id);
-        }
-      }
-    ]
-  });
+  this.penaltyCancelAppointmentId = id;
+}
 
-  await alert.present();
+closePenaltyModal(): void {
+  this.penaltyCancelAppointmentId = null;
+}
+
+choosePenaltyCredit(): void {
+  if (!this.penaltyCancelAppointmentId) return;
+
+  this.resolvePenalty(this.penaltyCancelAppointmentId, 'CREDIT');
+}
+
+choosePenaltyRefund(): void {
+  if (!this.penaltyCancelAppointmentId) return;
+
+  const appointmentId = this.penaltyCancelAppointmentId;
+  this.closePenaltyModal();
+  this.askRefundData(appointmentId);
 }
 async askRefundData(id: string) {
   const alert = await this.alertCtrl.create({
@@ -235,7 +246,7 @@ async askRefundData(id: string) {
       {
         name: 'account',
         type: 'text',
-        placeholder: 'Número de cuenta'
+        placeholder: 'NÃºmero de cuenta'
       },
       {
         name: 'accountType',
@@ -279,18 +290,43 @@ upcomingAppointments: any[] = [];
 pastAppointments: any[] = [];
 
 groupAppointments() {
+  const now = new Date();
+  const todayKey = now.toISOString().slice(0, 10);
+  const activeStatuses = ['PENDING', 'PENDING_PAYMENT', 'PAYMENT_REVIEW', 'CONFIRMED', 'RESCHEDULED'];
+  const historyStatuses = ['COMPLETED', 'CANCELLED', 'REFUNDED'];
 
-  this.todayAppointments = this.groupByDate(this.appointments);
+  const today = this.appointments.filter((appointment) =>
+    activeStatuses.includes(appointment.status) &&
+    String(appointment.date || '').slice(0, 10) === todayKey
+  );
 
-  this.futureAppointments = this.groupByDate(this.appointments);
+  const upcoming = this.appointments.filter((appointment) =>
+    activeStatuses.includes(appointment.status) &&
+    new Date(appointment.date).getTime() >= now.getTime() &&
+    String(appointment.date || '').slice(0, 10) !== todayKey
+  );
 
-  this.completedAppointments = this.groupByDate(this.appointments);
+  const history = this.appointments.filter((appointment) =>
+    historyStatuses.includes(appointment.status) ||
+    (
+      activeStatuses.includes(appointment.status) &&
+      new Date(appointment.date).getTime() < now.getTime()
+    )
+  );
 
-  this.historyAppointments = this.groupByDate(this.appointments);
+  this.todayAppointments = this.groupByDate(today);
 
-  this.upcomingAppointments = this.groupByDate(this.appointments);
+  this.futureAppointments = this.groupByDate(upcoming);
 
-  this.pastAppointments = this.groupByDate(this.appointments);
+  this.completedAppointments = this.groupByDate(
+    this.appointments.filter((appointment) => appointment.status === 'COMPLETED')
+  );
+
+  this.historyAppointments = this.groupByDate(history);
+
+  this.upcomingAppointments = this.groupByDate([...today, ...upcoming]);
+
+  this.pastAppointments = this.historyAppointments;
 
 }
 
@@ -327,6 +363,82 @@ getStatusColor(status: string): string {
   return getStatusColorHelper(status);
 }
 
+canCompleteAppointment(appt: any): boolean {
+  if (this.role !== 'PROFESSIONAL') return false;
+  if (appt.status !== 'CONFIRMED' && appt.status !== 'RESCHEDULED') return false;
+
+  const duration = Number(
+    appt.professional?.professional?.duration ||
+    appt.professional?.sessionDuration ||
+    60
+  );
+  const endsAt = new Date(appt.date).getTime() + duration * 60000;
+
+  return endsAt <= Date.now();
+}
+
+completeAppointment(appt: any): void {
+  if (!appt?.id) return;
+
+  this.loadingId = appt.id;
+  this.appointmentsService.completeAppointment(appt.id).subscribe({
+    next: async () => {
+      this.loadingId = null;
+      await this.presentToast('Cita finalizada correctamente', 'success');
+      this.loadAppointments();
+    },
+    error: async (err: any) => {
+      this.loadingId = null;
+      await this.presentToast(err?.error?.message || 'No pudimos finalizar la cita', 'danger');
+    }
+  });
+}
+
+canReviewAppointment(appt: any): boolean {
+  return this.role !== 'PROFESSIONAL' &&
+    appt?.status === 'COMPLETED' &&
+    !appt?.review;
+}
+
+  openReviewModal(appt: any): void {
+    this.reviewAppointment = appt;
+  }
+
+closeReviewModal(): void {
+  if (this.reviewSubmitting) return;
+
+  this.reviewAppointment = null;
+}
+
+submitReview(event: ReviewSubmitEvent): void {
+  if (!this.reviewAppointment || this.reviewSubmitting) return;
+
+  const comment = event.comment.trim();
+
+  if (comment.length > 500) {
+    void this.presentToast('El comentario no puede superar 500 caracteres', 'warning');
+    return;
+  }
+
+  this.reviewSubmitting = true;
+  this.reviewsService.createReview({
+    appointmentId: this.reviewAppointment.id,
+    rating: event.rating,
+    comment: comment || undefined,
+  }).subscribe({
+    next: async () => {
+      this.reviewSubmitting = false;
+      this.closeReviewModal();
+      await this.presentToast('Gracias por valorar al profesional', 'success');
+      this.loadAppointments();
+    },
+    error: async (err: any) => {
+      this.reviewSubmitting = false;
+      await this.presentToast(err?.error?.message || 'No pudimos guardar la valoracion', 'danger');
+    }
+  });
+}
+
 
 buildDocumentView(appt: any, document: any): any {
   const status = document?.status || appt?.documentStatus || 'DOCUMENT_NOT_REQUIRED';
@@ -352,7 +464,7 @@ buildDocumentView(appt: any, document: any): any {
     pdfUrl,
     timeline: this.getDocumentTimeline(appt, document, status),
     emptyMessage: requested
-      ? 'Documento pendiente de emisi�n'
+      ? 'Documento pendiente de emisión'
       : 'No se ha solicitado documento tributario',
   };
 }
@@ -367,7 +479,7 @@ getDocumentStatusLabel(status: string): string {
     DOCUMENT_UPLOADED: 'Documento cargado',
     DOCUMENT_GENERATED: 'Generado',
     DOCUMENT_SENT: 'Enviado',
-    DOCUMENT_FAILED: 'Fall�',
+    DOCUMENT_FAILED: 'Falló',
   };
 
   return labels[status] || status || 'Sin estado';
@@ -462,7 +574,7 @@ getDocumentEventLabel(type: string): string {
     DOCUMENT_UPLOADED: 'Documento cargado',
     DOCUMENT_GENERATED: 'Generado',
     DOCUMENT_SENT: 'Enviado',
-    DOCUMENT_FAILED: 'Fall�',
+    DOCUMENT_FAILED: 'Falló',
     DOCUMENT_EMAIL_SENT: 'Correo enviado',
     DOCUMENT_EMAIL_FAILED: 'Error de correo',
     DOCUMENT_EMAIL_RESENT: 'Correo reenviado',
@@ -487,11 +599,11 @@ shouldShowPenalty(appt: any): boolean {
   return validStatus && diffHours < 48;
 }
 
-// 💳 CLIENTE → marca como pagado
+// ðŸ’³ CLIENTE â†’ marca como pagado
 markAsPaid(id: string) {
   this.appointmentsService.markAsPaid(id).subscribe({
     next: async () => {
-      await this.presentToast('Pago enviado para revisión', 'warning');
+      await this.presentToast('Pago enviado para revisiÃ³n', 'warning');
       this.loadAppointments();
     },
     error: async () => {
@@ -515,7 +627,7 @@ confirmAppointment(id: string) {
   });
 }
 
-// 💳 ABRIR MODAL DE PAGO
+// ðŸ’³ ABRIR MODAL DE PAGO
 canAddToCalendar(appt: any): boolean {
   return appt?.status === 'CONFIRMED' && !!appt?.date;
 }
@@ -526,29 +638,29 @@ async addToCalendar(appt: any) {
     return;
   }
 
-  const alert = await this.alertCtrl.create({
-    header: 'Agregar al calendario',
-    message: 'Elige como quieres guardar esta cita.',
-    buttons: [
-      { text: 'Cancelar', role: 'cancel' },
-      {
-        text: 'Google Calendar',
-        handler: () => {
-          window.open(this.buildGoogleCalendarUrl(appt), '_blank', 'noopener');
-          return true;
-        }
-      },
-      {
-        text: 'Archivo .ics',
-        handler: () => {
-          this.downloadIcsFile(appt);
-          return true;
-        }
-      }
-    ]
-  });
+  this.calendarModalAppointment = appt;
+}
 
-  await alert.present();
+closeCalendarModal(): void {
+  this.calendarModalAppointment = null;
+}
+
+addSelectedAppointmentToGoogleCalendar(): void {
+  if (!this.calendarModalAppointment) return;
+
+  window.open(
+    this.buildGoogleCalendarUrl(this.calendarModalAppointment),
+    '_blank',
+    'noopener',
+  );
+  this.closeCalendarModal();
+}
+
+addSelectedAppointmentToSystemCalendar(): void {
+  if (!this.calendarModalAppointment) return;
+
+  this.downloadIcsFile(this.calendarModalAppointment);
+  this.closeCalendarModal();
 }
 
 private buildGoogleCalendarUrl(appt: any): string {
@@ -569,6 +681,7 @@ private buildGoogleCalendarUrl(appt: any): string {
 private downloadIcsFile(appt: any): void {
   const start = new Date(appt.date);
   const end = new Date(start.getTime() + this.getAppointmentDuration(appt) * 60000);
+  const meetingUrl = appt.meetingUrl || appt.meetLink;
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -581,6 +694,7 @@ private downloadIcsFile(appt: any): void {
     `SUMMARY:${this.escapeIcsText(this.getCalendarTitle(appt))}`,
     `DESCRIPTION:${this.escapeIcsText(this.getCalendarDescription(appt))}`,
     `LOCATION:${this.escapeIcsText(this.getCalendarLocation(appt))}`,
+    ...(meetingUrl ? [`URL:${this.escapeIcsText(meetingUrl)}`] : []),
     'END:VEVENT',
     'END:VCALENDAR',
   ].join('\r\n');
@@ -604,8 +718,10 @@ private getCalendarDescription(appt: any): string {
     `Participante: ${this.getNombre(appt)}.`,
   ];
 
-  if (appt.meetLink) {
-    parts.push(`Videollamada: ${appt.meetLink}`);
+  const meetingUrl = appt.meetingUrl || appt.meetLink;
+
+  if (meetingUrl) {
+    parts.push(`Videollamada: ${meetingUrl}`);
   }
 
   return parts.join('\n');
@@ -621,7 +737,7 @@ private getCalendarLocation(appt: any): string {
     ].filter(Boolean).join(', ') || 'Atencion presencial';
   }
 
-  return appt?.meetLink || 'Conecta';
+  return appt?.meetingUrl || appt?.meetLink || 'Conecta';
 }
 private getAppointmentDuration(appt: any): number {
   return Number(
@@ -819,7 +935,7 @@ private async handleRescheduleMessage(appt: any, data: any) {
           this.loadAppointments();
         },
         error: async () => {
-          await this.presentToast('Error aplicando cr�dito', 'danger');
+          await this.presentToast('Error aplicando crédito', 'danger');
         }
       });
 
@@ -833,11 +949,11 @@ private async handleRescheduleMessage(appt: any, data: any) {
 private handleCreditOnly(appt: any) {
   this.appointmentsService.resolvePenalty(appt.id, 'CREDIT').subscribe({
     next: async () => {
-      await this.presentToast('Saldo guardado como cr�dito', 'success');
+      await this.presentToast('Saldo guardado como crédito', 'success');
       this.loadAppointments();
     },
     error: async () => {
-      await this.presentToast('Error al guardar cr�dito', 'danger');
+      await this.presentToast('Error al guardar crédito', 'danger');
     }
   });
 }

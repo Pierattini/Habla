@@ -1,0 +1,166 @@
+.admin-list-page {
+  display: grid;
+  gap: 18px;
+}
+
+.section-header,
+.filters,
+.table-card {
+  border: 1px solid rgba(174, 109, 255, 0.14);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 45px rgba(74, 52, 107, 0.08);
+}
+
+.section-header {
+  padding: 22px;
+}
+
+.section-header span {
+  color: #a742ff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.section-header h2 {
+  margin: 6px 0;
+  color: #202536;
+  font-size: 30px;
+}
+
+.section-header p {
+  margin: 0;
+  color: #667085;
+  font-weight: 700;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 180px 160px 180px;
+  gap: 12px;
+  padding: 16px;
+}
+
+input,
+select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #ead7ff;
+  border-radius: 12px;
+  outline: 0;
+  color: #202536;
+  background: #fbf7ff;
+  font: inherit;
+  font-weight: 700;
+}
+
+.table-card {
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 16px;
+  border-bottom: 1px solid #f0e5fb;
+  text-align: left;
+  vertical-align: middle;
+}
+
+th {
+  color: #667085;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+td strong,
+td small {
+  display: block;
+}
+
+td small {
+  margin-top: 4px;
+  color: #667085;
+}
+
+.badge {
+  display: inline-flex;
+  padding: 7px 10px;
+  border-radius: 999px;
+  color: #166534;
+  background: #dcfce7;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.badge.off {
+  color: #6b7280;
+  background: #f3f4f6;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  background: #b03cff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+button.ghost {
+  color: #7b2bbf;
+  background: #f4e9ff;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pagination {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.pagination button.active {
+  background: #202536;
+}
+
+.loading,
+.error {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fff;
+  color: #667085;
+  font-weight: 800;
+}
+
+.error {
+  color: #9f1239;
+  background: #fff1f2;
+}
+
+@media (max-width: 900px) {
+  .filters {
+    grid-template-columns: 1fr;
+  }
+}

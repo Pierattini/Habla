@@ -1,0 +1,41 @@
+<section class="dashboard-grid">
+  <article class="welcome-card">
+    <span>Base Admin</span>
+    <h2>Dashboard administrativo listo</h2>
+    <p>
+      El rol ADMIN ahora entra a una experiencia independiente. Las siguientes
+      fases conectaran estadisticas reales, gestion de usuarios y gestion de
+      profesionales.
+    </p>
+  </article>
+
+  <a class="support-card" routerLink="/admin/support">
+    <span>Soporte</span>
+    <strong>Ver tickets</strong>
+    <small>Gestion operativa disponible</small>
+  </a>
+</section>
+
+<section class="metrics-grid" aria-label="Indicadores administrativos">
+  <p class="dashboard-message" *ngIf="loading">Cargando metricas...</p>
+  <p class="dashboard-message error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <article *ngFor="let metric of metrics" class="metric-card">
+    <span>{{ metric.label }}</span>
+    <strong>{{ metric.value }}</strong>
+    <small>{{ metric.note }}</small>
+  </article>
+</section>
+
+<section class="modules-card">
+  <div class="section-title">
+    <span>Roadmap Admin</span>
+    <h3>Modulos preparados</h3>
+  </div>
+
+  <div class="module-grid">
+    <div *ngFor="let module of modules">
+      {{ module }}
+    </div>
+  </div>
+</section>

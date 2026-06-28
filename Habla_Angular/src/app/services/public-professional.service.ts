@@ -18,6 +18,16 @@ export interface PublicProfessional {
   country?: string | null;
   ratingAverage: number;
   reviewsCount: number;
+  reviews?: Array<{
+    id: string;
+    rating: number;
+    comment?: string | null;
+    createdAt: string;
+    customer?: {
+      name?: string | null;
+      image?: string | null;
+    };
+  }>;
   shortDescription?: string;
   description?: string;
   experience?: string;
@@ -29,7 +39,13 @@ export interface PublicProfessional {
   officeCity?: string | null;
   officeRegion?: string | null;
   officeCountry?: string | null;
-  videoProvider?: 'JITSI' | 'GOOGLE_MEET' | 'ZOOM' | 'CUSTOM';
+  videoProvider?:
+    | 'CONNECTA_AUTO'
+    | 'JITSI'
+    | 'GOOGLE_MEET'
+    | 'ZOOM'
+    | 'MICROSOFT_TEAMS'
+    | 'CUSTOM';
   documentAutomationEnabled?: boolean;
   manualDocumentMode?: boolean;
   taxDocumentReady?: boolean;

@@ -79,6 +79,14 @@
           <p>
             {{ professional.reviewsCount || 0 }} opiniones registradas.
           </p>
+
+          <div class="review-list" *ngIf="professional.reviews?.length">
+            <article class="review-item" *ngFor="let review of professional.reviews">
+              <strong>{{ review.rating }} / 5</strong>
+              <p *ngIf="review.comment">{{ review.comment }}</p>
+              <small>{{ review.createdAt | date:'dd/MM/yyyy' }}</small>
+            </article>
+          </div>
         </ion-card-content>
       </ion-card>
 

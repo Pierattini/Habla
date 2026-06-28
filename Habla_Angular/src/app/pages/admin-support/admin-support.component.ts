@@ -106,7 +106,7 @@ export class AdminSupportComponent {
   }
 
   openConversation(ticket: SupportTicket): void {
-    this.router.navigate(['/tabs/messages', ticket.conversationId]);
+    this.router.navigate(['/admin/messages', ticket.conversationId]);
   }
 
   getStatusLabel(status: SupportTicketStatus | ''): string {

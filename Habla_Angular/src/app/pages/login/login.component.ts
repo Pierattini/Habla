@@ -1,8 +1,10 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+﻿import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PushNotificationService } from '../../services/push-notification.service';
+import { ProfessionItem, ProfessionService } from '../../services/profession.service';
+import { RecaptchaService } from '../../services/recaptcha.service';
 
 type OnboardingMode = 'intro' | 'login' | 'register' | 'forgot' | 'reset';
 type AccountRole = 'CUSTOMER' | 'PROFESSIONAL';
@@ -37,10 +39,12 @@ export class LoginComponent implements OnInit {
     name: '',
     email: '',
     password: '',
+    confirmPassword: '',
     country: 'CL',
     timezone: 'America/Santiago',
     interest: 'Salud',
     specialty: '',
+    professionId: '',
     attentionMode: 'ONLINE' as AttentionMode,
     acceptedTerms: false,
   };
@@ -54,17 +58,17 @@ export class LoginComponent implements OnInit {
     'Otro',
   ];
 
-  public professionalServices = [
-    'Psicologia',
-    'Nutricion',
-    'Kinesiologia',
-    'Peluqueria',
-    'Barberia',
-    'Depilacion',
-    'Estetica',
-    'Abogado',
-    'Otro',
-  ];
+  public professionSearch = '';
+  public professionSuggestions: ProfessionItem[] = [];
+  public selectedProfession: ProfessionItem | null = null;
+  public customProfessionMode = false;
+  public customProfession = '';
+  public professionSearchFocused = false;
+  public showRegisterPassword = false;
+  public showRegisterConfirmPassword = false;
+  public emailCheckStatus: 'idle' | 'checking' | 'available' | 'taken' | 'invalid' = 'idle';
+  private professionSearchTimer: ReturnType<typeof setTimeout> | null = null;
+  private emailCheckTimer: ReturnType<typeof setTimeout> | null = null;
 
   public countries = [
     { label: 'Chile', value: 'CL', timezone: 'America/Santiago' },
@@ -76,6 +80,8 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private auth: AuthService,
+    private professionService: ProfessionService,
+    private recaptchaService: RecaptchaService,
     private pushNotifications: PushNotificationService,
     private route: ActivatedRoute,
     private router: Router,
@@ -101,9 +107,18 @@ export class LoginComponent implements OnInit {
 
   public selectRole(role: AccountRole): void {
     this.selectedRole = role;
-    this.registerForm.interest = role === 'CUSTOMER' ? 'Salud' : 'Psicologia';
-    this.registerForm.specialty = role === 'PROFESSIONAL' ? 'Psicologia' : '';
+    this.registerForm.interest = role === 'CUSTOMER' ? 'Salud' : '';
+    this.registerForm.specialty = '';
+    this.registerForm.professionId = '';
+    this.selectedProfession = null;
+    this.professionSearch = '';
+    this.customProfession = '';
+    this.customProfessionMode = false;
     this.errorMessage = '';
+
+    if (role === 'PROFESSIONAL') {
+      this.loadProfessionSuggestions('');
+    }
   }
 
   public showLogin(): void {
@@ -134,6 +149,54 @@ export class LoginComponent implements OnInit {
     }
   }
 
+  public onRegisterNameChange(value: string): void {
+    this.registerForm.name = value;
+    this.errorMessage = '';
+  }
+
+  public onRegisterEmailChange(value: string): void {
+    this.registerForm.email = String(value || '').trim().toLowerCase();
+    this.errorMessage = '';
+
+    if (this.emailCheckTimer) {
+      clearTimeout(this.emailCheckTimer);
+    }
+
+    if (!this.registerForm.email) {
+      this.emailCheckStatus = 'idle';
+      return;
+    }
+
+    if (!this.isEmailValid()) {
+      this.emailCheckStatus = 'invalid';
+      return;
+    }
+
+    this.emailCheckStatus = 'checking';
+    this.emailCheckTimer = setTimeout(() => {
+      this.auth.checkEmailAvailability(this.registerForm.email).subscribe({
+        next: (res) => {
+          this.emailCheckStatus = res.available ? 'available' : 'taken';
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.emailCheckStatus = 'invalid';
+          this.cdr.detectChanges();
+        },
+      });
+    }, 350);
+  }
+
+  public onRegisterPasswordChange(value: string): void {
+    this.registerForm.password = value;
+    this.errorMessage = '';
+  }
+
+  public onRegisterConfirmPasswordChange(value: string): void {
+    this.registerForm.confirmPassword = value;
+    this.errorMessage = '';
+  }
+
   public login(): void {
     if (!this.email || !this.password || this.isSubmitting) return;
 
@@ -144,7 +207,9 @@ export class LoginComponent implements OnInit {
       next: (res: any) => {
         this.saveSession(res);
         void this.pushNotifications.registerDevice();
-        this.router.navigateByUrl('/tabs/home');
+        this.router.navigateByUrl(
+          res?.user?.role === 'ADMIN' ? '/admin/dashboard' : '/tabs/home'
+        );
       },
       error: () => {
         this.errorMessage = 'No pudimos iniciar sesion con esos datos.';
@@ -159,7 +224,8 @@ export class LoginComponent implements OnInit {
     this.isSubmitting = true;
     this.errorMessage = '';
 
-    this.auth.register({
+    this.recaptchaService.execute('register').then((recaptchaToken) => {
+      this.auth.register({
       name: this.registerForm.name.trim(),
       email: this.registerForm.email.trim(),
       password: this.registerForm.password,
@@ -173,15 +239,27 @@ export class LoginComponent implements OnInit {
       specialty: this.selectedRole === 'PROFESSIONAL'
         ? this.registerForm.specialty.trim()
         : undefined,
+      professionId: this.selectedRole === 'PROFESSIONAL' && this.registerForm.professionId
+        ? this.registerForm.professionId
+        : undefined,
+      customProfession: this.selectedRole === 'PROFESSIONAL' && this.customProfessionMode
+        ? this.customProfession.trim()
+        : undefined,
       attentionMode: this.selectedRole === 'PROFESSIONAL'
         ? this.registerForm.attentionMode
         : undefined,
-    }).subscribe({
-      next: () => this.loginAfterRegister(),
-      error: (err) => {
-        this.errorMessage = err?.error?.message || 'No pudimos crear la cuenta.';
-        this.isSubmitting = false;
-      }
+      acceptedTerms: this.registerForm.acceptedTerms,
+      recaptchaToken,
+      }).subscribe({
+        next: () => this.loginAfterRegister(),
+        error: (err) => {
+          this.errorMessage = err?.error?.message || 'No pudimos crear la cuenta.';
+          this.isSubmitting = false;
+        }
+      });
+    }).catch(() => {
+      this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
+      this.isSubmitting = false;
     });
   }
 
@@ -253,6 +331,12 @@ export class LoginComponent implements OnInit {
       next: (res: any) => {
         this.saveSession(res);
         void this.pushNotifications.registerDevice();
+        if (res?.user?.role === 'ADMIN') {
+          this.router.navigateByUrl('/admin/dashboard');
+          this.isSubmitting = false;
+          return;
+        }
+
         this.completeOnboardingProfile();
       },
       error: () => {
@@ -300,18 +384,33 @@ export class LoginComponent implements OnInit {
       return false;
     }
 
-    if (!this.registerForm.name.trim()) {
-      this.errorMessage = 'Ingresa tu nombre.';
+    if (!this.isFullNameValid()) {
+      this.errorMessage = 'Debes ingresar nombre y apellido.';
       return false;
     }
 
-    if (!this.registerForm.email.trim() || !this.registerForm.password) {
-      this.errorMessage = 'Ingresa email y contrasena.';
+    if (!this.isEmailValid()) {
+      this.errorMessage = 'Ingresa un correo valido.';
       return false;
     }
 
-    if (this.registerForm.password.length < 6) {
-      this.errorMessage = 'La contrasena debe tener al menos 6 caracteres.';
+    if (this.emailCheckStatus === 'taken') {
+      this.errorMessage = 'Este correo ya esta registrado.';
+      return false;
+    }
+
+    if (this.emailCheckStatus !== 'available') {
+      this.errorMessage = 'Espera la validacion del correo.';
+      return false;
+    }
+
+    if (!this.isPasswordStrong()) {
+      this.errorMessage = 'La contrasena debe tener mayuscula, minuscula, numero y caracter especial.';
+      return false;
+    }
+
+    if (!this.doPasswordsMatch()) {
+      this.errorMessage = 'Las contrasenas no coinciden.';
       return false;
     }
 
@@ -369,6 +468,90 @@ export class LoginComponent implements OnInit {
     }
   }
 
+  public onProfessionSearchChange(): void {
+    this.errorMessage = '';
+    this.customProfessionMode = false;
+    this.selectedProfession = null;
+    this.registerForm.professionId = '';
+    this.registerForm.specialty = '';
+
+    const query = this.professionSearch.trim();
+
+    if (this.professionSearchTimer) {
+      clearTimeout(this.professionSearchTimer);
+    }
+
+    this.professionSearchTimer = setTimeout(() => {
+      this.loadProfessionSuggestions(query);
+    }, 160);
+  }
+
+  public selectProfession(profession: ProfessionItem): void {
+    this.selectedProfession = profession;
+    this.customProfessionMode = false;
+    this.customProfession = '';
+    this.professionSearch = profession.name;
+    this.registerForm.specialty = profession.name;
+    this.registerForm.professionId = profession.id;
+    this.errorMessage = '';
+  }
+
+  public useCustomProfession(): void {
+    this.customProfessionMode = true;
+    this.selectedProfession = null;
+    this.registerForm.professionId = '';
+    this.customProfession = this.professionSearch.trim();
+    this.registerForm.specialty = this.customProfession;
+    this.errorMessage = '';
+  }
+
+  public onCustomProfessionChange(): void {
+    const value = this.customProfession.trim();
+    const existing = this.findExistingProfession(value);
+
+    if (existing) {
+      this.selectProfession(existing);
+      return;
+    }
+
+    this.registerForm.specialty = value;
+    this.registerForm.professionId = '';
+  }
+
+  public getCustomProfessionMessage(): string {
+    if (!this.customProfessionMode) return '';
+
+    const value = this.customProfession.trim();
+
+    if (!value) return 'Este campo es obligatorio si eliges Otro.';
+    if (value.length < 3) return 'Minimo 3 caracteres.';
+    if (value.length > 50) return 'Maximo 50 caracteres.';
+    if (!/^[\p{L}\s-]+$/u.test(value)) {
+      return 'Usa solo letras, espacios, tildes y guiones.';
+    }
+
+    return 'Profesion valida.';
+  }
+
+  public isCustomProfessionValid(): boolean {
+    const value = this.customProfession.trim();
+
+    return value.length >= 3 &&
+      value.length <= 50 &&
+      /^[\p{L}\s-]+$/u.test(value);
+  }
+
+  public shouldShowProfessionSuggestions(): boolean {
+    return this.selectedRole === 'PROFESSIONAL' &&
+      this.professionSearchFocused &&
+      !this.selectedProfession &&
+      !this.customProfessionMode;
+  }
+
+  public getProfessionCategoryLabel(profession: ProfessionItem): string {
+    return (profession as any).category?.name || 'Especialidad';
+  }
+
   public selectAttentionMode(value: AttentionMode): void {
     this.registerForm.attentionMode = value;
   }
@@ -376,35 +559,144 @@ export class LoginComponent implements OnInit {
   public getSelectedOptions(): string[] {
     return this.selectedRole === 'CUSTOMER'
       ? this.customerInterests
-      : this.professionalServices;
+      : [];
   }
 
   private isCurrentStepValid(): boolean {
     if (this.registerStep === 1) return true;
 
     if (this.registerStep === 2) {
-      if (!this.registerForm.name.trim()) {
-        this.errorMessage = 'Ingresa tu nombre.';
+      if (!this.isFullNameValid()) {
+        this.errorMessage = 'Debes ingresar nombre y apellido.';
         return false;
       }
 
-      if (!this.registerForm.email.trim() || !this.registerForm.password) {
-        this.errorMessage = 'Ingresa email y contrasena.';
+      if (!this.isEmailValid()) {
+        this.errorMessage = 'Ingresa un correo valido.';
         return false;
       }
 
-      if (this.registerForm.password.length < 6) {
-        this.errorMessage = 'La contrasena debe tener al menos 6 caracteres.';
+      if (this.emailCheckStatus !== 'available') {
+        this.errorMessage = this.emailCheckStatus === 'taken'
+          ? 'Este correo ya esta registrado.'
+          : 'Espera la validacion del correo.';
+        return false;
+      }
+
+      if (!this.isPasswordStrong()) {
+        this.errorMessage = 'La contrasena debe tener minimo 8 caracteres, mayuscula, minuscula, numero y caracter especial.';
+        return false;
+      }
+
+      if (!this.doPasswordsMatch()) {
+        this.errorMessage = 'Las contrasenas no coinciden.';
         return false;
       }
     }
 
-    if (this.registerStep === 3 && !this.registerForm.interest) {
-      this.errorMessage = 'Selecciona una opcion.';
-      return false;
+    if (this.registerStep === 3) {
+      if (this.selectedRole === 'CUSTOMER' && !this.registerForm.interest) {
+        this.errorMessage = 'Selecciona una opcion.';
+        return false;
+      }
+
+      if (this.selectedRole === 'PROFESSIONAL') {
+        const validationError = this.getProfessionValidationError();
+
+        if (validationError) {
+          this.errorMessage = validationError;
+          return false;
+        }
+      }
     }
 
     return true;
+  }
+
+  public canContinueRegister(): boolean {
+    if (this.isSubmitting) return false;
+    if (this.registerStep === 1) return true;
+
+    if (this.registerStep === 2) {
+      return this.isFullNameValid() &&
+        this.isEmailValid() &&
+        this.emailCheckStatus === 'available' &&
+        this.isPasswordStrong() &&
+        this.doPasswordsMatch();
+    }
+
+    if (this.registerStep === 3) {
+      if (this.selectedRole === 'CUSTOMER') return !!this.registerForm.interest;
+      return !this.getProfessionValidationError();
+    }
+
+    return true;
+  }
+
+  public canSubmitRegister(): boolean {
+    return this.registerStep === 4 &&
+      !this.isSubmitting &&
+      this.isFullNameValid() &&
+      this.isEmailValid() &&
+      this.emailCheckStatus === 'available' &&
+      this.isPasswordStrong() &&
+      this.doPasswordsMatch() &&
+      this.registerForm.acceptedTerms === true;
+  }
+
+  public isFullNameValid(): boolean {
+    const name = this.registerForm.name.trim().replace(/\s+/g, ' ');
+    return name.length >= 5 &&
+      name.length <= 80 &&
+      /^[\p{L}]+(?:[ -][\p{L}]+)+$/u.test(name);
+  }
+
+  public isEmailValid(): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(this.registerForm.email.trim());
+  }
+
+  public isPasswordStrong(): boolean {
+    return this.getPasswordScore() === 5;
+  }
+
+  public getPasswordScore(): number {
+    const password = this.registerForm.password || '';
+    let score = 0;
+
+    if (password.length >= 8) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[a-z]/.test(password)) score++;
+    if (/\d/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+
+    return score;
+  }
+
+  public getPasswordStrengthLabel(): string {
+    const score = this.getPasswordScore();
+
+    if (!this.registerForm.password) return 'Ingresa una contrasena segura.';
+    if (score <= 2) return 'Debil';
+    if (score <= 4) return 'Media';
+    return 'Fuerte';
+  }
+
+  public doPasswordsMatch(): boolean {
+    return !!this.registerForm.confirmPassword &&
+      this.registerForm.password === this.registerForm.confirmPassword;
+  }
+
+  public getFieldState(valid: boolean, touchedValue: string): 'valid' | 'invalid' | '' {
+    if (!String(touchedValue || '').length) return '';
+    return valid ? 'valid' : 'invalid';
+  }
+
+  public getEmailMessage(): string {
+    if (!this.registerForm.email) return 'Ingresa tu correo.';
+    if (this.emailCheckStatus === 'checking') return 'Validando correo...';
+    if (this.emailCheckStatus === 'taken') return 'Este correo ya esta registrado.';
+    if (this.emailCheckStatus === 'available') return 'Correo disponible.';
+    return 'Ingresa un correo valido.';
   }
 
   private saveSession(res: any): void {
@@ -417,5 +709,78 @@ export class LoginComponent implements OnInit {
   private cleanOptional(value: string): string | undefined {
     const cleaned = value?.trim();
     return cleaned ? cleaned : undefined;
+  }
+
+  public loadProfessionSuggestions(search: string): void {
+    this.professionService.getProfessions({
+      search,
+    }).subscribe({
+      next: (professions) => {
+        this.professionSuggestions = professions.slice(0, 12);
+
+        const existing = this.findExistingProfession(search);
+
+        if (existing && search.length > 0) {
+          this.selectProfession(existing);
+        }
+      },
+      error: () => {
+        this.professionSuggestions = [];
+      },
+    });
+  }
+
+  private findExistingProfession(value: string): ProfessionItem | null {
+    const normalized = this.normalizeProfession(value);
+
+    if (!normalized) return null;
+
+    return this.professionSuggestions.find((profession) => {
+      const names = [
+        profession.name,
+        profession.slug,
+        ...(profession.aliases || []),
+      ];
+
+      return names.some((item) => this.normalizeProfession(item) === normalized);
+    }) || null;
+  }
+
+  private getProfessionValidationError(): string | null {
+    const value = this.customProfessionMode
+      ? this.customProfession.trim()
+      : this.registerForm.specialty.trim();
+
+    if (!value) return 'Selecciona o escribe el servicio que ofreces.';
+
+    const existing = this.findExistingProfession(value);
+
+    if (existing) {
+      this.selectProfession(existing);
+      return null;
+    }
+
+    if (this.customProfessionMode) {
+      if (value.length < 3) return 'La profesion debe tener al menos 3 caracteres.';
+      if (value.length > 50) return 'La profesion no puede superar 50 caracteres.';
+      if (!/^[\p{L}\s-]+$/u.test(value)) {
+        return 'Usa solo letras, espacios, tildes y guiones.';
+      }
+    }
+
+    if (!this.customProfessionMode && !this.registerForm.professionId) {
+      return 'Selecciona una profesion del catalogo o usa Otra profesion.';
+    }
+
+    return null;
+  }
+
+  private normalizeProfession(value: string): string {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
   }
 }

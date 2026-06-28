@@ -4,7 +4,13 @@ import { API_URL } from '../core/config/api.config';
 
 export type ScheduleMode = 'CONTINUOUS' | 'SPECIFIC';
 export type AttentionMode = 'ONLINE' | 'PRESENTIAL' | 'BOTH';
-export type VideoProvider = 'JITSI' | 'GOOGLE_MEET' | 'ZOOM' | 'CUSTOM';
+export type VideoProvider =
+  | 'CONNECTA_AUTO'
+  | 'JITSI'
+  | 'GOOGLE_MEET'
+  | 'ZOOM'
+  | 'MICROSOFT_TEAMS'
+  | 'CUSTOM';
 
 export interface ProfessionalProfile {
   slug?: string;

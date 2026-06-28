@@ -84,10 +84,21 @@
           <input
             type="text"
             autocomplete="name"
+            aria-describedby="register-name-help"
+            [class.valid]="$any(this).getFieldState($any(this).isFullNameValid(), $any(this).registerForm.name) === 'valid'"
+            [class.invalid]="$any(this).getFieldState($any(this).isFullNameValid(), $any(this).registerForm.name) === 'invalid'"
             [ngModel]="$any(this).registerForm.name"
-            (ngModelChange)="$any(this).registerForm.name = $event"
-            placeholder="Tu nombre"
+            (ngModelChange)="$any(this).onRegisterNameChange($event)"
+            placeholder="Nombre y apellido"
+            maxlength="80"
           />
+          <small
+            id="register-name-help"
+            [class.ok]="$any(this).isFullNameValid()"
+            [class.error]="$any(this).registerForm.name && !$any(this).isFullNameValid()"
+          >
+            {{ $any(this).isFullNameValid() ? 'Nombre valido' : 'Debes ingresar nombre y apellido.' }}
+          </small>
         </label>
 
         <label class="field full">
@@ -95,26 +106,88 @@
           <input
             type="email"
             autocomplete="email"
+            aria-describedby="register-email-help"
+            [class.valid]="$any(this).emailCheckStatus === 'available'"
+            [class.invalid]="$any(this).emailCheckStatus === 'taken' || $any(this).emailCheckStatus === 'invalid'"
             [ngModel]="$any(this).registerForm.email"
-            (ngModelChange)="$any(this).registerForm.email = $event"
+            (ngModelChange)="$any(this).onRegisterEmailChange($event)"
             placeholder="tu@email.com"
           />
+          <small
+            id="register-email-help"
+            [class.ok]="$any(this).emailCheckStatus === 'available'"
+            [class.error]="$any(this).emailCheckStatus === 'taken' || $any(this).emailCheckStatus === 'invalid'"
+          >
+            {{ $any(this).getEmailMessage() }}
+          </small>
         </label>
 
-        <label class="field full">
+        <label class="field full password-field">
           <span>Contrasena</span>
-          <input
-            type="password"
-            autocomplete="new-password"
-            [ngModel]="$any(this).registerForm.password"
-            (ngModelChange)="$any(this).registerForm.password = $event"
-            placeholder="Minimo 6 caracteres"
-          />
+          <div class="password-control">
+            <input
+              [type]="$any(this).showRegisterPassword ? 'text' : 'password'"
+              autocomplete="new-password"
+              aria-describedby="register-password-help"
+              [class.valid]="$any(this).isPasswordStrong()"
+              [class.invalid]="$any(this).registerForm.password && !$any(this).isPasswordStrong()"
+              [ngModel]="$any(this).registerForm.password"
+              (ngModelChange)="$any(this).onRegisterPasswordChange($event)"
+              placeholder="Minimo 8 caracteres"
+            />
+            <button
+              type="button"
+              (click)="$any(this).showRegisterPassword = !$any(this).showRegisterPassword"
+            >
+              {{ $any(this).showRegisterPassword ? 'Ocultar' : 'Mostrar' }}
+            </button>
+          </div>
+          <div class="password-strength" [class.strong]="$any(this).getPasswordScore() === 5">
+            <span [style.width.%]="$any(this).getPasswordScore() * 20"></span>
+          </div>
+          <small
+            id="register-password-help"
+            [class.ok]="$any(this).isPasswordStrong()"
+            [class.error]="$any(this).registerForm.password && !$any(this).isPasswordStrong()"
+          >
+            Seguridad: {{ $any(this).getPasswordStrengthLabel() }}.
+            Usa mayuscula, minuscula, numero y caracter especial.
+          </small>
+        </label>
+
+        <label class="field full password-field">
+          <span>Confirmar contrasena</span>
+          <div class="password-control">
+            <input
+              [type]="$any(this).showRegisterConfirmPassword ? 'text' : 'password'"
+              autocomplete="new-password"
+              aria-describedby="register-confirm-password-help"
+              [class.valid]="$any(this).doPasswordsMatch()"
+              [class.invalid]="$any(this).registerForm.confirmPassword && !$any(this).doPasswordsMatch()"
+              [ngModel]="$any(this).registerForm.confirmPassword"
+              (ngModelChange)="$any(this).onRegisterConfirmPasswordChange($event)"
+              placeholder="Repite tu contrasena"
+            />
+            <button
+              type="button"
+              (click)="$any(this).showRegisterConfirmPassword = !$any(this).showRegisterConfirmPassword"
+            >
+              {{ $any(this).showRegisterConfirmPassword ? 'Ocultar' : 'Mostrar' }}
+            </button>
+          </div>
+          <small
+            id="register-confirm-password-help"
+            [class.ok]="$any(this).doPasswordsMatch()"
+            [class.error]="$any(this).registerForm.confirmPassword && !$any(this).doPasswordsMatch()"
+          >
+            {{ $any(this).doPasswordsMatch() ? 'Las contrasenas coinciden.' : 'Las contrasenas no coinciden.' }}
+          </small>
         </label>
       </div>
       }
 
       @if ($any(this).registerStep === 3) {
+      @if ($any(this).selectedRole === 'CUSTOMER') {
       <div class="option-grid">
         @for (option of $any(this).getSelectedOptions(); track option) {
         <button
@@ -127,6 +200,85 @@
         </button>
         }
       </div>
+      }
+
+      @if ($any(this).selectedRole === 'PROFESSIONAL') {
+      <div class="profession-picker">
+        <label class="profession-search-field">
+          <span>Busca tu profesion o especialidad</span>
+          <input
+            type="text"
+            autocomplete="off"
+            [ngModel]="$any(this).professionSearch"
+            (ngModelChange)="$any(this).professionSearch = $event; $any(this).onProfessionSearchChange()"
+            (focus)="$any(this).professionSearchFocused = true; $any(this).loadProfessionSuggestions($any(this).professionSearch)"
+            placeholder="Ej: psicologo, barbero, abogado..."
+          />
+        </label>
+
+        @if ($any(this).selectedProfession) {
+        <div class="selected-profession">
+          <div>
+            <strong>{{ $any(this).selectedProfession.name }}</strong>
+            <span>{{ $any(this).getProfessionCategoryLabel($any(this).selectedProfession) }}</span>
+          </div>
+
+          <button
+            type="button"
+            (click)="$any(this).selectedProfession = null; $any(this).registerForm.professionId = ''; $any(this).registerForm.specialty = ''; $any(this).professionSearch = ''"
+          >
+            Cambiar
+          </button>
+        </div>
+        }
+
+        @if ($any(this).shouldShowProfessionSuggestions()) {
+        <div class="profession-suggestions">
+          @for (profession of $any(this).professionSuggestions; track profession.id) {
+          <button
+            type="button"
+            (click)="$any(this).selectProfession(profession); $any(this).professionSearchFocused = false"
+          >
+            <strong>{{ profession.name }}</strong>
+            <span>{{ $any(this).getProfessionCategoryLabel(profession) }}</span>
+          </button>
+          }
+
+          <button
+            type="button"
+            class="custom-option"
+            (click)="$any(this).useCustomProfession(); $any(this).professionSearchFocused = false"
+          >
+            <strong>Otro</strong>
+            <span>Escribir una profesion que no esta en el catalogo</span>
+          </button>
+        </div>
+        }
+
+        @if ($any(this).customProfessionMode) {
+        <label
+          class="field full custom-profession-field"
+          [class.valid]="$any(this).isCustomProfessionValid()"
+          [class.invalid]="$any(this).customProfession && !$any(this).isCustomProfessionValid()"
+        >
+          <span>Escribe tu profesion</span>
+          <input
+            type="text"
+            maxlength="50"
+            [ngModel]="$any(this).customProfession"
+            (ngModelChange)="$any(this).customProfession = $event; $any(this).onCustomProfessionChange()"
+            placeholder="Ejemplo: Neuropsicologo, Terapeuta Holistico, Coach Ejecutivo."
+          />
+          <small
+            [class.ok]="$any(this).isCustomProfessionValid()"
+            [class.error]="$any(this).customProfession && !$any(this).isCustomProfessionValid()"
+          >
+            {{ $any(this).getCustomProfessionMessage() }}
+          </small>
+        </label>
+        }
+      </div>
+      }
       }
 
       @if ($any(this).registerStep === 4) {
@@ -176,6 +328,19 @@
           y el tratamiento de mis datos.
         </span>
       </label>
+
+      <p class="recaptcha-notice">
+        Este sitio esta protegido por Google reCAPTCHA.
+        Aplican la
+        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">
+          Politica de Privacidad
+        </a>
+        y los
+        <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">
+          Terminos del servicio
+        </a>
+        de Google.
+      </p>
       }
 
       @if ($any(this).errorMessage) {
@@ -198,7 +363,7 @@
         <button
           type="button"
           class="login-button"
-          [disabled]="$any(this).isSubmitting"
+          [disabled]="!$any(this).canContinueRegister()"
           (click)="$any(this).nextRegisterStep()"
         >
           Continuar
@@ -209,7 +374,7 @@
         <button
           type="button"
           class="login-button"
-          [disabled]="$any(this).isSubmitting"
+          [disabled]="!$any(this).canSubmitRegister()"
           (click)="$any(this).register()"
         >
           {{ $any(this).isSubmitting ? 'Creando cuenta...' : 'Crear cuenta' }}
@@ -381,8 +546,8 @@
     }
 
     <footer class="legal-links">
-      <a routerLink="/privacy-policy">Privacy Policy</a>
-      <a routerLink="/terms">Terms</a>
+      <a routerLink="/privacy-policy">Politica de privacidad</a>
+      <a routerLink="/terms">Terminos</a>
       <a routerLink="/cookies">Cookies</a>
     </footer>
   </section>

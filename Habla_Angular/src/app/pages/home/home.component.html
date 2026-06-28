@@ -8,9 +8,56 @@
     <ion-searchbar
       [(ngModel)]="search"
       (ionInput)="onSearch()"
+      (ionFocus)="onSearchFocus()"
+      (ionBlur)="onSearchBlur()"
+      (keydown)="onSearchKeydown($any($event))"
       placeholder="Buscar psicologo, nutricionista..."
       animated="true">
     </ion-searchbar>
+
+    <div
+      class="search-suggestions"
+      *ngIf="showSuggestions && search.trim().length >= 2"
+      role="listbox"
+      aria-label="Sugerencias de busqueda"
+    >
+      <div
+        class="suggestion-status"
+        *ngIf="suggestionsLoading && searchSuggestions.length === 0"
+      >
+        Buscando...
+      </div>
+
+      <button
+        type="button"
+        class="suggestion-item"
+        *ngFor="let suggestion of searchSuggestions; let i = index"
+        [class.active]="i === activeSuggestionIndex"
+        (mousedown)="$event.preventDefault(); selectSearchSuggestion(suggestion)"
+        role="option"
+      >
+        <span class="suggestion-icon">{{ getSuggestionIcon(suggestion) }}</span>
+
+        <span class="suggestion-copy">
+          <strong>{{ suggestion.label }}</strong>
+          <small *ngIf="suggestion.type === 'professional'">
+            {{ suggestion.specialty || 'Profesional' }}
+            <ng-container *ngIf="suggestion.city"> • {{ suggestion.city }}</ng-container>
+          </small>
+          <small *ngIf="suggestion.type === 'profession'">
+            Profesion
+            <ng-container *ngIf="suggestion.categoryName"> • {{ suggestion.categoryName }}</ng-container>
+          </small>
+        </span>
+      </button>
+
+      <div
+        class="suggestion-status"
+        *ngIf="!suggestionsLoading && searchSuggestions.length === 0"
+      >
+        No encontramos resultados para tu busqueda.
+      </div>
+    </div>
   </div>
 
   <div class="modality-filter" aria-label="Modalidad de atencion">
@@ -178,7 +225,7 @@
       <div
         class="quick-card"
         *ngFor="let item of quickFilters"
-        [class.active]="search === item"
+        [class.active]="isQuickFilterActive(item)"
         (click)="filterCategory(item)"
       >
         <div class="icon">
@@ -201,7 +248,7 @@
           <h4>Completa tu experiencia</h4>
         </div>
 
-        <strong>{{ profileCompletionItems.length }}</strong>
+        <strong>{{ profileCompletionItems.length }} pendientes</strong>
       </div>
 
       <p>Mientras mas datos agregues, mejores recomendaciones veras.</p>
@@ -212,6 +259,7 @@
 
       <div class="completion-items">
         <span *ngFor="let item of profileCompletionItems">
+          <i aria-hidden="true"></i>
           {{ item }}
         </span>
       </div>
@@ -249,14 +297,16 @@
       <p>Prueba con otro nombre, profesion o especialidad.</p>
     </div>
 
-    <ion-card *ngFor="let prof of filteredProfessionals">
-      <ion-item lines="none">
-        <ion-avatar slot="start">
-          <img [src]="prof.image || 'https://i.pravatar.cc/150?img=1'" />
-        </ion-avatar>
+    <article class="professional-card" *ngFor="let prof of filteredProfessionals">
+      <div class="professional-summary">
+        <img
+          class="professional-avatar"
+          [src]="prof.image || 'https://i.pravatar.cc/150?img=1'"
+          alt="Foto profesional"
+        />
 
-        <ion-label>
-          <h2>{{ prof.name || 'Profesional' }}</h2>
+        <div class="professional-main">
+          <h3>{{ prof.name || 'Profesional' }}</h3>
 
           <p class="specialty">
             {{ getProfessionalSpecialty(prof) }}
@@ -279,24 +329,22 @@
               {{ getModeDetail(prof) }}
             </span>
           </div>
-        </ion-label>
-      </ion-item>
-
-      <ion-card-content>
-        <div class="card-info">
-          <span class="price">${{ prof.price }} CLP</span>
-          <span class="duration">{{ prof.duration }} min</span>
         </div>
+      </div>
 
-        <p *ngIf="prof.shortDescription" class="specialty">
-          {{ prof.shortDescription }}
-        </p>
+      <div class="card-info">
+        <span class="price">${{ prof.price }} CLP</span>
+        <span class="duration">{{ prof.duration }} min</span>
+      </div>
 
-        <ion-button expand="block" (click)="goToDetail(prof)">
-          Solicitar cita
-        </ion-button>
-      </ion-card-content>
-    </ion-card>
+      <p *ngIf="prof.shortDescription" class="specialty">
+        {{ prof.shortDescription }}
+      </p>
+
+      <button type="button" class="request-button" (click)="goToDetail(prof)">
+        Solicitar cita
+      </button>
+    </article>
 
     <div
       *ngIf="!loading && totalPages > 1"
@@ -329,4 +377,7 @@
     </div>
   </div>
 </ion-content>
+
+
+
 

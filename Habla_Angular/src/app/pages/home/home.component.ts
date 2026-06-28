@@ -1,21 +1,28 @@
-﻿import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { finalize, Subscription, timeout } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { ProfessionCategory, ProfessionItem, ProfessionService } from '../../services/profession.service';
 
 import {
   IonContent,
-  IonCard,
-  IonItem,
-  IonAvatar,
-  IonLabel,
   IonButton,
   IonSearchbar,
   IonSpinner,
-  IonCardContent
 } from '@ionic/angular/standalone';
+
+type SearchSuggestion = {
+  type: 'profession' | 'professional';
+  id: string;
+  slug?: string;
+  label: string;
+  specialty?: string;
+  categoryName?: string | null;
+  categorySlug?: string | null;
+  city?: string | null;
+};
 
 @Component({
   selector: 'app-home',
@@ -26,17 +33,13 @@ import {
     CommonModule,
     FormsModule,
     IonContent,
-    IonCard,
-    IonItem,
-    IonAvatar,
-    IonLabel,
     IonButton,
     IonSearchbar,
     IonSpinner,
-    IonCardContent,
   ]
 })
-export class HomePage implements OnInit {
+export class HomePage implements OnInit, OnDestroy {
+
 
   search = '';
   professionals: any[] = [];
@@ -60,10 +63,18 @@ export class HomePage implements OnInit {
   pageSize = 12;
   totalProfessionals = 0;
   totalPages = 1;
+  searchSuggestions: SearchSuggestion[] = [];
+  suggestionsLoading = false;
+  showSuggestions = false;
+  activeSuggestionIndex = -1;
   professionCategories: ProfessionCategory[] = [];
   selectedCategorySlug = '';
   selectedProfessionSlug = '';
   private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private suggestionsDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private suggestionsSubscription?: Subscription;
+  private loadingFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+  private professionalsSubscription?: Subscription;
   private professionalsRequestId = 0;
   private initialized = false;
 
@@ -89,11 +100,32 @@ export class HomePage implements OnInit {
     private auth: AuthService,
     private professionService: ProfessionService,
     private router: Router,
-    //private cd: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {}
+
+  private refreshView(): void {
+    this.cdr.detectChanges();
+  }
 
   ngOnInit() {
     this.initializeHome();
+  }
+
+  ngOnDestroy() {
+    this.professionalsSubscription?.unsubscribe();
+    this.suggestionsSubscription?.unsubscribe();
+
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+    }
+
+    if (this.suggestionsDebounceTimer) {
+      clearTimeout(this.suggestionsDebounceTimer);
+    }
+
+    if (this.loadingFallbackTimer) {
+      clearTimeout(this.loadingFallbackTimer);
+    }
   }
 
   ionViewWillEnter() {
@@ -157,21 +189,19 @@ export class HomePage implements OnInit {
 
     this.auth.getProfile().subscribe({
       next: (user: any) => {
-        const previousMode = this.selectedMode;
         const previousCountry = this.selectedCountry;
 
         this.userRole = user?.role || '';
         this.selectedInterests = Array.isArray(user?.customerInterests)
           ? user.customerInterests
           : [];
-        this.selectedMode = user?.preferredAttentionMode || 'ALL';
         this.selectedCountry = user?.country === 'ES' ? 'ES' : 'CL';
         this.preferredCity = user?.preferredCity || '';
         this.preferredRegion = user?.preferredRegion || '';
         this.profileCompletionItems = this.getCustomerProfileMissingItems(user);
         this.updateQuickFilters();
 
-        if (previousMode !== this.selectedMode || previousCountry !== this.selectedCountry) {
+        if (previousCountry !== this.selectedCountry) {
           this.currentPage = 1;
           this.loadProfessionals();
         }
@@ -181,6 +211,7 @@ export class HomePage implements OnInit {
       },
       complete: () => {
         this.profileLoading = false;
+        this.refreshView();
       }
     });
   }
@@ -191,10 +222,21 @@ export class HomePage implements OnInit {
       this.searchDebounceTimer = null;
     }
 
-    this.loading = true;
-    const requestId = ++this.professionalsRequestId;
+    this.professionalsSubscription?.unsubscribe();
 
-    this.auth.getProfessionals({
+    if (this.loadingFallbackTimer) {
+      clearTimeout(this.loadingFallbackTimer);
+      this.loadingFallbackTimer = null;
+    }
+
+    this.loading = true;
+    this.professionals = [];
+    this.filteredProfessionals = [];
+    this.totalProfessionals = 0;
+    this.totalPages = 1;
+    this.refreshView();
+    const requestId = ++this.professionalsRequestId;
+    const requestParams = {
       page: this.currentPage,
       limit: this.pageSize,
       search: this.search.trim(),
@@ -204,34 +246,75 @@ export class HomePage implements OnInit {
         : undefined,
       attentionMode: this.selectedMode,
       country: this.selectedCountry,
-    }).subscribe({
+    };
+
+    this.loadingFallbackTimer = setTimeout(() => {
+      if (requestId === this.professionalsRequestId && this.loading) {
+        this.loading = false;
+        this.refreshView();
+      }
+    }, 2500);
+
+    this.professionalsSubscription = this.auth.getProfessionals(requestParams).pipe(
+      timeout(8000),
+      finalize(() => {
+        if (requestId === this.professionalsRequestId && this.loading) {
+          this.loading = false;
+          this.refreshView();
+        }
+      }),
+    ).subscribe({
       next: (res: any) => {
         if (requestId !== this.professionalsRequestId) return;
 
-        const items = Array.isArray(res) ? res : res?.data || [];
+        if (this.loadingFallbackTimer) {
+          clearTimeout(this.loadingFallbackTimer);
+          this.loadingFallbackTimer = null;
+        }
 
-        this.professionals = items;
-        this.availableSpecialties = Array.isArray(res?.specialties)
-          ? res.specialties
-          : this.availableSpecialties;
-        this.totalProfessionals = Array.isArray(res) ? items.length : Number(res?.total || 0);
-        this.currentPage = Array.isArray(res) ? 1 : Number(res?.page || this.currentPage);
-        this.totalPages = Array.isArray(res) ? 1 : Number(res?.totalPages || 1);
-        this.applyFilters();
-        this.updateQuickFilters();
+        try {
+          const items = Array.isArray(res) ? res : res?.data || [];
 
-        this.loading = false;
-       // this.cd.detectChanges();
+          this.professionals = items;
+
+          this.availableSpecialties = Array.isArray(res?.specialties)
+            ? res.specialties
+            : this.availableSpecialties;
+          this.totalProfessionals = Array.isArray(res) ? items.length : Number(res?.total || 0);
+          this.currentPage = Array.isArray(res) ? 1 : Number(res?.page || this.currentPage);
+          this.totalPages = Array.isArray(res) ? 1 : Number(res?.totalPages || 1);
+          this.applyFilters();
+
+          this.updateQuickFilters();
+        } catch (error) {
+          console.error('[Home] flujo detenido dentro de next', error);
+        } finally {
+          this.loading = false;
+          this.refreshView();
+        }
       },
 
-      error: () => {
+      error: (error) => {
         if (requestId !== this.professionalsRequestId) return;
+
+        if (this.loadingFallbackTimer) {
+          clearTimeout(this.loadingFallbackTimer);
+          this.loadingFallbackTimer = null;
+        }
 
         this.professionals = [];
         this.filteredProfessionals = [];
+        this.totalProfessionals = 0;
+        this.totalPages = 1;
         this.loading = false;
-      //  this.cd.detectChanges();
-      }
+        this.refreshView();
+        console.error('[Conecta][Home professionals error]', error);
+      },
+      complete: () => {
+        if (requestId !== this.professionalsRequestId) return;
+        this.loading = false;
+        this.refreshView();
+      },
     });
   }
 
@@ -242,6 +325,7 @@ export class HomePage implements OnInit {
     }
 
     this.currentPage = 1;
+    this.queueSearchSuggestions();
 
     if (this.searchDebounceTimer) {
       clearTimeout(this.searchDebounceTimer);
@@ -252,17 +336,160 @@ export class HomePage implements OnInit {
     }, 350);
   }
 
+  onSearchFocus(): void {
+    this.showSuggestions = this.search.trim().length >= 2;
+    this.queueSearchSuggestions();
+  }
+
+  onSearchBlur(): void {
+    window.setTimeout(() => {
+      this.showSuggestions = false;
+      this.activeSuggestionIndex = -1;
+      this.refreshView();
+    }, 140);
+  }
+
+  onSearchKeydown(event: KeyboardEvent): void {
+    if (!this.showSuggestions || this.searchSuggestions.length === 0) {
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.activeSuggestionIndex = Math.min(
+        this.activeSuggestionIndex + 1,
+        this.searchSuggestions.length - 1,
+      );
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.activeSuggestionIndex = Math.max(this.activeSuggestionIndex - 1, 0);
+      return;
+    }
+
+    if (event.key === 'Enter' && this.activeSuggestionIndex >= 0) {
+      event.preventDefault();
+      this.selectSearchSuggestion(this.searchSuggestions[this.activeSuggestionIndex]);
+    }
+
+    if (event.key === 'Escape') {
+      this.showSuggestions = false;
+      this.activeSuggestionIndex = -1;
+    }
+  }
+
+  queueSearchSuggestions(): void {
+    const query = this.search.trim();
+
+    if (this.suggestionsDebounceTimer) {
+      clearTimeout(this.suggestionsDebounceTimer);
+    }
+
+    if (query.length < 2) {
+      this.searchSuggestions = [];
+      this.suggestionsLoading = false;
+      this.showSuggestions = false;
+      this.activeSuggestionIndex = -1;
+      return;
+    }
+
+    this.showSuggestions = true;
+    this.suggestionsLoading = true;
+
+    this.suggestionsDebounceTimer = setTimeout(() => {
+      this.loadSearchSuggestions(query);
+    }, 300);
+  }
+
+  loadSearchSuggestions(query: string): void {
+    this.suggestionsSubscription?.unsubscribe();
+
+    this.suggestionsSubscription = this.auth.getSearchSuggestions({
+      q: query,
+      country: this.selectedCountry,
+    }).pipe(
+      timeout(5000),
+      finalize(() => {
+        this.suggestionsLoading = false;
+        this.refreshView();
+      }),
+    ).subscribe({
+      next: (suggestions) => {
+        if (this.search.trim() !== query) return;
+
+        this.searchSuggestions = suggestions.slice(0, 8);
+        this.activeSuggestionIndex = this.searchSuggestions.length ? 0 : -1;
+        this.showSuggestions = true;
+      },
+      error: () => {
+        this.searchSuggestions = [];
+        this.activeSuggestionIndex = -1;
+      },
+    });
+  }
+
+  selectSearchSuggestion(suggestion: SearchSuggestion): void {
+    this.showSuggestions = false;
+    this.activeSuggestionIndex = -1;
+
+    if (suggestion.type === 'professional') {
+      this.goToDetail({
+        id: suggestion.id,
+        slug: suggestion.slug,
+      });
+      return;
+    }
+
+    if (suggestion.slug) {
+      this.search = suggestion.label;
+      this.selectedProfessionSlug = suggestion.slug;
+      this.selectedCategorySlug = suggestion.categorySlug || '';
+      this.currentPage = 1;
+      this.loadProfessionals();
+      return;
+    }
+
+    this.search = suggestion.label;
+    this.currentPage = 1;
+    this.loadProfessionals();
+  }
+
+  getSuggestionIcon(suggestion: SearchSuggestion): string {
+    if (suggestion.type === 'professional') return '👤';
+
+    return '🔎';
+  }
+
   applyFilters() {
     this.filteredProfessionals = [...this.professionals]
       .sort((a, b) => this.getRecommendationScore(b) - this.getRecommendationScore(a));
   }
 
   filterCategory(category: string) {
+    const profession = this.findCatalogProfessionByName(category);
+
+    if (profession) {
+      this.selectProfession(profession);
+      return;
+    }
+
     this.search = category;
     this.selectedCategorySlug = '';
     this.selectedProfessionSlug = '';
     this.currentPage = 1;
     this.loadProfessionals();
+  }
+
+  isQuickFilterActive(category: string): boolean {
+    const profession = this.findCatalogProfessionByName(category);
+
+    if (profession) {
+      return this.selectedProfessionSlug === profession.slug;
+    }
+
+    return this.normalizeText(this.search) === this.normalizeText(category);
   }
 
   selectCategory(category: ProfessionCategory) {
@@ -430,6 +657,20 @@ export class HomePage implements OnInit {
     );
   }
 
+  findCatalogProfessionByName(name: string): ProfessionItem | undefined {
+    const normalizedName = this.normalizeText(name);
+
+    return this.getCatalogProfessions().find((profession) => {
+      const aliases = Array.isArray(profession.aliases) ? profession.aliases : [];
+
+      return [
+        profession.name,
+        profession.slug,
+        ...aliases,
+      ].some((value) => this.normalizeText(value) === normalizedName);
+    });
+  }
+
   getProfessionalSpecialty(prof: any): string {
     return prof?.professionName || prof?.specialty || 'Especialidad por definir';
   }
@@ -512,6 +753,7 @@ export class HomePage implements OnInit {
 
     if (prof?.videoProvider === 'GOOGLE_MEET') return 'Google Meet';
     if (prof?.videoProvider === 'ZOOM') return 'Zoom';
+    if (prof?.videoProvider === 'MICROSOFT_TEAMS') return 'Microsoft Teams';
     if (prof?.videoProvider === 'CUSTOM') return 'Enlace personalizado';
 
     return 'Sala online';
@@ -634,4 +876,10 @@ export class HomePage implements OnInit {
     return missing;
   }
 }
+
+
+
+
+
+
 

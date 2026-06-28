@@ -1,16 +1,15 @@
-<ion-header>
-  <ion-toolbar>
-   <ion-buttons slot="start">
+﻿<header class="chat-header">
+  <div class="chat-header-inner">
+    <button type="button" class="back-button" (click)="goBack()">
+      <span aria-hidden="true">←</span>
+      Volver
+    </button>
 
-  <ion-button fill="clear" (click)="goBack()">
-    ← Volver
-  </ion-button>
+    <h1>{{ professionalName }}</h1>
 
-</ion-buttons>
-
-    <ion-title>{{ professionalName }}</ion-title>
-  </ion-toolbar>
-</ion-header>
+    <span class="header-spacer" aria-hidden="true"></span>
+  </div>
+</header>
 
 <ion-content class="chat-content">
 
@@ -75,7 +74,7 @@
       [class.active]="activeTab === 'images'"
       (click)="changeTab('images')"
     >
-      Imágenes
+      ImÃ¡genes
     </button>
   </div>
 
@@ -89,7 +88,7 @@
     <div class="message-bubble">
 
       <small class="sender-label">
-        {{ msg.senderId === currentUserId ? 'Tú' : professionalName }}
+        {{ msg.senderId === currentUserId ? 'TÃº' : professionalName }}
       </small>
 
       <ng-container *ngIf="msg.content">
@@ -126,7 +125,7 @@
         <p>{{ doc.createdAt | date:'short' }}</p>
 
         <p class="uploaded-by">
-          Subido por {{ doc.senderId === currentUserId ? 'Tú' : professionalName }}
+          Subido por {{ doc.senderId === currentUserId ? 'TÃº' : professionalName }}
         </p>
       </ion-label>
 
@@ -142,7 +141,7 @@
   </ng-container>
 </div>
 
-<!-- IMÁGENES -->
+<!-- IMÃGENES -->
 <div *ngIf="activeTab === 'images'" class="images-grid">
   <ng-container *ngFor="let image of images">
     <div class="image-card" *ngIf="image.fileUrl">
@@ -153,14 +152,14 @@
       />
 
       <small class="uploaded-by">
-        Subido por {{ image.senderId === currentUserId ? 'Tú' : professionalName }}
+        Subido por {{ image.senderId === currentUserId ? 'TÃº' : professionalName }}
       </small>
 
     </div>
   </ng-container>
 </div>
 
-  <!-- IMÁGENES -->
+  <!-- IMÃGENES -->
   <div *ngIf="activeTab === 'images'" class="images-grid">
   <div *ngFor="let image of images" class="image-card">
     <img
@@ -169,7 +168,7 @@
     />
 
     <small class="uploaded-by">
-      Subido por {{ image.senderId === currentUserId ? 'Tú' : professionalName }}
+      Subido por {{ image.senderId === currentUserId ? 'TÃº' : professionalName }}
     </small>
   </div>
 </div>
@@ -194,7 +193,7 @@
   fill="clear"
   (click)="fileInput.click()"
 >
-  📎
+  ðŸ“Ž
 </ion-button>
       <ion-button fill="clear" (click)="sendMessage()">
         Enviar
@@ -202,3 +201,4 @@
     </div>
   </ion-toolbar>
 </ion-footer>
+

@@ -707,7 +707,7 @@
           <p class="subsection-title">Videollamada</p>
           <div class="mode-selector">
             <label>
-              <input type="radio" name="videoProvider" value="JITSI" [(ngModel)]="profile.videoProvider">
+              <input type="radio" name="videoProvider" value="CONNECTA_AUTO" [(ngModel)]="profile.videoProvider">
               Sala automatica
             </label>
             <label>
@@ -719,13 +719,111 @@
               Zoom
             </label>
             <label>
+              <input type="radio" name="videoProvider" value="MICROSOFT_TEAMS" [(ngModel)]="profile.videoProvider">
+              Microsoft Teams
+            </label>
+            <label>
               <input type="radio" name="videoProvider" value="CUSTOM" [(ngModel)]="profile.videoProvider">
               Enlace propio
             </label>
           </div>
         </div>
 
-        <ion-item *ngIf="profile.videoProvider !== 'JITSI'">
+        <p *ngIf="$any(this).isVideoProvider('CONNECTA_AUTO')" class="helper-text">
+          Las videollamadas seran generadas automaticamente por Conecta cuando la cita sea confirmada.
+        </p>
+
+        <div *ngIf="$any(this).isVideoProvider('GOOGLE_MEET')" class="provider-action">
+          <p *ngIf="!$any(this).googleConnection.connected">
+            Conecta tu cuenta de Google para generar automaticamente enlaces de Meet.
+          </p>
+
+          <div *ngIf="$any(this).googleConnection.connected" class="connected-provider">
+            <strong>Cuenta conectada</strong>
+            <span>{{ $any(this).googleConnection.googleEmail }}</span>
+            <small *ngIf="$any(this).googleConnection.connectedAt">
+              Conectada el {{ $any(this).googleConnection.connectedAt | date:'dd/MM/yyyy HH:mm' }}
+            </small>
+          </div>
+
+          <ion-button
+            *ngIf="!$any(this).googleConnection.connected"
+            fill="outline"
+            [disabled]="$any(this).googleConnectionLoading"
+            (click)="$any(this).connectGoogleAccount()">
+            Conectar cuenta Google
+          </ion-button>
+
+          <ion-button
+            *ngIf="$any(this).googleConnection.connected"
+            fill="clear"
+            color="medium"
+            (click)="$any(this).disconnectGoogleAccount()">
+            Desconectar
+          </ion-button>
+        </div>
+
+        <div *ngIf="$any(this).isVideoProvider('ZOOM')" class="provider-action">
+          <p *ngIf="!$any(this).zoomConnection.connected">
+            Conecta tu cuenta de Zoom para generar automaticamente reuniones.
+          </p>
+
+          <div *ngIf="$any(this).zoomConnection.connected" class="connected-provider">
+            <strong>Cuenta conectada</strong>
+            <span>{{ $any(this).zoomConnection.zoomEmail }}</span>
+            <small *ngIf="$any(this).zoomConnection.connectedAt">
+              Conectada el {{ $any(this).zoomConnection.connectedAt | date:'dd/MM/yyyy HH:mm' }}
+            </small>
+          </div>
+
+          <ion-button
+            *ngIf="!$any(this).zoomConnection.connected"
+            fill="outline"
+            [disabled]="$any(this).zoomConnectionLoading"
+            (click)="$any(this).connectZoomAccount()">
+            Conectar cuenta Zoom
+          </ion-button>
+
+          <ion-button
+            *ngIf="$any(this).zoomConnection.connected"
+            fill="clear"
+            color="medium"
+            (click)="$any(this).disconnectZoomAccount()">
+            Desconectar
+          </ion-button>
+        </div>
+
+        <div *ngIf="$any(this).isVideoProvider('MICROSOFT_TEAMS')" class="provider-action">
+          <p *ngIf="!$any(this).teamsConnection.connected">
+            Conecta tu cuenta Microsoft para generar automaticamente reuniones de Teams.
+          </p>
+
+          <div *ngIf="$any(this).teamsConnection.connected" class="connected-provider">
+            <strong>Cuenta conectada</strong>
+            <span>{{ $any(this).teamsConnection.microsoftEmail }}</span>
+            <small *ngIf="$any(this).teamsConnection.connectedAt">
+              Conectada el {{ $any(this).teamsConnection.connectedAt | date:'dd/MM/yyyy HH:mm' }}
+            </small>
+          </div>
+
+          <ion-button
+            *ngIf="!$any(this).teamsConnection.connected"
+            fill="outline"
+            [disabled]="$any(this).teamsConnectionLoading"
+            (click)="$any(this).connectTeamsAccount()">
+            Conectar cuenta Microsoft
+          </ion-button>
+
+          <ion-button
+            *ngIf="$any(this).teamsConnection.connected"
+            fill="clear"
+            color="medium"
+            (click)="$any(this).disconnectTeamsAccount()">
+            Desconectar
+          </ion-button>
+        </div>
+
+        <ion-item *ngIf="$any(this).isVideoProvider('CUSTOM')">
           <ion-label position="stacked">
             Enlace de videollamada
           </ion-label>
@@ -738,48 +836,78 @@
       </ng-container>
 
       <ng-container *ngIf="profile.attentionMode !== 'ONLINE'">
-        <ion-item>
+        <div class="presence-rules">
+          <strong>Reglas para atencion presencial</strong>
+          <span>Direccion, ciudad y pais son obligatorios.</span>
+          <span>No incluyas telefono, correo, WhatsApp ni redes sociales.</span>
+        </div>
+
+        <ion-item class="profile-field" lines="none">
           <ion-label position="stacked">
-            Direccion
+            Direccion <span class="required-mark">*</span>
           </ion-label>
 
-          <ion-input [(ngModel)]="profile.officeAddress"></ion-input>
+          <ion-input
+            maxlength="140"
+            placeholder="Ej: Av. Providencia 123, oficina 402"
+            [(ngModel)]="profile.officeAddress">
+          </ion-input>
         </ion-item>
+        <p class="field-rule">Minimo 8 y maximo 140 caracteres. No se muestra publicamente.</p>
 
-        <ion-item>
+        <ion-item class="profile-field" lines="none">
           <ion-label position="stacked">
-            Ciudad
+            Ciudad <span class="required-mark">*</span>
           </ion-label>
 
-          <ion-input [(ngModel)]="profile.officeCity"></ion-input>
+          <ion-input
+            maxlength="60"
+            placeholder="Ej: Santiago"
+            [(ngModel)]="profile.officeCity">
+          </ion-input>
         </ion-item>
+        <p class="field-rule">Minimo 2 y maximo 60 caracteres.</p>
 
-        <ion-item>
+        <ion-item class="profile-field" lines="none">
           <ion-label position="stacked">
             Region
           </ion-label>
 
-          <ion-input [(ngModel)]="profile.officeRegion"></ion-input>
+          <ion-input
+            maxlength="60"
+            placeholder="Ej: Metropolitana"
+            [(ngModel)]="profile.officeRegion">
+          </ion-input>
         </ion-item>
+        <p class="field-rule">Opcional. Maximo 60 caracteres.</p>
 
-        <ion-item>
+        <ion-item class="profile-field" lines="none">
           <ion-label position="stacked">
-            Pais
+            Pais <span class="required-mark">*</span>
           </ion-label>
 
-          <ion-input [(ngModel)]="profile.officeCountry"></ion-input>
+          <ion-input
+            maxlength="40"
+            placeholder="Chile o Espana"
+            [(ngModel)]="profile.officeCountry">
+          </ion-input>
         </ion-item>
+        <p class="field-rule">Usa Chile/CL o Espana/ES para filtrar correctamente.</p>
 
-        <ion-item>
+        <ion-item class="profile-field profile-field-textarea" lines="none">
           <ion-label position="stacked">
             Instrucciones de llegada
           </ion-label>
 
           <ion-textarea
             rows="3"
+            maxlength="300"
+            [counter]="true"
+            placeholder="Ej: Tocar timbre 402. Entrada por recepcion."
             [(ngModel)]="profile.arrivalInstructions">
           </ion-textarea>
         </ion-item>
+        <p class="field-rule">Opcional. Maximo 300 caracteres. No incluyas datos de contacto directo.</p>
       </ng-container>
 
     </ion-card-content>

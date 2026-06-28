@@ -1,0 +1,137 @@
+:host {
+  display: block;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.welcome-card,
+.support-card,
+.metric-card,
+.modules-card {
+  border: 1px solid rgba(174, 109, 255, 0.14);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 45px rgba(74, 52, 107, 0.08);
+}
+
+.welcome-card {
+  padding: 28px;
+}
+
+.welcome-card span,
+.support-card span,
+.metric-card span,
+.section-title span {
+  color: #a742ff;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.welcome-card h2 {
+  margin: 8px 0 10px;
+  color: #202536;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.02;
+}
+
+.welcome-card p {
+  max-width: 720px;
+  margin: 0;
+  color: #667085;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.support-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 190px;
+  padding: 24px;
+  text-decoration: none;
+}
+
+.support-card strong {
+  margin-top: 8px;
+  color: #202536;
+  font-size: 28px;
+}
+
+.support-card small,
+.metric-card small {
+  color: #667085;
+  font-weight: 700;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.dashboard-message {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  color: #667085;
+  background: rgba(255, 255, 255, 0.85);
+  font-weight: 800;
+}
+
+.dashboard-message.error {
+  color: #9f1239;
+  background: #fff1f2;
+}
+
+.metric-card {
+  min-height: 140px;
+  padding: 22px;
+}
+
+.metric-card strong {
+  display: block;
+  margin: 12px 0 8px;
+  color: #202536;
+  font-size: 34px;
+}
+
+.modules-card {
+  padding: 24px;
+}
+
+.section-title h3 {
+  margin: 6px 0 18px;
+  color: #202536;
+  font-size: 24px;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.module-grid div {
+  padding: 14px;
+  border: 1px solid #ead7ff;
+  border-radius: 14px;
+  color: #596174;
+  background: #fbf7ff;
+  font-weight: 800;
+}
+
+@media (max-width: 1020px) {
+  .dashboard-grid,
+  .metrics-grid,
+  .module-grid {
+    grid-template-columns: 1fr;
+  }
+}

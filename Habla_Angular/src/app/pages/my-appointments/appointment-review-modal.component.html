@@ -1,0 +1,66 @@
+<div
+  class="review-modal-backdrop"
+  (click)="close.emit()"
+>
+  <div
+    class="review-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="review-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <button
+      type="button"
+      class="review-close"
+      aria-label="Cerrar"
+      (click)="close.emit()"
+    >
+      x
+    </button>
+
+    <h2 id="review-modal-title">Valorar profesional</h2>
+    <p>Tu opinion ayuda a otros pacientes a elegir con confianza.</p>
+
+    <div class="review-stars" aria-label="Puntuacion">
+      <button
+        type="button"
+        *ngFor="let star of [1, 2, 3, 4, 5]"
+        [class.active]="star <= rating"
+        (click)="setRating(star)"
+      >
+        ★
+      </button>
+    </div>
+
+    <label class="review-field">
+      <span>Comentario opcional</span>
+      <textarea
+        maxlength="500"
+        rows="4"
+        [(ngModel)]="comment"
+        placeholder="Cuenta brevemente como fue tu experiencia"
+      ></textarea>
+      <small>{{ comment.length }}/500 caracteres</small>
+    </label>
+
+    <div class="review-actions">
+      <button
+        type="button"
+        class="secondary"
+        [disabled]="submitting"
+        (click)="close.emit()"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="primary"
+        [disabled]="submitting"
+        (click)="submit()"
+      >
+        {{ submitting ? 'Guardando...' : 'Enviar valoracion' }}
+      </button>
+    </div>
+  </div>
+</div>

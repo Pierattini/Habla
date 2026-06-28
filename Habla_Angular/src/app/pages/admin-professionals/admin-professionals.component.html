@@ -1,0 +1,119 @@
+<section class="admin-list-page">
+  <header class="section-header">
+    <div>
+      <span>Administracion</span>
+      <h2>Profesionales</h2>
+      <p>{{ total }} profesionales encontrados</p>
+    </div>
+  </header>
+
+  <section class="filters professionals-filters">
+    <input type="search" [(ngModel)]="search" (ngModelChange)="resetAndLoad()" placeholder="Buscar nombre, email o especialidad" />
+    <select [(ngModel)]="country" (ngModelChange)="resetAndLoad()">
+      <option value="">Todos los paises</option>
+      <option value="CL">Chile</option>
+      <option value="ES">España</option>
+    </select>
+    <select [(ngModel)]="attentionMode" (ngModelChange)="resetAndLoad()">
+      <option *ngFor="let item of modes" [value]="item">{{ getModeLabel(item) }}</option>
+    </select>
+    <select [(ngModel)]="planStatus" (ngModelChange)="resetAndLoad()">
+      <option *ngFor="let item of planStatuses" [value]="item">{{ item || 'Todos los planes' }}</option>
+    </select>
+    <select [(ngModel)]="subscriptionStatus" (ngModelChange)="resetAndLoad()">
+      <option *ngFor="let item of subscriptionStatuses" [value]="item">{{ item || 'Todas las suscripciones' }}</option>
+    </select>
+    <select [(ngModel)]="isActive" (ngModelChange)="resetAndLoad()">
+      <option value="">Todos</option>
+      <option value="true">Activos</option>
+      <option value="false">Inactivos</option>
+    </select>
+  </section>
+
+  <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  <p class="loading" *ngIf="loading">Cargando profesionales...</p>
+
+  <div class="table-card" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th>Profesional</th>
+          <th>Especialidad</th>
+          <th>Modalidad</th>
+          <th>Ubicacion</th>
+          <th>Plan</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let professional of professionals">
+          <td>
+            <ng-container *ngIf="editingId !== professional.id; else editName">
+              <strong>{{ professional.name || professional.user.name || 'Sin nombre' }}</strong>
+              <small>{{ professional.user.email }}</small>
+            </ng-container>
+            <ng-template #editName>
+              <input [(ngModel)]="draft.name" placeholder="Nombre publico" />
+            </ng-template>
+          </td>
+          <td>
+            <input *ngIf="editingId === professional.id; else specialtyText" [(ngModel)]="draft.specialty" placeholder="Especialidad" />
+            <ng-template #specialtyText>
+              {{ getSpecialty(professional) }}
+              <small *ngIf="professional.profession?.category">{{ professional.profession?.category?.name }}</small>
+            </ng-template>
+          </td>
+          <td>
+            <select *ngIf="editingId === professional.id; else modeText" [(ngModel)]="draft.attentionMode">
+              <option value="ONLINE">Online</option>
+              <option value="PRESENTIAL">Presencial</option>
+              <option value="BOTH">Mixta</option>
+            </select>
+            <ng-template #modeText>{{ getModeLabel(professional.attentionMode) }}</ng-template>
+          </td>
+          <td>
+            <ng-container *ngIf="editingId !== professional.id; else editLocation">
+              {{ professional.officeCity || 'Sin ciudad' }}
+              <small>{{ professional.officeCountry || professional.user.country || 'Sin pais' }}</small>
+            </ng-container>
+            <ng-template #editLocation>
+              <input [(ngModel)]="draft.city" placeholder="Ciudad" />
+              <select [(ngModel)]="draft.country">
+                <option value="">Sin pais</option>
+                <option value="CL">Chile</option>
+                <option value="ES">España</option>
+              </select>
+            </ng-template>
+          </td>
+          <td>
+            <strong>{{ professional.subscription?.status || professional.planStatus }}</strong>
+            <small *ngIf="professional.subscription?.currentPeriodEnd">
+              Hasta {{ professional.subscription?.currentPeriodEnd | date:'dd/MM/yyyy' }}
+            </small>
+          </td>
+          <td>
+            <span class="badge" [class.off]="!professional.user.isActive">
+              {{ professional.user.isActive ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+          <td class="actions">
+            <button *ngIf="editingId !== professional.id" type="button" (click)="startEdit(professional)">Editar</button>
+            <button *ngIf="editingId === professional.id" type="button" (click)="save(professional)">Guardar</button>
+            <button *ngIf="editingId === professional.id" type="button" class="ghost" (click)="cancelEdit()">Cancelar</button>
+            <button *ngIf="professional.user.isActive" type="button" class="ghost" (click)="suspend(professional)">Suspender</button>
+            <button *ngIf="!professional.user.isActive" type="button" class="ghost" (click)="activate(professional)">Activar</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <nav class="pagination" *ngIf="totalPages > 1">
+    <button type="button" [disabled]="page === 1" (click)="load(page - 1)">Anterior</button>
+    <button type="button" *ngFor="let item of getPages()" [class.active]="item === page" (click)="load(item)">
+      {{ item }}
+    </button>
+    <button type="button" [disabled]="page === totalPages" (click)="load(page + 1)">Siguiente</button>
+  </nav>
+</section>

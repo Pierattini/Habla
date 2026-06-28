@@ -12,7 +12,8 @@ import {
   AvailabilityPayload,
   ProfessionalProfile,
   ProfessionalProfileService,
-  ScheduleMode
+  ScheduleMode,
+  VideoProvider
 } from '../../services/professional-profile.service';
 import {
   ProfessionalAccess,
@@ -26,9 +27,6 @@ import { environment } from '../../../environments/environment';
 
 import {
   IonContent,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
   IonCard,
   IonCardContent,
   IonButton,
@@ -65,6 +63,24 @@ type AgendaDay = {
   blockedRanges: AgendaBlock[];
 };
 
+type GoogleConnectionState = {
+  connected: boolean;
+  googleEmail: string | null;
+  connectedAt: string | null;
+};
+
+type ZoomConnectionState = {
+  connected: boolean;
+  zoomEmail: string | null;
+  connectedAt: string | null;
+};
+
+type TeamsConnectionState = {
+  connected: boolean;
+  microsoftEmail: string | null;
+  connectedAt: string | null;
+};
+
 @Component({
   selector: 'app-professional-dashboard',
   standalone: true,
@@ -75,9 +91,6 @@ type AgendaDay = {
     FormsModule,
 
     IonContent,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
     IonCard,
     IonCardContent,
     IonButton,
@@ -109,6 +122,24 @@ export class ProfessionalDashboardComponent {
     currency: 'CLP',
     label: '$10.000 CLP/mes',
   };
+  googleConnection: GoogleConnectionState = {
+    connected: false,
+    googleEmail: null,
+    connectedAt: null,
+  };
+  googleConnectionLoading = false;
+  zoomConnection: ZoomConnectionState = {
+    connected: false,
+    zoomEmail: null,
+    connectedAt: null,
+  };
+  zoomConnectionLoading = false;
+  teamsConnection: TeamsConnectionState = {
+    connected: false,
+    microsoftEmail: null,
+    connectedAt: null,
+  };
+  teamsConnectionLoading = false;
   requestActionIds: Record<string, boolean> = {};
   private professionalUserId = '';
   private dashboardRequestsPending = 0;
@@ -174,7 +205,7 @@ export class ProfessionalDashboardComponent {
     officeLatitude: null as number | null,
     officeLongitude: null as number | null,
     arrivalInstructions: '',
-    videoProvider: 'JITSI',
+    videoProvider: 'CONNECTA_AUTO',
     customVideoUrl: ''
   };
 
@@ -296,7 +327,7 @@ export class ProfessionalDashboardComponent {
 
     if (
       this.profile.attentionMode !== 'PRESENTIAL' &&
-      ['GOOGLE_MEET', 'ZOOM', 'CUSTOM'].includes(this.profile.videoProvider) &&
+      this.profile.videoProvider === 'CUSTOM' &&
       !this.profile.customVideoUrl
     ) {
       missing.push('Agrega enlace de videollamada');
@@ -325,6 +356,10 @@ export class ProfessionalDashboardComponent {
 
   get isDevelopmentMode(): boolean {
     return environment.production === false;
+  }
+
+  isVideoProvider(provider: VideoProvider): boolean {
+    return this.profile.videoProvider === provider;
   }
 
   saveProfile() {
@@ -381,6 +416,175 @@ export class ProfessionalDashboardComponent {
       }
     });
   }
+
+  loadGoogleConnectionStatus(): void {
+    this.googleConnectionLoading = true;
+
+    this.http
+      .get<{
+        connected: boolean;
+        googleEmail: string | null;
+        connectedAt: string | null;
+      }>(`${API_URL}/meetings/google/status`)
+      .subscribe({
+        next: (status) => {
+          this.googleConnection = status;
+        },
+        error: () => {
+          this.googleConnection = {
+            connected: false,
+            googleEmail: null,
+            connectedAt: null,
+          };
+        },
+        complete: () => {
+          this.googleConnectionLoading = false;
+        },
+      });
+  }
+
+  loadZoomConnectionStatus(): void {
+    this.zoomConnectionLoading = true;
+
+    this.http
+      .get<{
+        connected: boolean;
+        zoomEmail: string | null;
+        connectedAt: string | null;
+      }>(`${API_URL}/meetings/zoom/status`)
+      .subscribe({
+        next: (status) => {
+          this.zoomConnection = status;
+        },
+        error: () => {
+          this.zoomConnection = {
+            connected: false,
+            zoomEmail: null,
+            connectedAt: null,
+          };
+        },
+        complete: () => {
+          this.zoomConnectionLoading = false;
+        },
+      });
+  }
+
+  loadTeamsConnectionStatus(): void {
+    this.teamsConnectionLoading = true;
+
+    this.http
+      .get<{
+        connected: boolean;
+        microsoftEmail: string | null;
+        connectedAt: string | null;
+      }>(`${API_URL}/meetings/teams/status`)
+      .subscribe({
+        next: (status) => {
+          this.teamsConnection = status;
+        },
+        error: () => {
+          this.teamsConnection = {
+            connected: false,
+            microsoftEmail: null,
+            connectedAt: null,
+          };
+        },
+        complete: () => {
+          this.teamsConnectionLoading = false;
+        },
+      });
+  }
+
+  connectGoogleAccount(): void {
+    this.http
+      .get<{ url: string }>(`${API_URL}/meetings/google/connect`)
+      .subscribe({
+        next: (response) => {
+          window.location.href = response.url;
+        },
+        error: (err) => {
+          alert(err?.error?.message || 'No se pudo iniciar conexion con Google');
+        },
+      });
+  }
+
+  disconnectGoogleAccount(): void {
+    this.http
+      .delete(`${API_URL}/meetings/google/disconnect`)
+      .subscribe({
+        next: () => {
+          this.googleConnection = {
+            connected: false,
+            googleEmail: null,
+            connectedAt: null,
+          };
+        },
+        error: (err) => {
+          alert(err?.error?.message || 'No se pudo desconectar Google');
+        },
+      });
+  }
+
+  connectZoomAccount(): void {
+    this.http
+      .get<{ url: string }>(`${API_URL}/meetings/zoom/connect`)
+      .subscribe({
+        next: (response) => {
+          window.location.href = response.url;
+        },
+        error: (err) => {
+          alert(err?.error?.message || 'No se pudo iniciar conexion con Zoom');
+        },
+      });
+  }
+
+  disconnectZoomAccount(): void {
+    this.http
+      .delete(`${API_URL}/meetings/zoom/disconnect`)
+      .subscribe({
+        next: () => {
+          this.zoomConnection = {
+            connected: false,
+            zoomEmail: null,
+            connectedAt: null,
+          };
+        },
+        error: (err) => {
+          alert(err?.error?.message || 'No se pudo desconectar Zoom');
+        },
+      });
+  }
+
+  connectTeamsAccount(): void {
+    this.http
+      .get<{ url: string }>(`${API_URL}/meetings/teams/connect`)
+      .subscribe({
+        next: (response) => {
+          window.location.href = response.url;
+        },
+        error: (err) => {
+          alert(err?.error?.message || 'No se pudo iniciar conexion con Microsoft');
+        },
+      });
+  }
+
+  disconnectTeamsAccount(): void {
+    this.http
+      .delete(`${API_URL}/meetings/teams/disconnect`)
+      .subscribe({
+        next: () => {
+          this.teamsConnection = {
+            connected: false,
+            microsoftEmail: null,
+            connectedAt: null,
+          };
+        },
+        error: (err) => {
+          alert(err?.error?.message || 'No se pudo desconectar Microsoft');
+        },
+      });
+  }
+
 onFileSelected(event: Event) {
 
   console.log('INPUT OK');
@@ -433,11 +637,14 @@ onFileSelected(event: Event) {
         officeLatitude: res.professional?.officeLatitude ?? null,
         officeLongitude: res.professional?.officeLongitude ?? null,
         arrivalInstructions: res.professional?.arrivalInstructions || '',
-        videoProvider: res.professional?.videoProvider || 'JITSI',
+        videoProvider: this.normalizeVideoProvider(res.professional?.videoProvider),
         customVideoUrl: res.professional?.customVideoUrl || ''
       };
       this.publicProfileUrl = this.buildPublicProfileUrl(this.profile.slug || '');
       this.loadPlanPricing(this.profile.officeCountry || 'CL');
+      this.loadGoogleConnectionStatus();
+      this.loadZoomConnectionStatus();
+      this.loadTeamsConnectionStatus();
 
       this.loadAvailability(() => this.finishDashboardRequest());
 
@@ -448,6 +655,19 @@ onFileSelected(event: Event) {
       }
     });
 
+  }
+
+  private normalizeVideoProvider(provider?: string | null): VideoProvider {
+    if (
+      provider === 'GOOGLE_MEET' ||
+      provider === 'ZOOM' ||
+      provider === 'MICROSOFT_TEAMS' ||
+      provider === 'CUSTOM'
+    ) {
+      return provider;
+    }
+
+    return 'CONNECTA_AUTO';
   }
 
   loadAvailability(onDone?: () => void): void {
@@ -620,12 +840,44 @@ onFileSelected(event: Event) {
       errors.push('Para atencion presencial debes indicar direccion, ciudad y pais.');
     }
 
+    if (['PRESENTIAL', 'BOTH'].includes(this.profile.attentionMode)) {
+      const address = this.normalizeText(this.profile.officeAddress);
+      const city = this.normalizeText(this.profile.officeCity);
+      const region = this.normalizeText(this.profile.officeRegion);
+      const country = this.normalizeText(this.profile.officeCountry);
+      const instructions = this.normalizeText(this.profile.arrivalInstructions);
+
+      if (address && (address.length < 8 || address.length > 140)) {
+        errors.push('La direccion debe tener entre 8 y 140 caracteres.');
+      }
+
+      if (city && (city.length < 2 || city.length > 60)) {
+        errors.push('La ciudad debe tener entre 2 y 60 caracteres.');
+      }
+
+      if (region.length > 60) {
+        errors.push('La region debe tener maximo 60 caracteres.');
+      }
+
+      if (country && (country.length < 2 || country.length > 40)) {
+        errors.push('El pais debe tener entre 2 y 40 caracteres.');
+      }
+
+      if (instructions.length > 300) {
+        errors.push('Las instrucciones de llegada deben tener maximo 300 caracteres.');
+      }
+
+      if (this.containsDirectContact([address, city, region, country, instructions].join(' '))) {
+        errors.push('No incluyas telefono, correo, enlaces ni redes sociales en la direccion presencial.');
+      }
+    }
+
     if (
       this.profile.attentionMode !== 'PRESENTIAL' &&
-      ['GOOGLE_MEET', 'ZOOM', 'CUSTOM'].includes(this.profile.videoProvider) &&
+      this.profile.videoProvider === 'CUSTOM' &&
       !this.profile.customVideoUrl
     ) {
-      errors.push('Para Google Meet, Zoom o enlace personalizado debes indicar el enlace de videollamada.');
+      errors.push('Para enlace propio debes indicar el enlace de videollamada.');
     }
 
     for (const item of this.availability as AgendaDay[]) {
@@ -677,6 +929,26 @@ onFileSelected(event: Event) {
     }
 
     return errors;
+  }
+
+  private normalizeText(value?: string | null): string {
+    return String(value || '').trim().replace(/\s+/g, ' ');
+  }
+
+  private containsDirectContact(value: string): boolean {
+    const text = this.normalizeText(value).toLowerCase();
+
+    if (!text) return false;
+
+    const patterns = [
+      /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i,
+      /(https?:\/\/|www\.|[a-z0-9-]+\.(com|cl|es|net|org))/i,
+      /(\+?\d[\d\s().-]{7,}\d)/,
+      /(@[a-z0-9._-]{3,})/i,
+      /(whatsapp|instagram|facebook|linkedin|telegram|wa\.me|t\.me)/i,
+    ];
+
+    return patterns.some((pattern) => pattern.test(text));
   }
 
   isValidTime(value: string): boolean {

@@ -1,10 +1,11 @@
-import { Routes } from '@angular/router';
+﻿import { Routes } from '@angular/router';
 import { professionalGuard } from './core/guards/professional.guard';
 import { adminGuard } from './core/guards/admin.guard';
+import { appUserGuard } from './core/guards/app-user.guard';
 
 export const routes: Routes = [
 
-  // 🔐 LOGIN
+  // ðŸ” LOGIN
   {
     path: 'login',
     loadComponent: () =>
@@ -28,21 +29,22 @@ export const routes: Routes = [
       import('./pages/legal/legal-page.component').then(m => m.LegalPageComponent)
   },
 
-  // 📱 TABS
+  // ðŸ“± TABS
   {
     path: 'tabs',
+    canActivate: [appUserGuard],
     loadComponent: () =>
       import('./pages/tabs/tabs.component').then(m => m.TabsComponent),
     children: [
 
-      // 🏠 HOME
+      // ðŸ  HOME
       {
         path: 'home',
         loadComponent: () =>
           import('./pages/home/home.component').then(m => m.HomePage),
       },
 
-      // 📅 CITAS USUARIO
+      // ðŸ“… CITAS USUARIO
       {
         path: 'appointments',
         loadComponent: () =>
@@ -50,7 +52,7 @@ export const routes: Routes = [
             .then(m => m.MyAppointmentsComponent),
       },
 
-      // 👤 PERFIL USUARIO (🔥 ESTE ES EL CORRECTO)
+      // ðŸ‘¤ PERFIL USUARIO (ðŸ”¥ ESTE ES EL CORRECTO)
       {
         path: 'profile',
         loadComponent: () =>
@@ -71,7 +73,7 @@ export const routes: Routes = [
             .then(m => m.AdminSupportComponent),
       },
 
-      // 🧑‍⚕️ DETALLE PROFESIONAL
+      // ðŸ§‘â€âš•ï¸ DETALLE PROFESIONAL
       {
         path: 'professional/:id',
         loadComponent: () =>
@@ -79,7 +81,7 @@ export const routes: Routes = [
             .then(m => m.ProfessionalDetailComponent),
       },
 
-      // 🧑‍⚕️ DASHBOARD PROFESIONAL (separado)
+      // ðŸ§‘â€âš•ï¸ DASHBOARD PROFESIONAL (separado)
       {
         path: 'professional-dashboard',
         canActivate: [professionalGuard],
@@ -101,13 +103,58 @@ export const routes: Routes = [
       m => m.ChatDetailComponent
     ),
 },
-      // 🔥 DEFAULT TAB
+      // ðŸ”¥ DEFAULT TAB
       {
         path: '',
         redirectTo: 'home',
         pathMatch: 'full',
       }
     ]
+  },
+
+  {
+    path: 'admin',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./pages/admin-layout/admin-layout.component')
+        .then(m => m.AdminLayoutComponent),
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./pages/admin-dashboard/admin-dashboard.component')
+            .then(m => m.AdminDashboardComponent),
+      },
+      {
+        path: 'support',
+        loadComponent: () =>
+          import('./pages/admin-support/admin-support.component')
+            .then(m => m.AdminSupportComponent),
+      },
+      {
+        path: 'users',
+        loadComponent: () =>
+          import('./pages/admin-users/admin-users.component')
+            .then(m => m.AdminUsersComponent),
+      },
+      {
+        path: 'professionals',
+        loadComponent: () =>
+          import('./pages/admin-professionals/admin-professionals.component')
+            .then(m => m.AdminProfessionalsComponent),
+      },
+      {
+        path: 'messages/:id',
+        loadComponent: () =>
+          import('./pages/chat-detail/chat-detail.component')
+            .then(m => m.ChatDetailComponent),
+      },
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full',
+      },
+    ],
   },
 
 
@@ -117,18 +164,25 @@ export const routes: Routes = [
       import('./pages/public-professional/public-professional.component')
         .then(m => m.PublicProfessionalComponent),
   },
-  // 🔥 INICIO
+  {
+    path: 'meeting/:appointmentId/:token',
+    loadComponent: () =>
+      import('./pages/meeting/meeting.component')
+        .then(m => m.MeetingComponent),
+  },
+  // ðŸ”¥ INICIO
   {
     path: '',
     redirectTo: 'login',
     pathMatch: 'full'
   },
 
-  // 🔁 fallback
+  // ðŸ” fallback
   {
     path: '**',
     redirectTo: 'login'
   }
 ];
+
 
 

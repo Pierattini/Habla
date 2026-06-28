@@ -216,6 +216,33 @@ ion-datetime {
   font-weight: 900;
 }
 
+.review-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.review-item {
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-primary-light) 6%, var(--app-surface));
+}
+
+.review-item strong {
+  color: var(--app-primary);
+  font-weight: 900;
+}
+
+.review-item p {
+  margin: 8px 0;
+}
+
+.review-item small {
+  color: var(--app-muted);
+  font-weight: 800;
+}
+
 ion-button {
   --border-radius: var(--app-radius-md);
   text-transform: none;

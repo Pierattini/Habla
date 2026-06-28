@@ -71,6 +71,13 @@ export class AppointmentsService {
     );
   }
 
+  completeAppointment(id: string) {
+    return this.http.patch(
+      `${this.api}/appointments/${id}/complete`,
+      {}
+    );
+  }
+
   rescheduleAppointment(id: string, date: string) {
     return this.http.patch(
       `${this.api}/appointments/${id}/reschedule`,

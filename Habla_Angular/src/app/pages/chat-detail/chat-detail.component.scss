@@ -4,21 +4,59 @@
   color: var(--app-text);
 }
 
-ion-toolbar {
-  --background: var(--app-surface);
-  --color: var(--app-text);
+.chat-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--app-surface);
   border-bottom: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
+  box-shadow: 0 8px 22px rgba(31, 41, 55, 0.06);
 }
 
-ion-title {
-  font-weight: 800;
+.chat-header-inner {
+  display: grid;
+  grid-template-columns: minmax(88px, 1fr) auto minmax(88px, 1fr);
+  align-items: center;
+  max-width: 680px;
+  min-height: 56px;
+  margin: 0 auto;
+  padding: 0 14px;
 }
 
-ion-button {
-  --border-radius: var(--app-radius-md);
-  --color: var(--app-primary);
-  font-weight: 800;
-  text-transform: none;
+.chat-header h1 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+
+.back-button {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--app-radius-md);
+  background: transparent;
+  color: var(--app-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.back-button span {
+  color: var(--app-muted);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.header-spacer {
+  width: 88px;
 }
 
 .chat-content {

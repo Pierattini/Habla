@@ -238,6 +238,150 @@
   box-shadow: 0 14px 28px rgba(168, 85, 247, 0.13);
 }
 
+.profession-picker {
+  position: relative;
+  display: grid;
+  gap: 12px;
+}
+
+.profession-search-field {
+  display: block;
+}
+
+.profession-search-field span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--app-text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.profession-search-field input {
+  width: 100%;
+  height: 58px;
+  padding: 0 18px;
+  border: 1px solid rgba(168, 85, 247, 0.16);
+  border-radius: 22px;
+  outline: none;
+  background: #fcfaff;
+  color: var(--app-text);
+  font: inherit;
+  font-size: 16px;
+  box-shadow: 0 14px 34px rgba(168, 85, 247, 0.08);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.profession-search-field input:focus {
+  border-color: var(--app-primary-light);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.12), 0 18px 42px rgba(168, 85, 247, 0.13);
+}
+
+.profession-suggestions {
+  display: grid;
+  gap: 8px;
+  max-height: 310px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid rgba(168, 85, 247, 0.14);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 22px 48px rgba(31, 41, 55, 0.14);
+  animation: fadeSlideIn 0.18s ease;
+}
+
+.profession-suggestions button,
+.selected-profession {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--app-text);
+  font: inherit;
+  text-align: left;
+}
+
+.profession-suggestions button {
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.profession-suggestions button:hover,
+.profession-suggestions button:focus {
+  background: rgba(168, 85, 247, 0.08);
+  transform: translateY(-1px);
+}
+
+.profession-suggestions strong,
+.selected-profession strong {
+  display: block;
+  color: var(--app-text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.profession-suggestions span,
+.selected-profession span {
+  display: block;
+  margin-top: 3px;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.profession-suggestions .custom-option {
+  border: 1px dashed rgba(168, 85, 247, 0.34);
+  background: rgba(168, 85, 247, 0.06);
+}
+
+.selected-profession {
+  border: 1px solid rgba(168, 85, 247, 0.16);
+  background: rgba(168, 85, 247, 0.08);
+}
+
+.selected-profession button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(168, 85, 247, 0.22);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--app-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.custom-profession-field small {
+  display: block;
+  margin-top: 7px;
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.custom-profession-field {
+  animation: fadeSlideIn 0.2s ease;
+}
+
+.custom-profession-field.valid input {
+  border-color: color-mix(in srgb, var(--app-success) 60%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--app-success) 12%, transparent);
+}
+
+.custom-profession-field.invalid input {
+  border-color: color-mix(in srgb, var(--app-primary) 70%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--app-primary) 12%, transparent);
+}
+
 .role-card {
   min-height: 132px;
   padding: 16px;
@@ -333,6 +477,79 @@
   box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.12);
 }
 
+.field input.valid {
+  border-color: color-mix(in srgb, var(--app-success) 72%, #ffffff);
+  background: color-mix(in srgb, var(--app-success) 7%, #ffffff);
+}
+
+.field input.invalid {
+  border-color: color-mix(in srgb, #ef4444 68%, #ffffff);
+  background: color-mix(in srgb, #ef4444 5%, #ffffff);
+}
+
+.field small {
+  display: block;
+  margin-top: 7px;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  transition: color 0.18s ease;
+}
+
+.field small.ok {
+  color: var(--app-success);
+}
+
+.field small.error {
+  color: #b91c1c;
+}
+
+.password-control {
+  position: relative;
+}
+
+.password-control input {
+  padding-right: 92px;
+}
+
+.password-control button {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  min-width: 74px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.1);
+  color: var(--app-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  transform: translateY(-50%);
+}
+
+.password-strength {
+  height: 7px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.1);
+}
+
+.password-strength span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #f59e0b, var(--app-primary-light));
+  transition: width 0.22s ease;
+}
+
+.password-strength.strong span {
+  background: linear-gradient(135deg, var(--app-success), var(--app-primary-light));
+}
+
 .consent-row {
   display: flex;
   align-items: flex-start;
@@ -351,10 +568,19 @@
 }
 
 .consent-row a,
-.legal-links a {
+.legal-links a,
+.recaptcha-notice a {
   color: var(--app-primary);
   font-weight: 900;
   text-decoration: none;
+}
+
+.recaptcha-notice {
+  margin: 10px 0 0;
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.45;
 }
 
 .form-error {
@@ -466,6 +692,18 @@
   50% {
     transform: scale(1.04);
     box-shadow: 0 0 0 16px rgba(168, 85, 247, 0);
+  }
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

@@ -1,0 +1,96 @@
+<section class="admin-list-page">
+  <header class="section-header">
+    <div>
+      <span>Administracion</span>
+      <h2>Usuarios</h2>
+      <p>{{ total }} usuarios encontrados</p>
+    </div>
+  </header>
+
+  <section class="filters">
+    <input type="search" [(ngModel)]="search" (ngModelChange)="resetAndLoad()" placeholder="Buscar nombre o email" />
+    <select [(ngModel)]="role" (ngModelChange)="resetAndLoad()">
+      <option *ngFor="let item of roles" [value]="item">{{ getRoleLabel(item) }}</option>
+    </select>
+    <select [(ngModel)]="country" (ngModelChange)="resetAndLoad()">
+      <option value="">Todos los paises</option>
+      <option value="CL">Chile</option>
+      <option value="ES">España</option>
+    </select>
+    <select [(ngModel)]="isActive" (ngModelChange)="resetAndLoad()">
+      <option value="">Todos los estados</option>
+      <option value="true">Activos</option>
+      <option value="false">Inactivos</option>
+    </select>
+  </section>
+
+  <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  <p class="loading" *ngIf="loading">Cargando usuarios...</p>
+
+  <div class="table-card" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Pais</th>
+          <th>Estado</th>
+          <th>Creado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of users">
+          <td>
+            <ng-container *ngIf="editingId !== user.id; else editName">
+              <strong>{{ user.name || 'Sin nombre' }}</strong>
+              <small>{{ user.email }}</small>
+            </ng-container>
+            <ng-template #editName>
+              <input [(ngModel)]="draft.name" placeholder="Nombre" />
+              <input [(ngModel)]="draft.email" placeholder="Email" />
+            </ng-template>
+          </td>
+          <td>
+            <select *ngIf="editingId === user.id; else roleText" [(ngModel)]="draft.role">
+              <option value="CUSTOMER">Paciente</option>
+              <option value="PROFESSIONAL">Profesional</option>
+              <option value="ADMIN">Administrador</option>
+            </select>
+            <ng-template #roleText>{{ getRoleLabel(user.role) }}</ng-template>
+          </td>
+          <td>
+            <select *ngIf="editingId === user.id; else countryText" [(ngModel)]="draft.country">
+              <option value="">Sin pais</option>
+              <option value="CL">Chile</option>
+              <option value="ES">España</option>
+            </select>
+            <ng-template #countryText>{{ user.country || 'Sin pais' }}</ng-template>
+          </td>
+          <td>
+            <span class="badge" [class.off]="!user.isActive">
+              {{ user.isActive ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+          <td>{{ user.createdAt | date:'dd/MM/yyyy' }}</td>
+          <td class="actions">
+            <button *ngIf="editingId !== user.id" type="button" (click)="startEdit(user)">Editar</button>
+            <button *ngIf="editingId === user.id" type="button" (click)="save(user)">Guardar</button>
+            <button *ngIf="editingId === user.id" type="button" class="ghost" (click)="cancelEdit()">Cancelar</button>
+            <button type="button" class="ghost" (click)="toggleActive(user)">
+              {{ user.isActive ? 'Desactivar' : 'Activar' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <nav class="pagination" *ngIf="totalPages > 1">
+    <button type="button" [disabled]="page === 1" (click)="load(page - 1)">Anterior</button>
+    <button type="button" *ngFor="let item of getPages()" [class.active]="item === page" (click)="load(item)">
+      {{ item }}
+    </button>
+    <button type="button" [disabled]="page === totalPages" (click)="load(page + 1)">Siguiente</button>
+  </nav>
+</section>

@@ -1,9 +1,10 @@
 <ion-header>
-  <ion-toolbar>
+  <ion-toolbar class="detail-toolbar">
 
     <ion-buttons slot="start">
-      <ion-button fill="clear" (click)="goHome()">
-        â†
+      <ion-button class="back-button" fill="clear" (click)="goHome()">
+        <span aria-hidden="true">&larr;</span>
+        Volver
       </ion-button>
     </ion-buttons>
 
@@ -25,8 +26,15 @@
           <img [src]="professional.image || ('https://i.pravatar.cc/150?u=' + professional.id)" />
         </ion-avatar>
 
-        <div class="message-icon" (click)="goToChat()">
-          ðŸ’¬
+        <div
+          class="message-icon"
+          role="button"
+          tabindex="0"
+          aria-label="Enviar mensaje"
+          (click)="goToChat()"
+          (keydown.enter)="goToChat()"
+        >
+          <span aria-hidden="true"></span>
         </div>
 
       </div>
@@ -287,3 +295,4 @@
   </div>
 
 </ion-content>
+
