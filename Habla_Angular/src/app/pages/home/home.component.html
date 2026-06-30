@@ -272,7 +272,7 @@
     </div>
   </div>
 
-  <div>
+  <div *ngIf="hasActiveProfessionalSearch()">
     <div *ngIf="loading" class="center">
       <ion-spinner></ion-spinner>
       <p>Cargando profesionales...</p>

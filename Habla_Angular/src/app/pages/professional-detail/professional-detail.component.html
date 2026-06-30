@@ -198,6 +198,10 @@
       </ion-card-header>
 
       <ion-card-content>
+        <p class="document-helper document-intro">
+          Elige solo si necesitas boleta o factura para esta reserva.
+        </p>
+
         <div class="document-options">
           <label
             class="document-option"
@@ -211,8 +215,8 @@
               (ngModelChange)="$any(this).onDocumentModeChange($event)"
             />
             <span>
-              <strong>No necesito documento</strong>
-              <small>Reserva sin boleta o factura asociada.</small>
+              <strong>No necesito boleta/factura</strong>
+              <small>No necesito documento tributario para esta reserva.</small>
             </span>
           </label>
 
@@ -228,31 +232,8 @@
               (ngModelChange)="$any(this).onDocumentModeChange($event)"
             />
             <span>
-              <strong>Lo emite el profesional</strong>
-              <small>Quedara pendiente para que el profesional lo cargue o marque como emitido.</small>
-            </span>
-          </label>
-
-          <label
-            class="document-option"
-            [class.active]="$any(this).selectedDocumentMode === 'AUTOMATED'"
-            [class.disabled]="!professional?.documentAutomationEnabled"
-          >
-            <input
-              type="radio"
-              name="documentMode"
-              value="AUTOMATED"
-              [disabled]="!professional?.documentAutomationEnabled"
-              [ngModel]="$any(this).selectedDocumentMode"
-              (ngModelChange)="$any(this).onDocumentModeChange($event)"
-            />
-            <span>
-              <strong>Gestionar con Conecta</strong>
-              <small>
-                {{ professional?.documentAutomationEnabled
-                  ? 'Conecta gestionara el documento tributario.'
-                  : 'Este profesional aun no activo gestion por Conecta.' }}
-              </small>
+              <strong>Si necesito boleta/factura</strong>
+              <small>Completa los datos para que el profesional pueda emitir el documento.</small>
             </span>
           </label>
         </div>
@@ -263,31 +244,79 @@
 
         <p
           class="document-helper warning"
-          *ngIf="$any(this).selectedDocumentMode !== 'NONE' && !$any(this).customerTaxReady"
+          *ngIf="$any(this).selectedDocumentMode !== 'NONE' && !$any(this).customerTaxData"
         >
-          Al confirmar te pediremos los datos minimos para emitir el documento.
+          Al solicitar la cita te pediremos nombre o razon social, documento tributario, direccion y telefono.
         </p>
 
-        <p
-          class="document-helper warning"
-          *ngIf="$any(this).selectedDocumentMode !== 'NONE' && !$any(this).professionalTaxReady"
+        <div
+          class="tax-request-form"
+          *ngIf="$any(this).selectedDocumentMode !== 'NONE' && $any(this).customerTaxData as taxData"
         >
-          Este profesional debe completar sus datos tributarios para emitir documentos.
-        </p>
+          <label>
+            <span>Nombre o razon social *</span>
+            <input
+              type="text"
+              maxlength="120"
+              placeholder="Ej: Maria Rodriguez"
+              [(ngModel)]="taxData.taxName"
+            />
+          </label>
+
+          <label>
+            <span>RUT / NIF / documento tributario *</span>
+            <input
+              type="text"
+              maxlength="20"
+              placeholder="Ej: 12.345.678-9"
+              [(ngModel)]="taxData.taxId"
+            />
+          </label>
+
+          <label>
+            <span>Direccion *</span>
+            <input
+              type="text"
+              maxlength="160"
+              placeholder="Ej: Av. Providencia 123"
+              [(ngModel)]="taxData.taxAddress"
+            />
+          </label>
+
+          <label>
+            <span>Telefono *</span>
+            <input
+              type="tel"
+              maxlength="30"
+              placeholder="Ej: +56 9 1234 5678"
+              [(ngModel)]="taxData.taxPhone"
+            />
+          </label>
+
+          <label>
+            <span>Comentario para la boleta/factura</span>
+            <textarea
+              rows="3"
+              maxlength="300"
+              placeholder="Informacion adicional opcional"
+              [(ngModel)]="taxData.taxComment"
+            ></textarea>
+          </label>
+
+          <p
+            class="document-helper warning"
+            *ngIf="$any(this).getCustomerTaxValidationMessage()"
+          >
+            {{ $any(this).getCustomerTaxValidationMessage() }}
+          </p>
+        </div>
       </ion-card-content>
     </ion-card>
-
-    <ion-text
-      color="success"
-      *ngIf="successMessage"
-      class="success-message">
-      {{ successMessage }}
-    </ion-text>
 
     <ion-button
       expand="block"
       class="confirm-btn"
-      [disabled]="!selectedHour || isBooking"
+      [disabled]="!selectedHour || isBooking || !$any(this).canSubmitBooking()"
       (click)="bookAppointment()">
       {{ isBooking ? 'Reservando...' : 'Solicitar cita' }}
     </ion-button>
@@ -296,3 +325,34 @@
 
 </ion-content>
 
+<div
+  *ngIf="$any(this).messageOpen"
+  class="conecta-message-backdrop"
+  role="presentation"
+  (click)="$any(this).closeMessage()"
+>
+  <section
+    class="conecta-message-card"
+    [class]="$any(this).messageType"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="$any(this).messageTitle"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="conecta-message-icon" aria-hidden="true">
+      <span *ngIf="$any(this).messageType === 'success'">✓</span>
+      <span *ngIf="$any(this).messageType === 'info'">i</span>
+      <span *ngIf="$any(this).messageType === 'warning'">!</span>
+      <span *ngIf="$any(this).messageType === 'error'">x</span>
+    </div>
+
+    <div class="conecta-message-copy">
+      <h2>{{ $any(this).messageTitle }}</h2>
+      <p>{{ $any(this).messageDescription }}</p>
+    </div>
+
+    <button type="button" (click)="$any(this).closeMessage()">
+      Aceptar
+    </button>
+  </section>
+</div>

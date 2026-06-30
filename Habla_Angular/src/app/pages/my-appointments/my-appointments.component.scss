@@ -217,6 +217,86 @@ ion-card {
   font-weight: 800;
 }
 
+.appointment-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.appointment-summary div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-primary-light) 5%, var(--app-surface));
+}
+
+.appointment-summary span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.appointment-summary strong {
+  display: block;
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.appointment-details-toggle {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 22%, transparent);
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-primary-light) 8%, var(--app-surface));
+  color: var(--app-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.appointment-details-toggle i {
+  font-style: normal;
+  font-size: 11px;
+}
+
+.appointment-details-toggle + .detail-note,
+.appointment-details-toggle ~ .appointment-modality,
+.appointment-details-toggle ~ div .documento-tributario {
+  animation: accordionIn 180ms ease-out;
+}
+
+.detail-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--app-radius-md);
+  background: #fff7ed;
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+@keyframes accordionIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .calendar-modal-backdrop,
 .penalty-modal-backdrop {
   position: fixed;
@@ -689,10 +769,40 @@ ion-card {
 
 .acciones-secundarias {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
   margin-top: 6px;
+}
+
+.action-row {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.action-row-payment,
+.action-row-secondary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.action-row-message {
+  display: flex;
+  justify-content: center;
+}
+
+.action-row-message ion-button {
+  min-width: 132px;
+}
+
+.action-row-extra {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 2px;
+}
+
+.action-row ion-button {
+  width: 100%;
+  margin: 0;
 }
 
 ion-button {
@@ -752,4 +862,355 @@ ion-button[size="small"] {
 
 .disabled {
   opacity: 0.58;
+}
+
+.review-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(17, 24, 39, 0.42);
+}
+
+.review-modal {
+  position: relative;
+  width: min(340px, 100%);
+  padding: 26px 24px 20px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: var(--app-radius-md);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-strong);
+}
+
+.review-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-primary-light) 12%, var(--app-surface));
+  color: var(--app-primary);
+  font-weight: 900;
+}
+
+.review-modal h2 {
+  margin: 0 0 12px;
+  color: var(--app-text);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.review-modal p {
+  margin: 0;
+  color: var(--app-muted);
+  line-height: 1.3;
+}
+
+.review-stars {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.review-stars button {
+  width: 42px;
+  height: 42px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 20%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--app-primary-light) 8%, var(--app-surface));
+  color: color-mix(in srgb, var(--app-muted) 70%, #ffffff);
+  font-size: 24px;
+}
+
+.review-stars button.active {
+  border-color: var(--app-primary);
+  color: var(--app-primary);
+}
+
+.review-field,
+.review-field span,
+.review-field small {
+  display: block;
+}
+
+.review-field span {
+  margin-bottom: 8px;
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.review-field textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: var(--app-radius-md);
+  outline: none;
+  background: #fcfaff;
+  color: var(--app-text);
+  font: inherit;
+  resize: vertical;
+}
+
+.review-field small {
+  margin-top: 6px;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.review-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.review-actions button {
+  min-height: 46px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 18%, transparent);
+  border-radius: var(--app-radius-md);
+  font-weight: 900;
+}
+
+.review-actions .secondary {
+  background: var(--app-surface);
+  color: var(--app-primary);
+}
+
+.review-actions .primary {
+  border: 0;
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  color: #ffffff;
+}
+
+/* Refuerzo visual de tarjetas de citas: mantiene datos y orden, solo mejora presentación. */
+:host .card-cita {
+  max-width: 100%;
+  border-radius: 22px;
+}
+
+:host .card-cita ion-card-content {
+  gap: 14px;
+  padding: 16px;
+}
+
+:host .card-cita .header-cita {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+:host .card-cita .avatar {
+  width: 74px !important;
+  height: 74px !important;
+  min-width: 74px !important;
+  border-radius: 22px;
+  overflow: hidden;
+}
+
+:host .card-cita .avatar img {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  object-fit: cover;
+}
+
+:host .card-cita img.appointment-photo {
+  display: block !important;
+  width: 74px !important;
+  height: 74px !important;
+  max-width: 74px !important;
+  min-width: 74px !important;
+  object-fit: cover !important;
+  border-radius: 22px;
+}
+
+:host .card-cita .info {
+  min-width: 0;
+  gap: 5px;
+}
+
+:host .card-cita .nombre {
+  font-size: 16px;
+  line-height: 1.18;
+}
+
+:host .card-cita .especialidad,
+:host .card-cita .extra {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+:host .card-cita .extra {
+  color: var(--app-text);
+}
+
+:host .card-cita .estado {
+  margin: 0;
+  box-shadow: none;
+}
+
+:host .card-cita .appointment-summary {
+  grid-template-columns: 1fr;
+}
+
+:host .card-cita .appointment-summary div {
+  padding: 11px 13px;
+}
+
+:host .card-cita .appointment-details-toggle {
+  min-height: 42px;
+  margin-top: 2px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--app-primary) 12%, #fff),
+    color-mix(in srgb, var(--app-primary-light) 16%, #fff)
+  );
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--app-primary) 10%, transparent);
+}
+
+:host .card-cita .appointment-details-toggle span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--app-primary);
+}
+
+:host .card-cita .appointment-details-toggle i {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--app-surface);
+  color: var(--app-primary);
+  box-shadow: 0 6px 12px color-mix(in srgb, var(--app-primary) 10%, transparent);
+}
+
+:host .card-cita .appointment-modality,
+:host .card-cita .documento-tributario {
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--app-primary-light) 8%, #fff), #fff);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+:host .card-cita .appointment-modality {
+  padding: 12px;
+}
+
+:host .card-cita .appointment-modality div {
+  display: grid;
+  grid-template-columns: minmax(88px, auto) 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+:host .card-cita .appointment-modality span {
+  width: max-content;
+  max-width: 100%;
+  padding: 6px 10px;
+}
+
+:host .card-cita .appointment-modality strong {
+  justify-self: end;
+  text-align: right;
+  line-height: 1.25;
+}
+
+:host .card-cita .documento-tributario {
+  padding: 10px;
+  gap: 8px;
+}
+
+:host .card-cita .documento-toggle {
+  align-items: center;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
+  border-radius: 16px;
+  background: #fff;
+}
+
+:host .card-cita .documento-toggle span {
+  margin-bottom: 5px;
+  line-height: 1.2;
+}
+
+:host .card-cita .documento-toggle p {
+  max-width: 180px;
+  line-height: 1.35;
+}
+
+:host .card-cita .documento-toggle-side strong {
+  max-width: 118px;
+  text-align: center;
+  line-height: 1.15;
+}
+
+:host .card-cita .documento-panel {
+  padding: 4px 2px 2px;
+}
+
+:host .card-cita .documento-grid {
+  grid-template-columns: 1fr;
+}
+
+:host .card-cita .documento-grid div {
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
+}
+
+:host .card-cita .botones {
+  gap: 10px;
+}
+
+:host .card-cita ion-button {
+  min-width: 0;
+}
+
+:host .card-cita .btn-main::part(native),
+:host .card-cita .btn-sec::part(native),
+:host .card-cita .btn-principal::part(native) {
+  min-height: 34px;
+  padding-inline: 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+:host .card-cita .action-row-payment {
+  align-items: center;
+}
+
+:host .card-cita .action-row-secondary {
+  align-items: center;
+}
+
+@media (max-width: 380px) {
+  :host .card-cita ion-card-content {
+    padding: 14px;
+  }
+
+  :host .card-cita .header-cita {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  :host .card-cita .avatar {
+    width: 64px !important;
+    height: 64px !important;
+    min-width: 64px !important;
+    border-radius: 20px;
+  }
 }

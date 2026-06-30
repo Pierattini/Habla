@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { API_URL } from '../../core/config/api.config';
 import { AlertController } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
+import { ConectaMessageType } from '../../shared/conecta-message/conecta-message.component';
 //import { IonicModule } from '@ionic/angular';
 
 
@@ -23,7 +24,6 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonText,
   IonCard,
   IonCardHeader,
   IonCardTitle,
@@ -54,13 +54,13 @@ import {
     //IonGrid,
     //IonRow,
    // IonCol,
-    IonText,
     IonCard,
     IonCardHeader,
     IonCardTitle,
     IonCardContent,
     IonButtons,
-  ]
+  ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA]
 })
 export class ProfessionalDetailComponent {
 
@@ -75,13 +75,23 @@ export class ProfessionalDetailComponent {
   availableHours: string[] = [];
   selectedHour: string | null = null;
   isBooking: boolean = false;
-  successMessage: string = '';
-  selectedDocumentMode: 'NONE' | 'MANUAL' | 'AUTOMATED' = 'NONE';
+  messageOpen = false;
+  messageType: ConectaMessageType = 'info';
+  messageTitle = '';
+  messageDescription = '';
+  selectedDocumentMode: 'NONE' | 'MANUAL' = 'NONE';
   selectedAttentionMode: 'ONLINE' | 'PRESENTIAL' = 'ONLINE';
   wantsTaxDocumentByDefault = false;
   customerTaxReady = false;
   professionalTaxReady = false;
   customerProfile: any = null;
+  customerTaxData: {
+    taxName?: string;
+    taxId?: string;
+    taxAddress?: string;
+    taxPhone?: string;
+    taxComment?: string;
+  } | null = null;
 
   constructor(
   private route: ActivatedRoute,
@@ -99,7 +109,6 @@ export class ProfessionalDetailComponent {
       this.professional = null;
       this.availableHours = [];
       this.selectedHour = null;
-      this.successMessage = '';
       this.selectedDocumentMode = 'NONE';
       this.selectedAttentionMode = 'ONLINE';
       this.loaded = false;
@@ -117,10 +126,7 @@ export class ProfessionalDetailComponent {
   if (!value) return;
 
   this.selectedDate = value.split('T')[0];
-  this.successMessage = '';
   this.loaded = false;
-  console.log('FECHA CAMBIADA:', this.selectedDate);
-
   this.loadAvailability();
 }
   getProfessional() {
@@ -181,8 +187,6 @@ export class ProfessionalDetailComponent {
 )
   .subscribe({
    next: (res: any[]) => {
-  console.log('HORAS REALES:', res);
-
   this.availableHours = res;
   this.loading = false;
   this.loaded = true;
@@ -221,19 +225,30 @@ async bookAppointment() {
   const token = localStorage.getItem('token');
 
   if (!token) {
-    alert('Debes iniciar sesión');
+    this.showMessage(
+      'warning',
+      'Inicia sesion',
+      'Debes iniciar sesion para solicitar una cita.'
+    );
     return;
   }
   if (this.selectedDocumentMode !== 'NONE') {
-    if (!this.customerTaxReady) {
-      const shouldContinue = await this.openCustomerTaxDataModal();
+    this.ensureCustomerTaxDraft();
 
-      if (!shouldContinue) return;
+    const validationError = this.validateTaxPayload(this.customerTaxData || {});
+
+    if (validationError) {
+      this.showMessage(
+        'warning',
+        'Datos tributarios incompletos',
+        validationError
+      );
+      return;
     }
 
-    if (!this.professionalTaxReady) {
+    if (this.professional?.documentAutomationEnabled && !this.professionalTaxReady) {
       const shouldContinue = await this.confirmBookingWithoutDocument(
-        'Este profesional debe completar sus datos tributarios antes de emitir documentos.'
+        'Este profesional debe completar sus datos tributarios para activar la emision automatica.'
       );
 
       if (!shouldContinue) return;
@@ -243,7 +258,6 @@ async bookAppointment() {
 
 
   this.isBooking = true;
-  this.successMessage = '';
 
   const [hour, minute] = this.selectedHour.split(':');
 
@@ -254,16 +268,15 @@ async bookAppointment() {
     professionalId: this.professional.id,
     date: date.toISOString(),
     documentRequested: this.selectedDocumentMode !== 'NONE',
-    documentMode: this.selectedDocumentMode !== 'NONE'
-      ? this.selectedDocumentMode
-      : undefined,
     documentCurrency: 'CLP',
-    attentionMode: this.selectedAttentionMode
+    attentionMode: this.selectedAttentionMode,
+    customerTaxName: this.customerTaxData?.taxName,
+    customerTaxId: this.customerTaxData?.taxId,
+    customerTaxAddress: this.customerTaxData?.taxAddress,
+    customerTaxPhone: this.customerTaxData?.taxPhone,
+    customerTaxComment: this.customerTaxData?.taxComment,
   };
 
-
-  console.log('POST → /appointments');
-  console.log('PAYLOAD:', payload);
 
   this.http.post(
     `${API_URL}/appointments`,
@@ -272,13 +285,19 @@ async bookAppointment() {
     next: () => {
       console.log('✅ CITA OK');
 
-      this.successMessage = '✅ Cita reservada correctamente';
       this.selectedHour = null;
       this.isBooking = false;
+      this.showMessage(
+        'success',
+        'Reserva realizada',
+        'Tu cita fue registrada correctamente en Conecta.'
+      );
 
       // 👇 navegar después
       setTimeout(() => {
-        this.router.navigate(['/tabs/appointments']);
+        this.router.navigate(['/tabs/appointments'], {
+          queryParams: { filter: 'upcoming' },
+        });
       }, 800);
     },
     error: (err) => {
@@ -287,7 +306,11 @@ async bookAppointment() {
       // 🔥 MUY IMPORTANTE (esto te faltaba)
       this.isBooking = false;
 
-      alert(err?.error?.message || 'Error al reservar');
+      this.showMessage(
+        'error',
+        'No pudimos reservar',
+        err?.error?.message || 'No fue posible completar la reserva. Intentalo nuevamente.'
+      );
     }
   });
 }
@@ -341,131 +364,6 @@ async confirmBookingWithoutDocument(message: string): Promise<boolean> {
   });
 }
 
-async openCustomerTaxDataModal(): Promise<boolean> {
-  return new Promise(async (resolve) => {
-    let settled = false;
-    let taxAlert: HTMLIonAlertElement;
-
-    const current = this.customerProfile || {};
-    const fallbackEmail = current.email || '';
-
-    taxAlert = await this.alertCtrl.create({
-      header: 'Datos para documento',
-      message: 'Completa estos datos una sola vez. RUT/NIF/DNI: 6 a 20 caracteres. Nombre: 3 a 120. Email valido. Ciudad: 2 a 80. Direccion: 5 a 160.',
-      inputs: [
-        {
-          name: 'taxName',
-          type: 'text',
-          value: current.taxName || current.name || '',
-          placeholder: 'Nombre completo o razon social',
-          attributes: {
-            maxlength: 120,
-          },
-        },
-        {
-          name: 'taxId',
-          type: 'text',
-          value: current.taxId || '',
-          placeholder: 'RUT / NIF / DNI',
-          attributes: {
-            maxlength: 20,
-            inputmode: 'text',
-          },
-        },
-        {
-          name: 'taxEmail',
-          type: 'email',
-          value: current.taxEmail || fallbackEmail,
-          placeholder: 'Correo para documento',
-          attributes: {
-            maxlength: 120,
-            inputmode: 'email',
-          },
-        },
-        {
-          name: 'taxCity',
-          type: 'text',
-          value: current.taxCity || '',
-          placeholder: 'Ciudad o comuna',
-          attributes: {
-            maxlength: 80,
-          },
-        },
-        {
-          name: 'taxAddress',
-          type: 'text',
-          value: current.taxAddress || '',
-          placeholder: 'Direccion tributaria',
-          attributes: {
-            maxlength: 160,
-          },
-        },
-      ],
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-        },
-        {
-          text: 'Guardar y continuar',
-          handler: (data) => {
-            const payload = {
-              taxName: this.cleanOptional(data.taxName),
-              taxId: this.cleanOptional(data.taxId),
-              taxEmail: this.cleanOptional(data.taxEmail) || fallbackEmail,
-              taxCity: this.cleanOptional(data.taxCity),
-              taxAddress: this.cleanOptional(data.taxAddress),
-              taxCountry: current.taxCountry || current.country || 'CL',
-            };
-
-            const missing = [
-              !payload.taxName ? 'nombre completo' : null,
-              !payload.taxId ? 'RUT / NIF / DNI' : null,
-              !payload.taxEmail ? 'correo' : null,
-              !payload.taxCity ? 'ciudad o comuna' : null,
-              !payload.taxAddress ? 'direccion' : null,
-            ].filter(Boolean);
-
-            if (missing.length > 0) {
-              alert(`Faltan datos para el documento: ${missing.join(', ')}.`);
-              return false;
-            }
-
-            const validationError = this.validateTaxPayload(payload);
-
-            if (validationError) {
-              alert(validationError);
-              return false;
-            }
-
-            this.auth.updateProfile(payload).subscribe({
-              next: (updatedUser: any) => {
-                this.updateCustomerTaxState(updatedUser);
-                settled = true;
-                taxAlert.dismiss(null, 'saved');
-                resolve(true);
-              },
-              error: () => {
-                alert('No se pudieron guardar los datos tributarios. Intenta nuevamente.');
-              },
-            });
-
-            return false;
-          },
-        },
-      ],
-    });
-
-    taxAlert.onDidDismiss().then((event) => {
-      if (!settled && event.role !== 'saved') {
-        resolve(false);
-      }
-    });
-
-    await taxAlert.present();
-  });
-}
-
 loadCustomerDocumentPreference() {
   const token = localStorage.getItem('token');
 
@@ -498,18 +396,19 @@ updateCustomerTaxState(user: any) {
 applyDefaultDocumentMode() {
   if (!this.wantsTaxDocumentByDefault || !this.professional) return;
 
-  this.selectedDocumentMode = this.professional.documentAutomationEnabled
-    ? 'AUTOMATED'
-    : 'MANUAL';
+  this.selectedDocumentMode = 'MANUAL';
+  this.ensureCustomerTaxDraft();
 }
 
 onDocumentModeChange(mode: 'NONE' | 'MANUAL' | 'AUTOMATED') {
-  if (mode === 'AUTOMATED' && !this.professional?.documentAutomationEnabled) {
-    this.selectedDocumentMode = 'MANUAL';
+  this.selectedDocumentMode = mode === 'NONE' ? 'NONE' : 'MANUAL';
+
+  if (this.selectedDocumentMode === 'NONE') {
+    this.customerTaxData = null;
     return;
   }
 
-  this.selectedDocumentMode = mode;
+  this.ensureCustomerTaxDraft();
 }
 
 onAttentionModeChange(mode: 'ONLINE' | 'PRESENTIAL') {
@@ -549,15 +448,37 @@ getVideoProviderLabel(): string {
 }
 
 getDocumentModeLabel(): string {
-  if (this.selectedDocumentMode === 'AUTOMATED') {
-    return 'Conecta gestionara el documento cuando el servicio este habilitado.';
-  }
-
   if (this.selectedDocumentMode === 'MANUAL') {
-    return 'El profesional emitira o subira el documento desde su panel.';
+    return 'Completa los datos para que el profesional pueda emitir el documento.';
   }
 
   return 'No se solicitara documento tributario para esta cita.';
+}
+
+canSubmitBooking(): boolean {
+  if (this.selectedDocumentMode === 'NONE') return true;
+
+  return !this.validateTaxPayload(this.customerTaxData || {});
+}
+
+getCustomerTaxValidationMessage(): string {
+  if (this.selectedDocumentMode === 'NONE') return '';
+
+  return this.validateTaxPayload(this.customerTaxData || {}) || 'Datos listos para enviar con la reserva.';
+}
+
+private ensureCustomerTaxDraft(): void {
+  if (this.customerTaxData) return;
+
+  const current = this.customerProfile || {};
+
+  this.customerTaxData = {
+    taxName: current.taxName || current.name || '',
+    taxId: current.taxId || '',
+    taxAddress: current.taxAddress || '',
+    taxPhone: current.phone || '',
+    taxComment: '',
+  };
 }
 
 private cleanOptional(value: string): string | undefined {
@@ -568,12 +489,12 @@ private cleanOptional(value: string): string | undefined {
 private validateTaxPayload(payload: {
   taxId?: string;
   taxName?: string;
-  taxEmail?: string;
   taxAddress?: string;
-  taxCity?: string;
+  taxPhone?: string;
+  taxComment?: string;
 }): string | null {
   const taxIdPattern = /^[a-zA-Z0-9.\-\s]{6,20}$/;
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const phonePattern = /^[+0-9\s().-]{6,30}$/;
 
   if (!payload.taxId || !taxIdPattern.test(payload.taxId)) {
     return 'El RUT / NIF / DNI debe tener entre 6 y 20 caracteres. Usa solo letras, numeros, puntos, guion o espacios.';
@@ -583,16 +504,16 @@ private validateTaxPayload(payload: {
     return 'El nombre tributario debe tener entre 3 y 120 caracteres.';
   }
 
-  if (!payload.taxEmail || payload.taxEmail.length > 120 || !emailPattern.test(payload.taxEmail)) {
-    return 'Ingresa un email tributario valido.';
-  }
-
-  if (!payload.taxCity || payload.taxCity.length < 2 || payload.taxCity.length > 80) {
-    return 'La ciudad o comuna debe tener entre 2 y 80 caracteres.';
-  }
-
   if (!payload.taxAddress || payload.taxAddress.length < 5 || payload.taxAddress.length > 160) {
-    return 'La direccion tributaria debe tener entre 5 y 160 caracteres.';
+    return 'La direccion debe tener entre 5 y 160 caracteres.';
+  }
+
+  if (!payload.taxPhone || !phonePattern.test(payload.taxPhone)) {
+    return 'El telefono debe tener entre 6 y 30 caracteres y usar un formato valido.';
+  }
+
+  if (payload.taxComment && payload.taxComment.length > 300) {
+    return 'El comentario debe tener maximo 300 caracteres.';
   }
 
   return null;
@@ -609,5 +530,18 @@ private recordProfileView(): void {
   ).subscribe({
     error: (err) => console.warn('No se pudo registrar vista de perfil:', err),
   });
+}
+
+showMessage(type: ConectaMessageType, title: string, description: string): void {
+  this.messageType = type;
+  this.messageTitle = title;
+  this.messageDescription = description;
+  this.messageOpen = true;
+  this.cdr.detectChanges();
+}
+
+closeMessage(): void {
+  this.messageOpen = false;
+  this.cdr.detectChanges();
 }
 }

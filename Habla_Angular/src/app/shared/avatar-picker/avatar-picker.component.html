@@ -1,0 +1,82 @@
+<div class="avatar-shell">
+  <img
+    class="avatar-preview"
+    [src]="previewImage"
+    alt="Avatar seleccionado"
+  />
+
+  <button
+    type="button"
+    class="avatar-edit"
+    (click)="open()"
+    aria-label="Editar avatar"
+  >
+    <span aria-hidden="true">✎</span>
+  </button>
+</div>
+
+<div
+  class="avatar-modal-backdrop"
+  *ngIf="isOpen"
+  (click)="close()"
+>
+  <section
+    class="avatar-modal"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="title"
+  >
+    <div class="avatar-modal-header">
+      <div>
+        <span>Foto de perfil</span>
+        <h3>{{ title }}</h3>
+      </div>
+
+      <button
+        type="button"
+        class="modal-close"
+        (click)="close()"
+        aria-label="Cerrar selector"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="modal-preview">
+      <img [src]="previewImage" alt="Vista previa" />
+    </div>
+
+    <label class="upload-option">
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        (change)="selectFile($event)"
+      />
+      <span>Subir fotografía</span>
+      <small>Galería, archivos o cámara en móvil</small>
+    </label>
+
+    <div class="avatar-options">
+      <button
+        type="button"
+        *ngFor="let avatar of defaultAvatars"
+        [class.active]="image === avatar"
+        (click)="selectAvatar(avatar)"
+        aria-label="Seleccionar avatar de color"
+      >
+        <img [src]="avatar" alt="" />
+      </button>
+    </div>
+
+    <button
+      type="button"
+      class="clear-option"
+      *ngIf="canClear && image"
+      (click)="clear()"
+    >
+      Usar avatar por defecto
+    </button>
+  </section>
+</div>

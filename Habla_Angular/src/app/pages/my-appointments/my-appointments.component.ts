@@ -1,4 +1,4 @@
-﻿import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+﻿import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ToastController, IonicModule, ModalController } from '@ionic/angular';
@@ -23,7 +23,12 @@ import {
   getStatusLabel as getStatusLabelHelper,
   groupByDate as groupByDateHelper
 } from './my-appointments.helpers';
-import { AppointmentReviewModalComponent, ReviewSubmitEvent } from './appointment-review-modal.component';
+
+type ReviewSubmitEvent = {
+  rating: number;
+  comment: string;
+};
+
 @Component({
   selector: 'app-my-appointments',
   standalone: true,
@@ -32,9 +37,8 @@ import { AppointmentReviewModalComponent, ReviewSubmitEvent } from './appointmen
     CommonModule,
     IonicModule,
     FormsModule,
-    AppointmentReviewModalComponent,
-    
-  ]
+  ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA]
 })
 export class MyAppointmentsComponent {
 
@@ -42,6 +46,7 @@ export class MyAppointmentsComponent {
   loading = true;
   loaded = false;
   expandedTaxDocuments: Record<string, boolean> = {};
+  expandedAppointmentDetails: Record<string, boolean> = {};
 
   constructor(
   private http: HttpClient,
@@ -71,11 +76,30 @@ getHeaders() {
   calendarModalAppointment: any | null = null;
   reviewAppointment: any | null = null;
   reviewSubmitting = false;
+  reviewRating = 5;
+  reviewComment = '';
   selectedFilter = 'today';
 
 
 setFilter(filter: string) {
   this.selectedFilter = filter;
+}
+
+getVisibleUpcomingGroups(): any[] {
+  if (this.selectedFilter === 'today') return this.todayAppointments;
+  if (this.selectedFilter === 'upcoming') return this.futureAppointments;
+  return this.upcomingAppointments;
+}
+
+hasVisibleAppointments(): boolean {
+  if (!this.loaded) return false;
+  if (this.selectedFilter === 'history') return this.historyAppointments.length > 0;
+  return this.getVisibleUpcomingGroups().length > 0;
+}
+
+getCurrentSectionTitle(): string {
+  if (this.selectedFilter === 'today') return 'Citas de hoy';
+  return 'Próximas citas';
 }
 
 toggleTaxDocument(appointmentId: string) {
@@ -85,13 +109,30 @@ toggleTaxDocument(appointmentId: string) {
 isTaxDocumentExpanded(appointmentId: string): boolean {
   return this.expandedTaxDocuments[appointmentId] === true;
 }
+
+toggleAppointmentDetails(appointmentId: string) {
+  this.expandedAppointmentDetails[appointmentId] = !this.expandedAppointmentDetails[appointmentId];
+}
+
+isAppointmentDetailsExpanded(appointmentId: string): boolean {
+  return this.expandedAppointmentDetails[appointmentId] === true;
+}
 //ngOnInit() {
  // this.role = localStorage.getItem('role');
 //}
 
 ionViewWillEnter() {
   this.role = localStorage.getItem('role');
+  this.applyRouteFilter();
   this.loadAppointments();
+}
+
+private applyRouteFilter() {
+  const filter = this.route.snapshot.queryParamMap.get('filter');
+
+  if (filter === 'today' || filter === 'upcoming' || filter === 'history') {
+    this.selectedFilter = filter;
+  }
 }
 
 async presentToast(message: string, color: string = 'success') {
@@ -174,7 +215,7 @@ finishAppointmentsLoad() {
 
       this.loadingId = null;
 
-      // ðŸ”¥ SI ES MENOS DE 48H â†’ MOSTRAR OPCIONES
+      // Si es menos de 48h, mostrar opciones
      if (
   res.status === 'PENDING_PAYMENT' ||
   res.penalty !== undefined
@@ -200,7 +241,7 @@ resolvePenalty(id: string, option: 'CREDIT' | 'REFUND', data?: any) {
     next: async () => {
       await this.presentToast(
         option === 'CREDIT'
-          ? 'Saldo guardado como crÃ©dito'
+          ? 'Saldo guardado como crédito'
           : 'Solicitud de reembolso enviada',
         'success'
       );
@@ -208,7 +249,7 @@ resolvePenalty(id: string, option: 'CREDIT' | 'REFUND', data?: any) {
       this.loadAppointments();
     },
     error: async () => {
-      await this.presentToast('Error en la operaciÃ³n', 'danger');
+      await this.presentToast('Error en la operación', 'danger');
     }
   });
 }
@@ -246,7 +287,7 @@ async askRefundData(id: string) {
       {
         name: 'account',
         type: 'text',
-        placeholder: 'NÃºmero de cuenta'
+        placeholder: 'Número de cuenta'
       },
       {
         name: 'accountType',
@@ -402,12 +443,27 @@ canReviewAppointment(appt: any): boolean {
 
   openReviewModal(appt: any): void {
     this.reviewAppointment = appt;
+    this.reviewRating = 5;
+    this.reviewComment = '';
   }
 
 closeReviewModal(): void {
   if (this.reviewSubmitting) return;
 
   this.reviewAppointment = null;
+  this.reviewRating = 5;
+  this.reviewComment = '';
+}
+
+setReviewRating(rating: number): void {
+  this.reviewRating = Math.min(5, Math.max(1, rating));
+}
+
+submitReviewFromModal(): void {
+  this.submitReview({
+    rating: this.reviewRating,
+    comment: this.reviewComment,
+  });
 }
 
 submitReview(event: ReviewSubmitEvent): void {
@@ -599,11 +655,11 @@ shouldShowPenalty(appt: any): boolean {
   return validStatus && diffHours < 48;
 }
 
-// ðŸ’³ CLIENTE â†’ marca como pagado
+// Cliente marca como pagado
 markAsPaid(id: string) {
   this.appointmentsService.markAsPaid(id).subscribe({
     next: async () => {
-      await this.presentToast('Pago enviado para revisiÃ³n', 'warning');
+      await this.presentToast('Pago enviado para revisión', 'warning');
       this.loadAppointments();
     },
     error: async () => {
@@ -627,7 +683,7 @@ confirmAppointment(id: string) {
   });
 }
 
-// ðŸ’³ ABRIR MODAL DE PAGO
+// Abrir modal de pago
 canAddToCalendar(appt: any): boolean {
   return appt?.status === 'CONFIRMED' && !!appt?.date;
 }

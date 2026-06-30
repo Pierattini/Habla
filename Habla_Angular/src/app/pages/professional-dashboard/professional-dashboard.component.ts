@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -33,15 +33,8 @@ import {
   IonInput,
   IonTextarea,
   IonItem,
-  IonLabel,
-  IonIcon
+  IonLabel
 } from '@ionic/angular/standalone';
-
-import { addIcons } from 'ionicons';
-
-import {
-  imageOutline
-} from 'ionicons/icons';
 
 type AgendaTime = {
   time: string;
@@ -97,13 +90,14 @@ type TeamsConnectionState = {
     IonInput,
     IonTextarea,
     IonItem,
-    IonLabel,
-    IonIcon
-  ]
+    IonLabel
+  ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA]
 })
 export class ProfessionalDashboardComponent {
   loading = true;
   loaded = false;
+  professionalAvatarPickerOpen = false;
   imageVersion = Date.now();
   selectedDocumentFiles: Record<string, File> = {};
   uploadingDocumentIds: Record<string, boolean> = {};
@@ -155,6 +149,13 @@ export class ProfessionalDashboardComponent {
     'image/jpeg',
     'image/png'
   ];
+  readonly professionalDefaultAvatars = [
+    this.buildDefaultAvatar('#a855f7', '#ec4899'),
+    this.buildDefaultAvatar('#7c3aed', '#38bdf8'),
+    this.buildDefaultAvatar('#14b8a6', '#a855f7'),
+    this.buildDefaultAvatar('#f97316', '#facc15'),
+    this.buildDefaultAvatar('#2563eb', '#22c55e'),
+  ];
 
   constructor(
     private professionalProfileService: ProfessionalProfileService,
@@ -162,13 +163,7 @@ export class ProfessionalDashboardComponent {
     private professionalPlanService: ProfessionalPlanService,
     private http: HttpClient,
     private cdr: ChangeDetectorRef
-  ) {
-
-    addIcons({
-      'image-outline': imageOutline
-    });
-
-  }
+  ) {}
 
   ionViewWillEnter() {
     this.loading = true;
@@ -206,7 +201,15 @@ export class ProfessionalDashboardComponent {
     officeLongitude: null as number | null,
     arrivalInstructions: '',
     videoProvider: 'CONNECTA_AUTO',
-    customVideoUrl: ''
+    customVideoUrl: '',
+    documentAutomationEnabled: false,
+    manualDocumentMode: true,
+    taxId: '',
+    taxName: '',
+    taxEmail: '',
+    taxAddress: '',
+    taxCountry: '',
+    taxCity: ''
   };
 
   // 🔥 BLOQUES HORARIOS
@@ -362,6 +365,22 @@ export class ProfessionalDashboardComponent {
     return this.profile.videoProvider === provider;
   }
 
+  setDocumentEmissionMode(mode: 'MANUAL' | 'AUTOMATED') {
+    this.profile.documentAutomationEnabled = mode === 'AUTOMATED';
+    this.profile.manualDocumentMode = mode === 'MANUAL';
+  }
+
+  get isProfessionalTaxReady(): boolean {
+    return !!(
+      this.profile.taxName?.trim() &&
+      this.profile.taxId?.trim() &&
+      this.profile.taxAddress?.trim() &&
+      this.profile.taxCity?.trim() &&
+      this.profile.taxCountry?.trim() &&
+      this.profile.taxEmail?.trim()
+    );
+  }
+
   saveProfile() {
     const validationErrors = this.validateAgenda();
 
@@ -400,6 +419,14 @@ export class ProfessionalDashboardComponent {
         arrivalInstructions: this.profile.arrivalInstructions,
         videoProvider: this.profile.videoProvider,
         customVideoUrl: this.profile.customVideoUrl,
+        documentAutomationEnabled: this.profile.documentAutomationEnabled,
+        manualDocumentMode: !this.profile.documentAutomationEnabled,
+        taxId: this.profile.taxId,
+        taxName: this.profile.taxName,
+        taxEmail: this.profile.taxEmail,
+        taxAddress: this.profile.taxAddress,
+        taxCountry: this.profile.taxCountry,
+        taxCity: this.profile.taxCity,
       }),
       ...availabilityRequests,
     ]).subscribe({
@@ -604,12 +631,57 @@ onFileSelected(event: Event) {
       ...this.profile,
       image: String(e.target?.result || '')
     };
+    this.closeProfessionalAvatarPicker();
     //this.imageVersion = Date.now();
   };
 
   reader.readAsDataURL(file);
 
   }
+
+selectProfessionalAvatar(avatar: string) {
+  this.profile = {
+    ...this.profile,
+    image: avatar
+  };
+  this.closeProfessionalAvatarPicker();
+}
+
+clearProfessionalImage() {
+  this.profile = {
+    ...this.profile,
+    image: ''
+  };
+  this.closeProfessionalAvatarPicker();
+}
+
+openProfessionalAvatarPicker(): void {
+  this.professionalAvatarPickerOpen = true;
+}
+
+closeProfessionalAvatarPicker(): void {
+  this.professionalAvatarPickerOpen = false;
+}
+
+private buildDefaultAvatar(primary: string, secondary: string): string {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+      <defs>
+        <linearGradient id="g" x1="20" y1="20" x2="140" y2="140" gradientUnits="userSpaceOnUse">
+          <stop stop-color="${primary}" />
+          <stop offset="1" stop-color="${secondary}" />
+        </linearGradient>
+      </defs>
+      <rect width="160" height="160" rx="46" fill="#fff" />
+      <circle cx="80" cy="66" r="26" fill="url(#g)" />
+      <path d="M34 136c7-28 25-43 46-43s39 15 46 43" fill="url(#g)" />
+      <rect x="3" y="3" width="154" height="154" rx="43" fill="none" stroke="url(#g)" stroke-width="6" />
+    </svg>
+  `;
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
   loadProfile() {
 
     this.professionalProfileService.getProfile().subscribe({
@@ -638,7 +710,15 @@ onFileSelected(event: Event) {
         officeLongitude: res.professional?.officeLongitude ?? null,
         arrivalInstructions: res.professional?.arrivalInstructions || '',
         videoProvider: this.normalizeVideoProvider(res.professional?.videoProvider),
-        customVideoUrl: res.professional?.customVideoUrl || ''
+        customVideoUrl: res.professional?.customVideoUrl || '',
+        documentAutomationEnabled: res.professional?.documentAutomationEnabled === true,
+        manualDocumentMode: res.professional?.manualDocumentMode !== false,
+        taxId: res.professional?.taxId || '',
+        taxName: res.professional?.taxName || '',
+        taxEmail: res.professional?.taxEmail || '',
+        taxAddress: res.professional?.taxAddress || '',
+        taxCountry: res.professional?.taxCountry || res.professional?.officeCountry || '',
+        taxCity: res.professional?.taxCity || ''
       };
       this.publicProfileUrl = this.buildPublicProfileUrl(this.profile.slug || '');
       this.loadPlanPricing(this.profile.officeCountry || 'CL');
@@ -878,6 +958,10 @@ onFileSelected(event: Event) {
       !this.profile.customVideoUrl
     ) {
       errors.push('Para enlace propio debes indicar el enlace de videollamada.');
+    }
+
+    if (this.profile.documentAutomationEnabled && !this.isProfessionalTaxReady) {
+      errors.push('Completa tus datos tributarios para activar la emision automatica.');
     }
 
     for (const item of this.availability as AgendaDay[]) {

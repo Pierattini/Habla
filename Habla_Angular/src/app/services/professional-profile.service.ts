@@ -32,6 +32,14 @@ export interface ProfessionalProfile {
   arrivalInstructions: string;
   videoProvider: VideoProvider;
   customVideoUrl: string;
+  documentAutomationEnabled: boolean;
+  manualDocumentMode: boolean;
+  taxId: string;
+  taxName: string;
+  taxEmail: string;
+  taxAddress: string;
+  taxCountry: string;
+  taxCity: string;
 }
 
 export interface ProfessionalProfileResponse {

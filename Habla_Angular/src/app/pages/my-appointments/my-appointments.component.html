@@ -1,9 +1,9 @@
-<ion-content>
+﻿<ion-content>
 <div class="contenedor">
   <div class="page-hero">
 
   <span class="page-greeting">
-    📅 Tu agenda
+    Tu agenda
   </span>
 
   <h1>
@@ -27,7 +27,7 @@
     size="small"
     class="btn-sec"
     (click)="openChat(appt)">
-    💬 Mensaje
+    Mensaje
   </ion-button>
 
   <ion-button
@@ -89,7 +89,7 @@
     class="btn-sec"
     *ngIf="role === 'PROFESSIONAL' || canReschedule(appt)"
     (click)="reschedule(appt)">
-    🔁 Reagendar
+    Reagendar
   </ion-button>
 
   <ion-button
@@ -99,13 +99,106 @@
     class="btn-sec"
     *ngIf="role === 'PROFESSIONAL' || canCancel(appt)"
     (click)="cancelAppointment(appt.id)">
-    ✖ Cancelar
+    Cancelar
   </ion-button>
 
 </div>
 
   </div>
 
+</ng-template>
+<ng-template #accionesOrdenadas let-appt>
+  <div class="acciones-secundarias">
+    <div class="action-row action-row-secondary">
+      <ion-button
+        fill="outline"
+        color="medium"
+        size="small"
+        class="btn-sec"
+        *ngIf="role === 'PROFESSIONAL' || canReschedule(appt)"
+        (click)="reschedule(appt)">
+        Reagendar
+      </ion-button>
+
+      <ion-button
+        fill="clear"
+        color="danger"
+        size="small"
+        class="btn-sec"
+        *ngIf="role === 'PROFESSIONAL' || canCancel(appt)"
+        (click)="cancelAppointment(appt.id)">
+        Cancelar
+      </ion-button>
+    </div>
+
+    <div class="action-row action-row-message">
+      <ion-button
+        fill="outline"
+        color="primary"
+        size="small"
+        class="btn-sec"
+        (click)="openChat(appt)">
+        Mensaje
+      </ion-button>
+    </div>
+
+    <div
+      class="action-row action-row-extra"
+      *ngIf="$any(this).canJoinVideoCall(appt) || $any(this).canAddToCalendar(appt) || $any(this).canReviewAppointment(appt) || $any(this).canCompleteAppointment(appt)"
+    >
+      <ion-button
+        fill="solid"
+        color="primary"
+        size="small"
+        class="btn-sec btn-video"
+        *ngIf="$any(this).canJoinVideoCall(appt)"
+        (click)="$any(this).openVideoCall(appt)">
+        Videollamada
+      </ion-button>
+
+      <ion-button
+        fill="outline"
+        color="primary"
+        size="small"
+        class="btn-sec"
+        *ngIf="$any(this).canJoinVideoCall(appt)"
+        [disabled]="$any(this).videoContinuationLoadingId === appt.id"
+        (click)="$any(this).askContinueVideoCall(appt)">
+        Continuar sesion
+      </ion-button>
+
+      <ion-button
+        fill="outline"
+        color="primary"
+        size="small"
+        class="btn-sec"
+        *ngIf="$any(this).canAddToCalendar(appt)"
+        (click)="$any(this).addToCalendar(appt)">
+        Calendario
+      </ion-button>
+
+      <ion-button
+        fill="outline"
+        color="primary"
+        size="small"
+        class="btn-sec"
+        *ngIf="$any(this).canReviewAppointment(appt)"
+        (click)="$any(this).openReviewModal(appt)">
+        Valorar profesional
+      </ion-button>
+
+      <ion-button
+        fill="solid"
+        color="primary"
+        size="small"
+        class="btn-sec btn-video"
+        *ngIf="$any(this).canCompleteAppointment(appt)"
+        [disabled]="$any(this).loadingId === appt.id"
+        (click)="$any(this).completeAppointment(appt)">
+        Finalizar cita
+      </ion-button>
+    </div>
+  </div>
 </ng-template>
 <ng-template #documentoTributario let-appt>
   <div
@@ -264,31 +357,22 @@
 
 </div>
 
-  <div
-  *ngIf="
-    $any(this).loaded && (
-      todayAppointments.length > 0 ||
-      futureAppointments.length > 0 ||
-      completedAppointments.length > 0 ||
-      historyAppointments.length > 0
-    );
-    else sinCitas
-  ">
+  <div *ngIf="$any(this).hasVisibleAppointments(); else sinCitas">
 
-  <!-- 🔥 PRÓXIMAS -->
+  <!-- PROXIMAS -->
   <h3
   class="seccion-title"
   *ngIf="
     selectedFilter !== 'history' &&
-    upcomingAppointments.length > 0
+    $any(this).getVisibleUpcomingGroups().length > 0
   ">
-    Próximas citas
+    {{ $any(this).getCurrentSectionTitle() }}
   </h3>
 
  <ng-container *ngIf="selectedFilter !== 'history'">
 
 <div
-*ngFor="let group of todayAppointments"
+*ngFor="let group of $any(this).getVisibleUpcomingGroups()"
   class="contenedor">
 
         <div class="fecha">
@@ -305,15 +389,17 @@
 
               <div class="avatar">
 
-  <!-- 🩺 VISTA PROFESIONAL -->
+  <!-- VISTA PROFESIONAL -->
   <img
+    class="appointment-photo"
     *ngIf="role === 'PROFESSIONAL'"
     [src]="appt.customer?.image || '/default-avatar.png'"
     (error)="onImgError($event)"
   >
 
-  <!-- 👤 VISTA CLIENTE -->
+  <!-- VISTA CLIENTE -->
   <img
+    class="appointment-photo"
     *ngIf="role !== 'PROFESSIONAL'"
     [src]="appt.professional?.professional?.image || appt.professional?.image || '/default-avatar.png'"
     (error)="onImgError($event)"
@@ -330,7 +416,7 @@
 
   {{
     role === 'PROFESSIONAL'
-      ? ('📧 ' + appt.customer?.email)
+      ? ('Email: ' + appt.customer?.email)
       : appt.professional?.professional?.specialty
   }}
 </div>
@@ -338,8 +424,8 @@
 <div
   class="extra"
   *ngIf="role !== 'PROFESSIONAL'">
-  💰 {{ appt.professional?.professional?.price }} CLP ·
-  ⏱️ {{ appt.professional?.professional?.duration }} min
+  Precio {{ appt.professional?.professional?.price }} CLP
+  · Duración {{ appt.professional?.professional?.duration }} min
 </div>
               </div>
 
@@ -347,29 +433,40 @@
 
             <div class="estado" [ngClass]="getStatusColor(appt.status)">
 
-  {{
-    appt.status === 'CONFIRMED' ? '✔ ' :
-    appt.status === 'COMPLETED' ? '✔ ' :
-    appt.status === 'CANCELLED' ? '✖ ' :
-    appt.status === 'RESCHEDULED' ? '🔁 ' :
-    appt.status === 'REFUNDED' ? '💸 ' :
-    appt.status === 'PAYMENT_REVIEW' ? '💳 ' :
-    appt.status === 'PENDING_PAYMENT' ? '🕒 ' :
-    '⏳ '
-  }}
-
   {{ getStatusLabel(appt.status) }}
 
 </div>
 
-<!-- 💰 Penalización -->
-<p *ngIf="shouldShowPenalty(appt)" style="color: orange; font-size: 13px;">
-  ⚠️ Penalización aplicada (50%)
+<!-- Penalizacion -->
+<div class="appointment-summary">
+  <div>
+    <span>Fecha y hora</span>
+    <strong>{{ appt.date | date:'dd/MM/yyyy HH:mm' }}</strong>
+  </div>
+
+  <div>
+    <span>Modalidad</span>
+    <strong>{{ $any(this).getAppointmentModeLabel(appt) }}</strong>
+  </div>
+</div>
+
+<button
+  type="button"
+  class="appointment-details-toggle"
+  (click)="$any(this).toggleAppointmentDetails(appt.id)"
+  [attr.aria-expanded]="$any(this).isAppointmentDetailsExpanded(appt.id)"
+>
+  <span>{{ $any(this).isAppointmentDetailsExpanded(appt.id) ? 'Ocultar información' : 'Más información' }}</span>
+  <i>{{ $any(this).isAppointmentDetailsExpanded(appt.id) ? '▲' : '▼' }}</i>
+</button>
+
+<p *ngIf="shouldShowPenalty(appt) && $any(this).isAppointmentDetailsExpanded(appt.id)" class="detail-note">
+  Penalización aplicada (50%)
 </p>
 
 
 
-<div class="appointment-modality">
+<div class="appointment-modality" *ngIf="$any(this).isAppointmentDetailsExpanded(appt.id)">
   <div>
     <span>{{ $any(this).getAppointmentModeLabel(appt) }}</span>
     <strong>{{ $any(this).getAppointmentModeDetail(appt) }}</strong>
@@ -378,52 +475,59 @@
   <small *ngIf="$any(this).getAppointmentArrivalInstructions(appt)">
     {{ $any(this).getAppointmentArrivalInstructions(appt) }}
   </small>
-</div><ng-container
-  *ngTemplateOutlet="documentoTributario; context: { $implicit: appt }">
-</ng-container><div class="botones">
+</div>
+<div *ngIf="$any(this).isAppointmentDetailsExpanded(appt.id)">
+  <ng-container
+    *ngTemplateOutlet="documentoTributario; context: { $implicit: appt }">
+  </ng-container>
+</div>
+<div class="botones">
 
-  <!-- 💳 VER DATOS DE PAGO -->
+  <div
+    class="action-row action-row-payment"
+    *ngIf="role !== 'PROFESSIONAL' && canPay(appt)"
+  >
+  <!-- VER DATOS DE PAGO -->
   <ion-button
     fill="outline"
     color="primary"
     size="small"
     class="btn-main"
-    *ngIf="role !== 'PROFESSIONAL' && canPay(appt)"
     (click)="openPayment(appt)">
-    💳 Ver datos
+    Ver datos
   </ion-button>
 
-  <!-- 📩 YA TRANSFERÍ -->
+  <!-- YA TRANSFERI -->
   <ion-button
     fill="solid"
     color="success"
     size="small"
     class="btn-main"
-    *ngIf="role !== 'PROFESSIONAL' && canPay(appt)"
     (click)="markAsPaid(appt.id)">
-    📩 Ya transferí
+    Ya transferí
   </ion-button>
+  </div>
 
-  <!-- ⏳ ESTADO ESPERA -->
+  <!-- ESTADO ESPERA -->
   <div
     class="estado-espera"
     *ngIf="canShowPaymentWaiting(appt)">
-    ⏳ Esperando confirmación del profesional
+    Esperando confirmación del profesional
   </div>
 
-  <!-- 🟢 PROFESIONAL CONFIRMA -->
+  <!-- PROFESIONAL CONFIRMA -->
   <ion-button
     expand="block"
     color="success"
     class="btn-principal"
     *ngIf="canProfessionalConfirm(appt)"
     (click)="confirmAppointment(appt.id)">
-    ✔ Confirmar pago
+    Confirmar pago
   </ion-button>
 
-  <!-- ⚙️ ACCIONES SECUNDARIAS -->
+  <!-- ACCIONES SECUNDARIAS -->
 <ng-container
-  *ngTemplateOutlet="acciones; context: { $implicit: appt }">
+  *ngTemplateOutlet="accionesOrdenadas; context: { $implicit: appt }">
 </ng-container>
 
 </div> <!-- botones -->
@@ -434,7 +538,7 @@
 
 
 </ng-container>
-<!-- 🕘 HISTORIAL -->
+<!-- HISTORIAL -->
 
 <h3
   class="seccion-title"
@@ -471,11 +575,13 @@
         <div class="avatar">
 
           <img
+            class="appointment-photo"
             *ngIf="role === 'PROFESSIONAL'"
             [src]="appt.customer?.image || '/default-avatar.png'"
             (error)="onImgError($event)">
 
           <img
+            class="appointment-photo"
             *ngIf="role !== 'PROFESSIONAL'"
             [src]="appt.professional?.professional?.image || appt.professional?.image || '/default-avatar.png'"
             (error)="onImgError($event)">
@@ -491,7 +597,7 @@
           <div class="especialidad">
             {{
               role === 'PROFESSIONAL'
-                ? ('📧 ' + appt.customer?.email)
+                ? ('Email: ' + appt.customer?.email)
                 : appt.professional?.professional?.specialty
             }}
           </div>
@@ -499,8 +605,8 @@
           <div
             class="extra"
             *ngIf="role !== 'PROFESSIONAL'">
-            💰 {{ appt.professional?.professional?.price }} CLP ·
-            ⏱️ {{ appt.professional?.professional?.duration }} min
+            Precio {{ appt.professional?.professional?.price }} CLP
+            · Duración {{ appt.professional?.professional?.duration }} min
           </div>
 
         </div>
@@ -511,7 +617,29 @@
         {{ getStatusLabel(appt.status) }}
       </div>
 
-<div class="appointment-modality">
+<div class="appointment-summary">
+  <div>
+    <span>Fecha y hora</span>
+    <strong>{{ appt.date | date:'dd/MM/yyyy HH:mm' }}</strong>
+  </div>
+
+  <div>
+    <span>Modalidad</span>
+    <strong>{{ $any(this).getAppointmentModeLabel(appt) }}</strong>
+  </div>
+</div>
+
+<button
+  type="button"
+  class="appointment-details-toggle"
+  (click)="$any(this).toggleAppointmentDetails(appt.id)"
+  [attr.aria-expanded]="$any(this).isAppointmentDetailsExpanded(appt.id)"
+>
+  <span>{{ $any(this).isAppointmentDetailsExpanded(appt.id) ? 'Ocultar información' : 'Más información' }}</span>
+  <i>{{ $any(this).isAppointmentDetailsExpanded(appt.id) ? '▲' : '▼' }}</i>
+</button>
+
+<div class="appointment-modality" *ngIf="$any(this).isAppointmentDetailsExpanded(appt.id)">
   <div>
     <span>{{ $any(this).getAppointmentModeLabel(appt) }}</span>
     <strong>{{ $any(this).getAppointmentModeDetail(appt) }}</strong>
@@ -520,11 +648,14 @@
   <small *ngIf="$any(this).getAppointmentArrivalInstructions(appt)">
     {{ $any(this).getAppointmentArrivalInstructions(appt) }}
   </small>
-</div><ng-container
-  *ngTemplateOutlet="documentoTributario; context: { $implicit: appt }">
-</ng-container>
+</div>
+<div *ngIf="$any(this).isAppointmentDetailsExpanded(appt.id)">
+  <ng-container
+    *ngTemplateOutlet="documentoTributario; context: { $implicit: appt }">
+  </ng-container>
+</div>
 <ng-container
-  *ngTemplateOutlet="acciones; context: { $implicit: appt }">
+  *ngTemplateOutlet="accionesOrdenadas; context: { $implicit: appt }">
 </ng-container>
     </ion-card-content>
 
@@ -547,12 +678,74 @@
 </ng-template>
 </div>
 
-<app-appointment-review-modal
+<div
+  class="review-modal-backdrop"
   *ngIf="$any(this).reviewAppointment"
-  [submitting]="$any(this).reviewSubmitting"
-  (close)="$any(this).closeReviewModal()"
-  (submitReview)="$any(this).submitReview($event)"
-></app-appointment-review-modal>
+  (click)="$any(this).closeReviewModal()"
+>
+  <div
+    class="review-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="review-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <button
+      type="button"
+      class="review-close"
+      aria-label="Cerrar"
+      (click)="$any(this).closeReviewModal()"
+    >
+      x
+    </button>
+
+    <h2 id="review-modal-title">Valorar profesional</h2>
+    <p>Tu opinion ayuda a otros pacientes a elegir con confianza.</p>
+
+    <div class="review-stars" aria-label="Puntuacion">
+      <button
+        type="button"
+        *ngFor="let star of [1, 2, 3, 4, 5]"
+        [class.active]="star <= $any(this).reviewRating"
+        (click)="$any(this).setReviewRating(star)"
+      >
+        ★
+      </button>
+    </div>
+
+    <label class="review-field">
+      <span>Comentario opcional</span>
+      <textarea
+        maxlength="500"
+        rows="4"
+        [ngModel]="$any(this).reviewComment"
+        (ngModelChange)="$any(this).reviewComment = $event"
+        placeholder="Cuenta brevemente como fue tu experiencia"
+      ></textarea>
+      <small>{{ $any(this).reviewComment.length }}/500 caracteres</small>
+    </label>
+
+    <div class="review-actions">
+      <button
+        type="button"
+        class="secondary"
+        [disabled]="$any(this).reviewSubmitting"
+        (click)="$any(this).closeReviewModal()"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="primary"
+        [disabled]="$any(this).reviewSubmitting"
+        (click)="$any(this).submitReviewFromModal()"
+      >
+        {{ $any(this).reviewSubmitting ? 'Guardando...' : 'Enviar valoracion' }}
+      </button>
+    </div>
+  </div>
+</div>
 
 <div
   class="calendar-modal-backdrop"

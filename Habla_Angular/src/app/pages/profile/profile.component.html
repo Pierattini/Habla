@@ -19,60 +19,109 @@
     <!-- PERFIL TOP -->
     <div class="profile-top">
       <div class="avatar-container">
+        <div class="avatar-shell">
+          <img
+            *ngIf="image; else defaultProfileAvatar"
+            [src]="image"
+            class="avatar-image"
+            alt="Imagen de perfil"
+          />
 
-  <img
-    *ngIf="image"
-    [src]="image"
-    class="avatar-image"
-  />
+          <ng-template #defaultProfileAvatar>
+            <ion-icon
+              name="person-circle-outline"
+              class="avatar">
+            </ion-icon>
+          </ng-template>
 
-  <ion-icon
-    *ngIf="!image"
-    name="person-circle-outline"
-    class="avatar"
-  ></ion-icon>
+          <button
+            type="button"
+            class="avatar-edit-button"
+            aria-label="Editar imagen de perfil"
+            (click)="$any(this).openAvatarPicker()"
+          >
+            <ion-icon name="image-outline"></ion-icon>
+          </button>
+        </div>
 
-</div>
-      <input
-        type="file"
-        #profileImageInput
-        accept="image/*"
-        (change)="$any(this).onProfileImageSelected($event)"
-        hidden
-      />
-
-      <div class="avatar-actions" *ngIf="role !== 'PROFESSIONAL'">
-        <ion-button
-          fill="outline"
-          size="small"
-          (click)="profileImageInput.click()"
-        >
-          <ion-icon name="image-outline" slot="start"></ion-icon>
-          Cambiar imagen
-        </ion-button>
-
-        <ion-button
-          *ngIf="image"
-          fill="clear"
-          size="small"
-          class="avatar-clear"
-          (click)="$any(this).clearProfileImage()"
-        >
-          Quitar
-        </ion-button>
+        <input
+          type="file"
+          #profileImageInput
+          accept="image/*"
+          (change)="$any(this).onProfileImageSelected($event)"
+          hidden
+        />
       </div>
 
-      <div class="default-avatar-picker" *ngIf="role !== 'PROFESSIONAL'">
-        <button
-          type="button"
-          *ngFor="let avatar of $any(this).defaultAvatars"
-          [class.active]="image === avatar"
-          (click)="$any(this).selectDefaultAvatar(avatar)"
-          aria-label="Seleccionar avatar por defecto"
+      <div
+        class="avatar-modal-backdrop"
+        *ngIf="$any(this).avatarPickerOpen"
+        (click)="$any(this).closeAvatarPicker()"
+      >
+        <div
+          class="avatar-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="avatar-modal-title"
+          (click)="$event.stopPropagation()"
         >
-          <img [src]="avatar" alt="" />
-        </button>
-      </div>
+          <button
+            type="button"
+            class="avatar-modal-close"
+            aria-label="Cerrar"
+            (click)="$any(this).closeAvatarPicker()"
+          >
+            x
+          </button>
+
+          <h3 id="avatar-modal-title">Editar imagen</h3>
+          <p>Elige un avatar o sube una fotografia.</p>
+
+          <div class="avatar-preview">
+            <img
+              *ngIf="image; else avatarPreviewDefault"
+              [src]="image"
+              alt="Vista previa"
+            />
+
+            <ng-template #avatarPreviewDefault>
+              <ion-icon name="person-circle-outline"></ion-icon>
+            </ng-template>
+          </div>
+
+          <div class="default-avatar-picker">
+            <button
+              type="button"
+              *ngFor="let avatar of $any(this).defaultAvatars"
+              [class.active]="image === avatar"
+              (click)="$any(this).selectDefaultAvatar(avatar)"
+              aria-label="Seleccionar avatar por defecto"
+            >
+              <img [src]="avatar" alt="" />
+            </button>
+          </div>
+
+        <div class="avatar-actions">
+          <ion-button
+            fill="outline"
+            size="small"
+            (click)="profileImageInput.click()"
+          >
+            Subir fotografia
+          </ion-button>
+
+          <ion-button
+            *ngIf="image"
+            fill="clear"
+            size="small"
+            class="avatar-clear"
+            (click)="$any(this).clearProfileImage()"
+          >
+            Quitar
+          </ion-button>
+        </div>
+        </div>
+        </div>
 
       <h2 *ngIf="name">{{ name }}</h2>
       <p class="subtitle">{{ email }}</p>
@@ -119,6 +168,187 @@
       </ion-item>
 
     </div>
+
+    <!-- PREFERENCIAS CLIENTE -->
+    <section
+      class="customer-preferences-card"
+      [class.preferences-readonly]="!$any(this).customerPreferencesEditing"
+      *ngIf="role !== 'PROFESSIONAL'"
+    >
+      <div class="preferences-header">
+        <div>
+          <span>Completa tu experiencia</span>
+          <h2>Preferencias de busqueda</h2>
+        </div>
+
+        <strong>{{ $any(this).customerInterests.length }}/9</strong>
+      </div>
+
+      <p class="preferences-helper">
+        Estos datos activan recomendaciones mas precisas y completan las secciones pendientes del perfil.
+      </p>
+
+      <div class="preference-block">
+        <h3>Selecciona tus intereses</h3>
+        <p>Elige hasta 9 sectores. Puedes cambiarlos cuando quieras.</p>
+
+        <div class="interest-search">
+          <input
+            type="search"
+            [value]="$any(this).interestSearch"
+            (input)="$any(this).interestSearch = $any($event.target).value"
+            placeholder="Buscar profesion o especialidad"
+            autocomplete="off"
+            aria-label="Buscar preferencias"
+            [disabled]="!$any(this).customerPreferencesEditing"
+          />
+        </div>
+
+        <div
+          class="selected-interest-chips"
+          *ngIf="$any(this).customerInterests.length > 0"
+        >
+          <span class="selected-interest-title">
+            Seleccionados
+          </span>
+
+          <button
+            type="button"
+            *ngFor="let interest of $any(this).customerInterests"
+            class="selected-interest-chip"
+            [disabled]="!$any(this).customerPreferencesEditing"
+            (click)="$any(this).removeCustomerInterest(interest, $event)"
+          >
+            {{ interest }}
+            <span aria-hidden="true">x</span>
+          </button>
+        </div>
+
+        <div
+          class="interest-grid"
+          *ngIf="$any(this).interestSearch.trim() && $any(this).getFilteredCustomerInterestOptions().length > 0"
+        >
+          <button
+            type="button"
+            *ngFor="let interest of $any(this).getFilteredCustomerInterestOptions()"
+            [class.active]="$any(this).isCustomerInterestSelected(interest)"
+            [disabled]="!$any(this).customerPreferencesEditing"
+            (click)="$any(this).toggleCustomerInterest(interest)"
+          >
+            <span>{{ interest }}</span>
+          </button>
+        </div>
+
+        <p
+          *ngIf="$any(this).interestSearch.trim() && $any(this).getFilteredCustomerInterestOptions().length === 0"
+          class="empty-interest-results"
+        >
+          No se encontraron coincidencias.
+        </p>
+      </div>
+
+      <div class="preference-block">
+        <h3>Elige modalidad preferida</h3>
+        <p>Usaremos esta opcion para ordenar tus resultados.</p>
+
+        <div class="mode-grid">
+          <button
+            type="button"
+            *ngFor="let option of $any(this).attentionModeOptions"
+            [class.active]="$any(this).preferredAttentionMode === option.value"
+            [disabled]="!$any(this).customerPreferencesEditing"
+            (click)="$any(this).selectPreferredAttentionMode(option.value)"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="preference-block">
+        <h3>Agrega ciudad o region preferida</h3>
+        <p>Opcional, pero ayuda a mostrar profesionales cercanos.</p>
+
+        <div class="location-grid">
+          <label>
+            <span>Ciudad</span>
+            <div class="location-autocomplete">
+              <input
+                type="text"
+                maxlength="80"
+                [value]="$any(this).preferredCity"
+                (focus)="$any(this).showLocationSuggestions('city')"
+                (blur)="$any(this).hideLocationSuggestions()"
+                (input)="$any(this).preferredCity = $any($event.target).value; $any(this).showLocationSuggestions('city')"
+                placeholder="Ej: Santiago"
+                autocomplete="off"
+                [disabled]="!$any(this).customerPreferencesEditing"
+              />
+
+              <div
+                class="location-suggestions"
+                *ngIf="$any(this).activeLocationSuggestion === 'city' && $any(this).getPreferredCitySuggestions().length > 0"
+              >
+                <button
+                  type="button"
+                  *ngFor="let city of $any(this).getPreferredCitySuggestions()"
+                  (mousedown)="$event.preventDefault()"
+                  (click)="$any(this).selectPreferredCitySuggestion(city)"
+                >
+                  {{ city }}
+                </button>
+              </div>
+            </div>
+          </label>
+
+          <label>
+            <span>Region</span>
+            <div class="location-autocomplete">
+              <input
+                type="text"
+                maxlength="80"
+                [value]="$any(this).preferredRegion"
+                (focus)="$any(this).showLocationSuggestions('region')"
+                (blur)="$any(this).hideLocationSuggestions()"
+                (input)="$any(this).preferredRegion = $any($event.target).value; $any(this).showLocationSuggestions('region')"
+                placeholder="Ej: Metropolitana"
+                autocomplete="off"
+                [disabled]="!$any(this).customerPreferencesEditing"
+              />
+
+              <div
+                class="location-suggestions"
+                *ngIf="$any(this).activeLocationSuggestion === 'region' && $any(this).getPreferredRegionSuggestions().length > 0"
+              >
+                <button
+                  type="button"
+                  *ngFor="let region of $any(this).getPreferredRegionSuggestions()"
+                  (mousedown)="$event.preventDefault()"
+                  (click)="$any(this).selectPreferredRegionSuggestion(region)"
+                >
+                  {{ region }}
+                </button>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <p
+        *ngIf="$any(this).customerPreferencesMessage"
+        class="preferences-message"
+      >
+        {{ $any(this).customerPreferencesMessage }}
+      </p>
+
+      <ion-button
+        expand="block"
+        class="preferences-save"
+        [disabled]="$any(this).customerPreferencesSaving"
+        (click)="$any(this).saveCustomerPreferences()"
+      >
+        {{ $any(this).getCustomerPreferencesActionLabel() }}
+      </ion-button>
+    </section>
 
     <!-- DATOS TRIBUTARIOS -->
     <div class="card">

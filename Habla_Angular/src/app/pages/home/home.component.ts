@@ -45,7 +45,7 @@ export class HomePage implements OnInit, OnDestroy {
   professionals: any[] = [];
   filteredProfessionals: any[] = [];
   availableSpecialties: string[] = [];
-  loading = true;
+  loading = false;
   profileLoading = false;
   savingPreferences = false;
   userRole = '';
@@ -135,9 +135,6 @@ export class HomePage implements OnInit, OnDestroy {
       this.loadProfessionCatalog();
     }
 
-    if (!this.loading && this.filteredProfessionals.length === 0 && this.totalProfessionals === 0) {
-      this.loadProfessionals();
-    }
   }
 
   private initializeHome() {
@@ -145,7 +142,6 @@ export class HomePage implements OnInit, OnDestroy {
 
     this.initialized = true;
     this.loadProfessionCatalog();
-    this.loadProfessionals();
 
     if (localStorage.getItem('token')) {
       this.loadProfilePreferences();
@@ -201,7 +197,7 @@ export class HomePage implements OnInit, OnDestroy {
         this.profileCompletionItems = this.getCustomerProfileMissingItems(user);
         this.updateQuickFilters();
 
-        if (previousCountry !== this.selectedCountry) {
+        if (previousCountry !== this.selectedCountry && this.hasActiveProfessionalSearch()) {
           this.currentPage = 1;
           this.loadProfessionals();
         }
@@ -217,6 +213,11 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   loadProfessionals() {
+    if (!this.hasActiveProfessionalSearch()) {
+      this.clearProfessionalResults();
+      return;
+    }
+
     if (this.searchDebounceTimer) {
       clearTimeout(this.searchDebounceTimer);
       this.searchDebounceTimer = null;
@@ -332,6 +333,11 @@ export class HomePage implements OnInit, OnDestroy {
     }
 
     this.searchDebounceTimer = setTimeout(() => {
+      if (this.search.trim().length === 0) {
+        this.clearProfessionalResults();
+        return;
+      }
+
       this.loadProfessionals();
     }, 350);
   }
@@ -513,13 +519,16 @@ export class HomePage implements OnInit, OnDestroy {
     this.selectedCategorySlug = '';
     this.selectedProfessionSlug = '';
     this.currentPage = 1;
-    this.loadProfessionals();
+    this.clearProfessionalResults();
   }
 
   filterMode(mode: 'ALL' | 'ONLINE' | 'PRESENTIAL' | 'BOTH') {
     this.selectedMode = mode;
     this.currentPage = 1;
-    this.loadProfessionals();
+
+    if (this.hasActiveProfessionalSearch()) {
+      this.loadProfessionals();
+    }
   }
 
   toggleInterest(interest: string) {
@@ -841,6 +850,31 @@ export class HomePage implements OnInit, OnDestroy {
 
   previousPage(): void {
     this.goToPage(this.currentPage - 1);
+  }
+
+  hasActiveProfessionalSearch(): boolean {
+    return Boolean(
+      this.search.trim() ||
+      this.selectedCategorySlug ||
+      this.selectedProfessionSlug
+    );
+  }
+
+  private clearProfessionalResults(): void {
+    this.professionalsSubscription?.unsubscribe();
+
+    if (this.loadingFallbackTimer) {
+      clearTimeout(this.loadingFallbackTimer);
+      this.loadingFallbackTimer = null;
+    }
+
+    this.loading = false;
+    this.professionals = [];
+    this.filteredProfessionals = [];
+    this.totalProfessionals = 0;
+    this.totalPages = 1;
+    this.currentPage = 1;
+    this.refreshView();
   }
 
   get shouldShowProfileCompletion(): boolean {

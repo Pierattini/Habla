@@ -1,4 +1,4 @@
-export function groupByDate(list: any[]) {
+﻿export function groupByDate(list: any[]) {
   const groups: any = {};
 
   list.forEach(appt => {
@@ -29,7 +29,7 @@ export function getLabel(date: Date): string {
   }
 
   if (date.toDateString() === tomorrow.toDateString()) {
-    return 'MaÃ±ana';
+    return 'Mañana';
   }
 
   return date.toLocaleDateString();
@@ -39,7 +39,7 @@ export function getStatusLabel(status: string): string {
   const map: any = {
     PENDING: 'Pendiente',
     PENDING_PAYMENT: 'Pendiente de pago',
-    PAYMENT_REVIEW: 'Pago en revisiÃ³n',
+    PAYMENT_REVIEW: 'Pago en revisión',
     CONFIRMED: 'Confirmada',
     COMPLETED: 'Finalizada',
     CANCELLED: 'Cancelada',

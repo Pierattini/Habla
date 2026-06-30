@@ -74,7 +74,7 @@
       [class.active]="activeTab === 'images'"
       (click)="changeTab('images')"
     >
-      ImÃ¡genes
+      Im&aacute;genes
     </button>
   </div>
 
@@ -83,12 +83,13 @@
   <div
     *ngFor="let msg of messages"
     class="message-wrapper"
-    [class.mine]="msg.senderId === currentUserId"
+    [class.customer-message]="$any(this).isCustomerMessage(msg)"
+    [class.professional-message]="!$any(this).isCustomerMessage(msg)"
   >
     <div class="message-bubble">
 
       <small class="sender-label">
-        {{ msg.senderId === currentUserId ? 'TÃº' : professionalName }}
+        {{ $any(this).getSenderLabel(msg) }}
       </small>
 
       <ng-container *ngIf="msg.content">
@@ -125,7 +126,7 @@
         <p>{{ doc.createdAt | date:'short' }}</p>
 
         <p class="uploaded-by">
-          Subido por {{ doc.senderId === currentUserId ? 'TÃº' : professionalName }}
+          Subido por {{ $any(this).getSenderLabel(doc) }}
         </p>
       </ion-label>
 
@@ -141,7 +142,7 @@
   </ng-container>
 </div>
 
-<!-- IMÃGENES -->
+<!-- IMAGENES -->
 <div *ngIf="activeTab === 'images'" class="images-grid">
   <ng-container *ngFor="let image of images">
     <div class="image-card" *ngIf="image.fileUrl">
@@ -152,25 +153,11 @@
       />
 
       <small class="uploaded-by">
-        Subido por {{ image.senderId === currentUserId ? 'TÃº' : professionalName }}
+        Subido por {{ $any(this).getSenderLabel(image) }}
       </small>
 
     </div>
   </ng-container>
-</div>
-
-  <!-- IMÃGENES -->
-  <div *ngIf="activeTab === 'images'" class="images-grid">
-  <div *ngFor="let image of images" class="image-card">
-    <img
-      [src]="image.fileUrl"
-      [alt]="image.fileName"
-    />
-
-    <small class="uploaded-by">
-      Subido por {{ image.senderId === currentUserId ? 'TÃº' : professionalName }}
-    </small>
-  </div>
 </div>
 
 </ion-content>
@@ -191,12 +178,19 @@
 
 <ion-button
   fill="clear"
+  class="attach-button"
+  aria-label="Adjuntar archivo"
   (click)="fileInput.click()"
 >
-  ðŸ“Ž
+  <ion-icon name="attach-outline"></ion-icon>
 </ion-button>
-      <ion-button fill="clear" (click)="sendMessage()">
-        Enviar
+      <ion-button
+        fill="clear"
+        class="send-button"
+        aria-label="Enviar mensaje"
+        (click)="sendMessage()"
+      >
+        <ion-icon name="send-outline"></ion-icon>
       </ion-button>
     </div>
   </ion-toolbar>

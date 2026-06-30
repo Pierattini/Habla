@@ -28,9 +28,15 @@ ion-content {
 }
 
 .avatar-container {
-  display: flex;
+  position: relative;
+  display: inline-flex;
   justify-content: center;
   margin-bottom: 16px;
+}
+
+.avatar-shell {
+  position: relative;
+  display: inline-flex;
 }
 
 .avatar-image {
@@ -47,6 +53,95 @@ ion-content {
   color: var(--app-primary);
   font-size: 118px;
   filter: drop-shadow(0 12px 22px rgba(168, 85, 247, 0.18));
+}
+
+.avatar-edit-button {
+  position: absolute;
+  right: -2px;
+  bottom: 6px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(168, 85, 247, 0.22);
+  border-radius: 999px;
+  background: var(--app-surface);
+  color: var(--app-primary);
+  box-shadow: 0 10px 22px rgba(168, 85, 247, 0.2);
+}
+
+.avatar-edit-button ion-icon {
+  font-size: 18px;
+}
+
+.avatar-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: end center;
+  padding: 18px;
+  background: rgba(17, 24, 39, 0.38);
+}
+
+.avatar-modal {
+  position: relative;
+  width: min(360px, 100%);
+  padding: 24px 20px 20px;
+  border: 1px solid rgba(168, 85, 247, 0.14);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-strong);
+  animation: avatarSheetIn 180ms ease-out;
+}
+
+.avatar-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.1);
+  color: var(--app-primary);
+  font-weight: 900;
+}
+
+.avatar-modal h3 {
+  margin: 0 36px 6px 0;
+  color: var(--app-text);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.avatar-modal p {
+  margin: 0 0 16px;
+  color: var(--app-muted);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.avatar-preview {
+  display: grid;
+  place-items: center;
+  width: 94px;
+  height: 94px;
+  margin: 0 auto 16px;
+  border-radius: 28px;
+  background: rgba(168, 85, 247, 0.08);
+}
+
+.avatar-preview img,
+.avatar-preview ion-icon {
+  width: 84px;
+  height: 84px;
+  border-radius: 24px;
+  object-fit: cover;
+}
+
+.avatar-preview ion-icon {
+  color: var(--app-primary);
 }
 
 .avatar-actions {
@@ -76,6 +171,7 @@ ion-content {
 .default-avatar-picker {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 9px;
   width: 100%;
   margin-bottom: 16px;
@@ -105,6 +201,17 @@ ion-content {
   object-fit: cover;
 }
 
+@keyframes avatarSheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .profile-top h2 {
   display: block;
   margin: 0 0 5px;
@@ -130,6 +237,335 @@ ion-content {
   background: var(--app-surface);
   box-shadow: var(--app-shadow-soft);
   overflow: hidden;
+}
+
+.customer-preferences-card {
+  margin-top: 18px;
+  padding: 22px 18px;
+  border: 1px solid rgba(168, 85, 247, 0.13);
+  border-radius: var(--app-radius-xl);
+  background:
+    radial-gradient(circle at top right, rgba(192, 132, 252, 0.16), transparent 34%),
+    var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.customer-preferences-card.preferences-readonly .interest-search input,
+.customer-preferences-card.preferences-readonly .location-grid input {
+  background: rgba(255, 255, 255, 0.52);
+  color: var(--app-muted);
+  cursor: default;
+}
+
+.customer-preferences-card.preferences-readonly .selected-interest-chip {
+  cursor: default;
+}
+
+.customer-preferences-card.preferences-readonly .selected-interest-chip span {
+  opacity: 0.45;
+}
+
+.customer-preferences-card.preferences-readonly .interest-grid button,
+.customer-preferences-card.preferences-readonly .mode-grid button {
+  cursor: default;
+}
+
+.customer-preferences-card.preferences-readonly .interest-grid button:not(.active),
+.customer-preferences-card.preferences-readonly .mode-grid button:not(.active) {
+  opacity: 0.7;
+}
+
+.preferences-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.preferences-header span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--app-primary);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.preferences-header h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.preferences-header strong {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.1);
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.preferences-helper,
+.preference-block p,
+.preferences-message {
+  margin: 10px 0 0;
+  color: var(--app-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.preference-block {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(168, 85, 247, 0.09);
+}
+
+.preference-block h3 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.interest-grid,
+.mode-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.selected-interest-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  border-radius: var(--app-radius-md);
+  background: rgba(168, 85, 247, 0.05);
+}
+
+.selected-interest-title {
+  flex: 0 0 100%;
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.selected-interest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 8px 0 13px;
+  border: 1px solid var(--app-primary);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.16), rgba(217, 70, 239, 0.13));
+  color: var(--app-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(168, 85, 247, 0.08);
+}
+
+.selected-interest-chip span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.14);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.interest-search {
+  position: relative;
+  margin-top: 14px;
+}
+
+.interest-search input {
+  width: 100%;
+  height: 46px;
+  padding: 0 15px;
+  border: 1px solid rgba(168, 85, 247, 0.16);
+  border-radius: var(--app-radius-md);
+  outline: none;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--app-text);
+  font-size: 14px;
+  font-weight: 700;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.interest-search input::placeholder {
+  color: color-mix(in srgb, var(--app-muted) 72%, transparent);
+  font-weight: 600;
+}
+
+.interest-search input:focus {
+  border-color: var(--app-primary);
+  background: var(--app-surface);
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.1);
+}
+
+.empty-interest-results {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border: 1px dashed rgba(168, 85, 247, 0.22);
+  border-radius: var(--app-radius-md);
+  background: rgba(168, 85, 247, 0.05);
+  color: var(--app-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.interest-grid button,
+.mode-grid button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(168, 85, 247, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--app-muted);
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(168, 85, 247, 0.07);
+}
+
+.interest-grid button.active {
+  padding-right: 8px;
+}
+
+.interest-grid .chip-remove {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin: -2px -3px -2px 0;
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.14);
+  color: var(--app-primary);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.interest-grid .chip-remove:hover,
+.interest-grid .chip-remove:focus-visible {
+  outline: none;
+  background: rgba(168, 85, 247, 0.22);
+}
+
+.interest-grid button.active,
+.mode-grid button.active {
+  border-color: var(--app-primary);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.16), rgba(217, 70, 239, 0.13));
+  color: var(--app-primary);
+}
+
+.location-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.location-grid label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.location-grid span {
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.location-grid input {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid rgba(168, 85, 247, 0.15);
+  border-radius: var(--app-radius-md);
+  outline: none;
+  background: rgba(255, 255, 255, 0.74);
+  color: var(--app-text);
+  font-size: 14px;
+}
+
+.location-grid input:focus {
+  border-color: var(--app-primary);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.12);
+}
+
+.location-autocomplete {
+  position: relative;
+  min-width: 0;
+}
+
+.location-suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: grid;
+  gap: 4px;
+  max-height: 210px;
+  padding: 7px;
+  overflow-y: auto;
+  border: 1px solid rgba(168, 85, 247, 0.16);
+  border-radius: var(--app-radius-md);
+  background: var(--app-surface);
+  box-shadow: 0 16px 34px rgba(168, 85, 247, 0.18);
+}
+
+.location-suggestions button {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--app-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.location-suggestions button:hover,
+.location-suggestions button:focus-visible {
+  outline: none;
+  background: rgba(168, 85, 247, 0.1);
+  color: var(--app-primary);
+}
+
+.preferences-message {
+  color: var(--app-primary);
+  font-weight: 800;
+}
+
+.preferences-save {
+  --background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  --color: #ffffff;
+  --box-shadow: 0 14px 28px rgba(168, 85, 247, 0.24);
+  height: 46px;
+  margin: 18px 0 0;
 }
 
 ion-item {
@@ -225,4 +661,10 @@ ion-button[color="tertiary"] {
   color: var(--app-muted);
   font-size: 14px;
   line-height: 1.5;
+}
+
+@media (max-width: 420px) {
+  .location-grid {
+    grid-template-columns: 1fr;
+  }
 }

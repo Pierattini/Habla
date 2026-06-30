@@ -2,43 +2,51 @@
   display: block;
   background: var(--app-bg);
   color: var(--app-text);
+  --chat-tabbar-space: 8px;
+  --chat-composer-height: 64px;
 }
 
 .chat-header {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--app-surface);
+  background: color-mix(in srgb, var(--app-bg) 86%, var(--app-surface));
   border-bottom: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
-  box-shadow: 0 8px 22px rgba(31, 41, 55, 0.06);
+  box-shadow: 0 10px 26px rgba(180, 82, 242, 0.12);
 }
 
 .chat-header-inner {
-  display: grid;
-  grid-template-columns: minmax(88px, 1fr) auto minmax(88px, 1fr);
+  position: relative;
+  display: flex;
   align-items: center;
   max-width: 680px;
-  min-height: 56px;
+  min-height: 60px;
   margin: 0 auto;
-  padding: 0 14px;
+  padding: 0 10px 0 6px;
 }
 
 .chat-header h1 {
+  position: absolute;
+  left: 50%;
+  max-width: 58%;
   margin: 0;
+  overflow: hidden;
   color: var(--app-text);
   font-size: 22px;
   font-weight: 900;
   line-height: 1;
   text-align: center;
+  text-overflow: ellipsis;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 
 .back-button {
-  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-height: 38px;
-  padding: 0 8px;
+  padding: 0 8px 0 2px;
   border: 0;
   border-radius: var(--app-radius-md);
   background: transparent;
@@ -50,13 +58,13 @@
 }
 
 .back-button span {
-  color: var(--app-muted);
+  color: var(--app-primary);
   font-size: 18px;
   line-height: 1;
 }
 
 .header-spacer {
-  width: 88px;
+  display: none;
 }
 
 .chat-content {
@@ -66,6 +74,7 @@
 .chat-content::part(scroll) {
   max-width: 680px;
   margin: 0 auto;
+  padding-bottom: calc(var(--chat-tabbar-space) + var(--chat-composer-height) + 32px);
 }
 
 .support-ticket-panel {
@@ -176,18 +185,24 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 12px;
+  min-height: 100%;
+  padding: 12px 12px 8px;
 }
 
 .message-wrapper {
   display: flex;
 }
 
-.message-wrapper.mine {
+.message-wrapper.customer-message {
   justify-content: flex-end;
 }
 
+.message-wrapper.professional-message {
+  justify-content: flex-start;
+}
+
 .message-bubble {
+  min-width: 150px;
   max-width: min(78%, 460px);
   padding: 12px 14px;
   border: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
@@ -199,7 +214,7 @@
   line-height: 1.45;
 }
 
-.message-wrapper.mine .message-bubble {
+.message-wrapper.customer-message .message-bubble {
   border-color: color-mix(in srgb, var(--app-primary) 18%, transparent);
   border-radius: 20px 20px 8px 20px;
   background: color-mix(in srgb, var(--app-secondary) 55%, var(--app-surface));
@@ -208,19 +223,37 @@
 
 .sender-label {
   display: block;
-  margin-bottom: 5px;
+  min-height: 17px;
+  margin-bottom: 6px;
   color: var(--app-muted);
   font-size: 11px;
   font-weight: 800;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  overflow: visible;
+  white-space: normal;
 }
 
-.message-wrapper.mine .sender-label {
+ion-footer {
+  position: fixed;
+  left: 50%;
+  right: auto;
+  bottom: calc(var(--chat-tabbar-space) + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  width: min(100%, 680px);
+  margin: 0;
+  transform: translateX(-50%);
+}
+
+.message-wrapper.customer-message .sender-label {
   color: var(--app-primary);
 }
 
 ion-footer ion-toolbar {
   --background: color-mix(in srgb, var(--app-bg) 82%, var(--app-surface));
   border-top: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
+  border-radius: var(--app-radius-xl) var(--app-radius-xl) 0 0;
+  box-shadow: 0 -14px 34px rgba(31, 41, 55, 0.08);
 }
 
 .input-container {
@@ -229,7 +262,7 @@ ion-footer ion-toolbar {
   align-items: center;
   gap: 8px;
   margin: 0 auto;
-  padding: 10px 12px calc(env(safe-area-inset-bottom, 0px) + 10px);
+  padding: 8px 12px;
 }
 
 .input-container ion-input {
@@ -248,14 +281,36 @@ ion-footer ion-toolbar {
   --background: var(--app-surface);
   --background-hover: var(--app-secondary);
   --box-shadow: none;
-  min-width: 44px;
+  --padding-start: 0;
+  --padding-end: 0;
+  --border-radius: var(--app-radius-md);
+  color: var(--app-primary);
+  min-width: 42px;
   height: 44px;
 }
 
-.input-container ion-button:last-child {
+.input-container .attach-button {
+  --border-color: color-mix(in srgb, var(--app-primary) 20%, transparent);
+  --color: var(--app-primary);
+  width: 44px;
+  min-width: 44px;
+}
+
+.input-container .attach-button ion-icon,
+.input-container .send-button ion-icon {
+  display: block;
+  font-size: 21px;
+  color: currentColor;
+}
+
+.input-container .send-button {
   --background: var(--app-primary);
+  --background-hover: var(--app-primary-light);
   --color: var(--app-surface);
-  min-width: 76px;
+  color: var(--app-surface);
+  width: 48px;
+  min-width: 48px;
+  border-radius: var(--app-radius-md);
 }
 
 .files-list {

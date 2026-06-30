@@ -1,10 +1,13 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { AlertController } from '@ionic/angular';
 import { Router, RouterLink } from '@angular/router';
-
-
+import {
+  LOCATION_SUGGESTIONS,
+  SupportedLocationCountry,
+} from '../../shared/location-suggestions';
 type Appointment = {
   id: string;
   date: string;
@@ -55,11 +58,12 @@ import {
     IonIcon,
     IonItem,
     IonLabel,
+    FormsModule,
     RouterLink
   ]
 })
 
-export class ProfileComponent {
+export class ProfileComponent implements OnDestroy {
   loading = true;
   loaded = false;
   private profileRequestsPending = 0;
@@ -71,6 +75,7 @@ export class ProfileComponent {
   role = '';
   country = '';
   timezone = '';
+  avatarPickerOpen = false;
   taxId = '';
   taxName = '';
   taxEmail = '';
@@ -80,6 +85,32 @@ export class ProfileComponent {
   wantsTaxDocumentByDefault = false;
   documentAutomationEnabled = false;
   manualDocumentMode = true;
+  customerInterests: string[] = [];
+  preferredAttentionMode = '';
+  preferredCity = '';
+  preferredRegion = '';
+  activeLocationSuggestion: 'city' | 'region' | null = null;
+  customerPreferencesSaving = false;
+  customerPreferencesMessage = '';
+  customerPreferencesEditing = true;
+  private customerPreferencesMessageTimer: ReturnType<typeof setTimeout> | null = null;
+  interestSearch = '';
+  customerInterestOptions = [
+    'Psicologo',
+    'Nutricionista',
+    'Kinesiologo',
+    'Terapeuta',
+    'Cardiologo',
+    'Dentista',
+    'Coach',
+    'Psiquiatra',
+    'Estetica',
+  ];
+  attentionModeOptions = [
+    { label: 'Online', value: 'ONLINE' },
+    { label: 'Presencial', value: 'PRESENTIAL' },
+    { label: 'Mixta', value: 'BOTH' },
+  ];
   defaultAvatars = [
     this.buildDefaultAvatar('#a855f7', '#ec4899'),
     this.buildDefaultAvatar('#7c3aed', '#38bdf8'),
@@ -121,6 +152,10 @@ export class ProfileComponent {
 });
   }
 
+  ngOnDestroy() {
+    this.clearCustomerPreferencesMessageTimer();
+  }
+
   ionViewWillEnter() {
     this.loadProfileData();
   }
@@ -151,6 +186,11 @@ this.taxCity = professionalTax.taxCity || user.taxCity || '';
 this.wantsTaxDocumentByDefault = user.wantsTaxDocumentByDefault === true;
 this.documentAutomationEnabled = professionalTax.documentAutomationEnabled === true;
 this.manualDocumentMode = professionalTax.manualDocumentMode !== false;
+this.customerInterests = Array.isArray(user.customerInterests) ? user.customerInterests : [];
+this.preferredAttentionMode = user.preferredAttentionMode || '';
+this.preferredCity = user.preferredCity || '';
+this.preferredRegion = user.preferredRegion || '';
+this.customerPreferencesEditing = !this.hasSavedCustomerPreferences();
 this.finishProfileRequest();
 },
       error: (err) => {
@@ -260,6 +300,14 @@ onProfileImageSelected(event: Event) {
   reader.readAsDataURL(file);
 }
 
+openAvatarPicker() {
+  this.avatarPickerOpen = true;
+}
+
+closeAvatarPicker() {
+  this.avatarPickerOpen = false;
+}
+
 selectDefaultAvatar(avatar: string) {
   this.saveProfileImage(avatar);
 }
@@ -272,6 +320,7 @@ private saveProfileImage(image: string) {
   this.auth.updateProfile({ image }).subscribe({
     next: (updatedUser: any) => {
       this.image = updatedUser.professional?.image || updatedUser.image || image;
+      this.closeAvatarPicker();
       this.cdr.detectChanges();
     },
     error: () => {
@@ -539,6 +588,272 @@ async editDocumentPreference() {
 
   await alert.present();
 }
+
+async editCustomerInterests() {
+  const alert = await this.alertCtrl.create({
+    header: 'Selecciona tus intereses',
+    message: 'Puedes elegir hasta 9 sectores para mejorar tus recomendaciones.',
+    inputs: this.customerInterestOptions.map(interest => ({
+      type: 'checkbox',
+      label: interest,
+      value: interest,
+      checked: this.customerInterests.some(item => this.normalizeText(item) === this.normalizeText(interest)),
+    })),
+    buttons: [
+      { text: 'Cancelar', role: 'cancel' },
+      {
+        text: 'Guardar',
+        handler: (selected: string[]) => {
+          const interests = Array.isArray(selected) ? selected.slice(0, 9) : [];
+
+          if (Array.isArray(selected) && selected.length > 9) {
+            window.alert('Puedes seleccionar maximo 9 intereses.');
+            return false;
+          }
+
+          this.auth.updateProfile({ customerInterests: interests }).subscribe(() => {
+            this.customerInterests = interests;
+          });
+
+          return true;
+        }
+      }
+    ]
+  });
+
+  await alert.present();
+}
+
+toggleCustomerInterest(interest: string) {
+  const exists = this.isCustomerInterestSelected(interest);
+
+  if (exists) {
+    this.customerInterests = this.customerInterests.filter(
+      item => this.normalizeText(item) !== this.normalizeText(interest)
+    );
+    this.customerPreferencesMessage = '';
+    return;
+  }
+
+  if (this.customerInterests.length >= 9) {
+    this.customerPreferencesMessage = 'Puedes elegir hasta 9 intereses. Quita uno para agregar otro.';
+    return;
+  }
+
+  this.customerInterests = [...this.customerInterests, interest];
+  this.customerPreferencesMessage = '';
+}
+
+isCustomerInterestSelected(interest: string): boolean {
+  return this.customerInterests.some(
+    item => this.normalizeText(item) === this.normalizeText(interest)
+  );
+}
+
+getFilteredCustomerInterestOptions(): string[] {
+  const query = this.normalizeText(this.interestSearch);
+
+  return this.customerInterestOptions.filter(interest => {
+    const matchesSearch = !query || this.normalizeText(interest).includes(query);
+
+    return matchesSearch && !this.isCustomerInterestSelected(interest);
+  });
+}
+
+removeCustomerInterest(interest: string, event?: Event) {
+  event?.preventDefault();
+  event?.stopPropagation();
+
+  this.customerInterests = this.customerInterests.filter(
+    item => this.normalizeText(item) !== this.normalizeText(interest)
+  );
+}
+
+selectPreferredAttentionMode(mode: string) {
+  this.preferredAttentionMode = mode;
+  this.customerPreferencesMessage = '';
+}
+
+getPreferredCitySuggestions(): string[] {
+  return this.getLocationSuggestions('city', this.preferredCity);
+}
+
+getPreferredRegionSuggestions(): string[] {
+  return this.getLocationSuggestions('region', this.preferredRegion);
+}
+
+selectPreferredCitySuggestion(city: string) {
+  this.preferredCity = city;
+  this.activeLocationSuggestion = null;
+}
+
+selectPreferredRegionSuggestion(region: string) {
+  this.preferredRegion = region;
+  this.activeLocationSuggestion = null;
+}
+
+showLocationSuggestions(field: 'city' | 'region') {
+  this.activeLocationSuggestion = field;
+}
+
+hideLocationSuggestions() {
+  window.setTimeout(() => {
+    this.activeLocationSuggestion = null;
+    this.cdr.detectChanges();
+  }, 120);
+}
+
+saveCustomerPreferences() {
+  if (!this.customerPreferencesEditing) {
+    this.customerPreferencesEditing = true;
+    this.customerPreferencesMessage = '';
+    this.clearCustomerPreferencesMessageTimer();
+    return;
+  }
+
+  const preferredCity = this.cleanOptional(this.preferredCity) || '';
+  const preferredRegion = this.cleanOptional(this.preferredRegion) || '';
+
+  if (preferredCity.length > 80 || preferredRegion.length > 80) {
+    this.customerPreferencesMessage = 'Ciudad y region deben tener maximo 80 caracteres.';
+    return;
+  }
+
+  this.customerPreferencesSaving = true;
+  this.customerPreferencesMessage = '';
+
+  this.auth.updateProfile({
+    customerInterests: this.customerInterests.slice(0, 9),
+    preferredAttentionMode: this.preferredAttentionMode || null,
+    preferredCity,
+    preferredRegion,
+  }).subscribe({
+    next: (updatedUser: any) => {
+      this.customerInterests = Array.isArray(updatedUser.customerInterests)
+        ? updatedUser.customerInterests
+        : this.customerInterests;
+      this.preferredAttentionMode = updatedUser.preferredAttentionMode || this.preferredAttentionMode;
+      this.preferredCity = updatedUser.preferredCity || preferredCity;
+      this.preferredRegion = updatedUser.preferredRegion || preferredRegion;
+      this.customerPreferencesSaving = false;
+      this.customerPreferencesEditing = false;
+      this.showTemporaryCustomerPreferencesMessage('Preferencias guardadas.');
+      this.cdr.detectChanges();
+    },
+    error: (error) => {
+      this.customerPreferencesSaving = false;
+      this.customerPreferencesMessage =
+        error?.error?.message || 'No se pudieron guardar las preferencias. Intenta nuevamente.';
+      this.cdr.detectChanges();
+    },
+  });
+}
+
+getCustomerPreferencesActionLabel(): string {
+  if (this.customerPreferencesSaving) return 'Guardando...';
+  return this.customerPreferencesEditing ? 'Guardar preferencias' : 'Editar preferencias';
+}
+
+private hasSavedCustomerPreferences(): boolean {
+  return Boolean(
+    this.customerInterests.length ||
+    this.preferredAttentionMode ||
+    this.preferredCity ||
+    this.preferredRegion
+  );
+}
+
+private showTemporaryCustomerPreferencesMessage(message: string) {
+  this.clearCustomerPreferencesMessageTimer();
+  this.customerPreferencesMessage = message;
+  this.customerPreferencesMessageTimer = setTimeout(() => {
+    this.customerPreferencesMessage = '';
+    this.customerPreferencesMessageTimer = null;
+    this.cdr.detectChanges();
+  }, 2500);
+}
+
+private clearCustomerPreferencesMessageTimer() {
+  if (!this.customerPreferencesMessageTimer) return;
+  clearTimeout(this.customerPreferencesMessageTimer);
+  this.customerPreferencesMessageTimer = null;
+}
+
+async editPreferredAttentionMode() {
+  const alert = await this.alertCtrl.create({
+    header: 'Modalidad preferida',
+    inputs: this.attentionModeOptions.map(option => ({
+      type: 'radio',
+      label: option.label,
+      value: option.value,
+      checked: this.preferredAttentionMode === option.value,
+    })),
+    buttons: [
+      { text: 'Cancelar', role: 'cancel' },
+      {
+        text: 'Guardar',
+        handler: (selectedMode) => {
+          if (!selectedMode) return false;
+
+          this.auth.updateProfile({ preferredAttentionMode: selectedMode }).subscribe((updatedUser: any) => {
+            this.preferredAttentionMode = updatedUser.preferredAttentionMode || selectedMode;
+          });
+
+          return true;
+        }
+      }
+    ]
+  });
+
+  await alert.present();
+}
+
+async editPreferredLocation() {
+  const alert = await this.alertCtrl.create({
+    header: 'Ubicacion preferida',
+    message: 'Usaremos estos datos para recomendar profesionales cercanos.',
+    inputs: [
+      {
+        name: 'preferredCity',
+        type: 'text',
+        value: this.preferredCity,
+        placeholder: 'Ciudad',
+        attributes: { maxlength: 80 },
+      },
+      {
+        name: 'preferredRegion',
+        type: 'text',
+        value: this.preferredRegion,
+        placeholder: 'Region',
+        attributes: { maxlength: 80 },
+      },
+    ],
+    buttons: [
+      { text: 'Cancelar', role: 'cancel' },
+      {
+        text: 'Guardar',
+        handler: (data) => {
+          const preferredCity = this.cleanOptional(data.preferredCity) || '';
+          const preferredRegion = this.cleanOptional(data.preferredRegion) || '';
+
+          if (preferredCity.length > 80 || preferredRegion.length > 80) {
+            window.alert('Ciudad y region deben tener maximo 80 caracteres.');
+            return false;
+          }
+
+          this.auth.updateProfile({ preferredCity, preferredRegion }).subscribe((updatedUser: any) => {
+            this.preferredCity = updatedUser.preferredCity || preferredCity;
+            this.preferredRegion = updatedUser.preferredRegion || preferredRegion;
+          });
+
+          return true;
+        }
+      }
+    ]
+  });
+
+  await alert.present();
+}
 getCountryLabel(code: string): string {
   const found = this.availableCountries.find(c => c.value === code);
   return found ? found.label : code;
@@ -584,6 +899,21 @@ getDocumentPreferenceLabel(): string {
     : 'Decidir al reservar';
 }
 
+getCustomerInterestsLabel(): string {
+  return this.customerInterests.length
+    ? this.customerInterests.join(', ')
+    : 'No definidos';
+}
+
+getPreferredAttentionModeLabel(): string {
+  const found = this.attentionModeOptions.find(option => option.value === this.preferredAttentionMode);
+  return found ? found.label : 'No definida';
+}
+
+getPreferredLocationLabel(): string {
+  return [this.preferredCity, this.preferredRegion].filter(Boolean).join(', ') || 'No definida';
+}
+
 private cleanOptional(value: string): string | undefined {
   const cleaned = value?.trim();
   return cleaned ? cleaned : undefined;
@@ -620,6 +950,38 @@ private validateTaxPayload(payload: {
   }
 
   return null;
+}
+
+private normalizeText(value: string): string {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+private getLocationSuggestions(
+  type: 'city' | 'region',
+  query: string,
+): string[] {
+  const normalizedQuery = this.normalizeText(query);
+
+  if (!normalizedQuery) {
+    return [];
+  }
+
+  const country = this.getSuggestionCountry();
+  const source = type === 'city'
+    ? LOCATION_SUGGESTIONS[country].cities
+    : LOCATION_SUGGESTIONS[country].regions;
+
+  return source
+    .filter(option => this.normalizeText(option).includes(normalizedQuery))
+    .slice(0, 6);
+}
+
+private getSuggestionCountry(): SupportedLocationCountry {
+  return this.country === 'ES' ? 'ES' : 'CL';
 }
 
 private buildDefaultAvatar(primary: string, secondary: string): string {

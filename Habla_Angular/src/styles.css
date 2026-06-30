@@ -278,3 +278,111 @@ ion-modal.reschedule-modal .slots ion-button[color="primary"] {
   --background: #2563eb;
   --color: white;
 }
+/* Shared avatar picker */
+.profile-image-shell,
+.avatar-shell {
+  position: relative;
+  display: inline-flex;
+  margin-bottom: 16px;
+}
+
+.avatar-edit-button,
+.avatar-modal-close {
+  border: 0;
+  border-radius: 999px;
+  background: var(--app-surface);
+  color: var(--app-primary);
+  font-weight: 900;
+}
+
+.avatar-edit-button {
+  position: absolute;
+  right: -2px;
+  bottom: 8px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--app-primary) 20%, transparent);
+}
+
+.avatar-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: end center;
+  padding: 18px;
+  background: rgba(17, 24, 39, 0.38);
+}
+
+.avatar-modal {
+  position: relative;
+  width: min(360px, 100%);
+  padding: 24px 20px 20px;
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-strong);
+}
+
+.avatar-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  background: color-mix(in srgb, var(--app-primary-light) 12%, var(--app-surface));
+}
+
+.avatar-modal h3 {
+  margin: 0 36px 6px 0;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.avatar-modal p {
+  margin: 0 0 16px;
+  color: var(--app-muted);
+  font-size: 14px;
+}
+
+.avatar-preview img,
+.avatar-preview ion-icon {
+  width: 94px;
+  height: 94px;
+  margin-bottom: 16px;
+  border-radius: 28px;
+  object-fit: cover;
+}
+
+.avatar-preview ion-icon {
+  color: var(--app-primary);
+}
+
+.default-avatar-picker {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 9px;
+  margin-bottom: 16px;
+}
+
+.default-avatar-picker button {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--app-primary-light) 8%, var(--app-surface));
+}
+
+.default-avatar-picker button.active {
+  border-color: var(--app-primary);
+}
+
+.default-avatar-picker img {
+  width: 100%;
+  height: 100%;
+  border-radius: 13px;
+  object-fit: cover;
+}

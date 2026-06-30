@@ -1,0 +1,213 @@
+:host {
+  display: inline-block;
+}
+
+.avatar-shell {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+}
+
+.avatar-preview {
+  display: block;
+  width: 124px;
+  height: 124px;
+  border: 4px solid var(--app-surface);
+  border-radius: 34px;
+  object-fit: cover;
+  box-shadow: 0 18px 36px color-mix(in srgb, var(--app-primary) 20%, transparent);
+}
+
+.avatar-edit {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 24%, transparent);
+  border-radius: 999px;
+  background: var(--app-surface);
+  color: var(--app-primary);
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--app-primary) 18%, transparent);
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.avatar-edit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px color-mix(in srgb, var(--app-primary) 24%, transparent);
+}
+
+.avatar-edit span {
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.avatar-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: end center;
+  padding: 18px;
+  background: rgba(17, 24, 39, 0.36);
+  animation: fadeIn 160ms ease;
+}
+
+.avatar-modal {
+  width: min(100%, 420px);
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 13%, transparent);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(192, 132, 252, 0.16), transparent 34%),
+    var(--app-surface);
+  box-shadow: 0 28px 70px rgba(17, 24, 39, 0.22);
+  animation: sheetIn 180ms ease;
+}
+
+.avatar-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.avatar-modal-header span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.avatar-modal-header h3 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.modal-close {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 16%, transparent);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--app-primary);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.modal-preview {
+  display: grid;
+  place-items: center;
+  margin: 18px 0;
+}
+
+.modal-preview img {
+  width: 112px;
+  height: 112px;
+  border: 4px solid var(--app-surface);
+  border-radius: 30px;
+  object-fit: cover;
+  box-shadow: 0 18px 36px color-mix(in srgb, var(--app-primary) 16%, transparent);
+}
+
+.upload-option {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 18%, transparent);
+  border-radius: var(--app-radius-md);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--app-text);
+  cursor: pointer;
+}
+
+.upload-option input {
+  display: none;
+}
+
+.upload-option span {
+  color: var(--app-primary);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.upload-option small {
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.avatar-options {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.avatar-options button {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 3px;
+  border: 2px solid transparent;
+  border-radius: 18px;
+  background: rgba(168, 85, 247, 0.07);
+  cursor: pointer;
+}
+
+.avatar-options button.active {
+  border-color: var(--app-primary);
+  background: rgba(168, 85, 247, 0.12);
+}
+
+.avatar-options img {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.clear-option {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 14px;
+  border: 0;
+  border-radius: var(--app-radius-md);
+  background: rgba(168, 85, 247, 0.08);
+  color: var(--app-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (min-width: 700px) {
+  .avatar-modal-backdrop {
+    place-items: center;
+  }
+}

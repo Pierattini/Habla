@@ -5,28 +5,38 @@
 }
 
 ion-content {
-  --background: var(--app-bg);
+  --background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--app-primary-light) 18%, transparent), transparent 34%),
+    var(--app-bg);
   --overflow: auto;
 }
 
 .detail-toolbar {
-  --background: color-mix(in srgb, var(--app-primary-light) 8%, var(--app-surface));
+  --background: color-mix(in srgb, var(--app-primary-light) 10%, var(--app-surface));
   --color: var(--app-text);
   --min-height: 58px;
   border-bottom: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
   box-shadow: 0 10px 24px color-mix(in srgb, var(--app-primary) 10%, transparent);
+  position: relative;
 }
 
 ion-title {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 96px;
   text-align: center;
   color: var(--app-text);
   font-size: 18px;
   font-weight: 900;
   letter-spacing: 0;
+  pointer-events: none;
 }
 
 .back-button {
-  --color: var(--app-text);
+  --color: var(--app-primary);
   --background-hover: color-mix(in srgb, var(--app-primary-light) 14%, transparent);
   --border-radius: 999px;
   margin-left: 6px;
@@ -34,6 +44,8 @@ ion-title {
   font-size: 13px;
   font-weight: 900;
   text-transform: none;
+  position: relative;
+  z-index: 2;
 }
 
 .back-button span {
@@ -46,15 +58,16 @@ ion-title {
 .detail-shell {
   max-width: 540px;
   margin: 0 auto;
-  padding-bottom: 112px;
+  padding: 6px 0 112px;
 }
 
 .professional-hero {
-  margin: 8px 0 18px;
-  padding: 28px 20px 22px;
+  margin: 10px 0 18px;
+  padding: 30px 20px 24px;
   border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
   border-radius: var(--app-radius-xl);
-  background: var(--app-surface);
+  background:
+    linear-gradient(180deg, #fff 0%, color-mix(in srgb, var(--app-primary-light) 6%, var(--app-surface)) 100%);
   box-shadow: var(--app-shadow-soft);
   text-align: center;
 }
@@ -89,7 +102,7 @@ ion-title {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--app-primary) 20%, transparent);
   border-radius: 50%;
   background: var(--app-surface);
   box-shadow: 0 12px 26px color-mix(in srgb, var(--app-primary) 18%, transparent);
@@ -127,8 +140,8 @@ ion-title {
 .professional-info h2 {
   margin: 0 0 6px;
   color: var(--app-text);
-  font-size: 26px;
-  font-weight: 800;
+  font-size: 28px;
+  font-weight: 900;
   letter-spacing: 0;
 }
 
@@ -136,7 +149,7 @@ ion-title {
   margin: 0;
   color: var(--app-muted);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .meta-grid {
@@ -147,10 +160,10 @@ ion-title {
 }
 
 .meta-pill {
-  padding: 12px;
+  padding: 13px;
   border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
   border-radius: var(--app-radius-lg);
-  background: var(--app-surface);
+  background: color-mix(in srgb, var(--app-primary-light) 4%, var(--app-surface));
   text-align: left;
 }
 
@@ -172,8 +185,10 @@ ion-card {
   margin: 16px 0;
   border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
   border-radius: var(--app-radius-xl);
-  background: var(--app-surface);
+  background:
+    linear-gradient(180deg, var(--app-surface) 0%, color-mix(in srgb, var(--app-primary-light) 4%, var(--app-surface)) 100%);
   box-shadow: var(--app-shadow-soft);
+  overflow: hidden;
 }
 
 ion-card-header,
@@ -181,10 +196,15 @@ ion-card-content {
   text-align: center;
 }
 
+ion-card-header {
+  padding-bottom: 6px;
+}
+
 ion-card-title {
   color: var(--app-text);
-  font-size: 18px;
-  font-weight: 800;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: 0;
 }
 
 ion-card-content p,
@@ -200,8 +220,9 @@ ion-datetime {
   max-width: 330px;
   margin: 0 auto;
   border-radius: var(--app-radius-lg);
-  --background: var(--app-surface);
+  --background: transparent;
   --ion-color-primary: var(--app-primary);
+  color: var(--app-text);
 }
 
 .hours-container {
@@ -224,7 +245,7 @@ ion-datetime {
   padding: 12px;
   border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
   border-radius: var(--app-radius-lg);
-  background: color-mix(in srgb, var(--app-primary) 4%, var(--app-surface));
+  background: color-mix(in srgb, var(--app-primary-light) 5%, var(--app-surface));
   cursor: pointer;
 }
 
@@ -271,6 +292,53 @@ ion-datetime {
   font-weight: 700;
 }
 
+.tax-request-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  text-align: left;
+}
+
+.tax-request-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.tax-request-form span {
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.tax-request-form input,
+.tax-request-form textarea {
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-primary-light) 4%, var(--app-surface));
+  color: var(--app-text);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.tax-request-form input {
+  height: 46px;
+  padding: 0 14px;
+}
+
+.tax-request-form textarea {
+  min-height: 92px;
+  padding: 12px 14px;
+  resize: vertical;
+}
+
+.tax-request-form input:focus,
+.tax-request-form textarea:focus {
+  border-color: var(--app-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 14%, transparent);
+}
+
 .hour-btn {
   min-width: 86px;
   height: 42px;
@@ -294,17 +362,6 @@ ion-datetime {
   opacity: 0.42;
 }
 
-.success-message {
-  display: block;
-  margin-top: 12px;
-  padding: 12px;
-  border-radius: var(--app-radius-md);
-  background: color-mix(in srgb, var(--app-success) 12%, var(--app-surface));
-  color: var(--app-success);
-  text-align: center;
-  font-weight: 800;
-}
-
 ion-button {
   --border-radius: var(--app-radius-md);
   text-transform: none;
@@ -319,3 +376,13 @@ ion-button {
   margin-top: 20px;
   font-size: 15px;
 }
+
+.conecta-message-backdrop{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:22px;background:rgba(23,18,32,.38)}
+.conecta-message-card{width:min(360px,100%);padding:22px;border-radius:24px;background:var(--app-surface);box-shadow:0 24px 60px rgba(36,23,59,.24);text-align:center}
+.conecta-message-icon{width:48px;height:48px;margin:0 auto 14px;display:grid;place-items:center;border-radius:999px;background:color-mix(in srgb,var(--app-primary) 12%,transparent);color:var(--app-primary);font-weight:900}
+.conecta-message-card.success .conecta-message-icon{background:color-mix(in srgb,var(--app-success) 14%,transparent);color:var(--app-success)}
+.conecta-message-card.error .conecta-message-icon{background:#fee2e2;color:#dc2626}
+.conecta-message-card.warning .conecta-message-icon{background:#fff7ed;color:#f97316}
+.conecta-message-copy h2{margin:0 0 8px;color:var(--app-text);font-size:20px;font-weight:900}
+.conecta-message-copy p{margin:0 0 18px;color:var(--app-muted);font-size:14px;line-height:1.45}
+.conecta-message-card button{min-width:132px;height:44px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--app-primary),var(--app-primary-light));color:#fff;font-weight:900}

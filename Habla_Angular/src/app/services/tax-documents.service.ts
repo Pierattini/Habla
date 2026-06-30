@@ -31,6 +31,16 @@ export interface PendingTaxDocument {
   currency: string;
   status: string;
   createdAt: string;
+  customerTax?: {
+    name?: string | null;
+    taxId?: string | null;
+    email?: string | null;
+    address?: string | null;
+    country?: string | null;
+    city?: string | null;
+    phone?: string | null;
+    comment?: string | null;
+  };
 }
 
 export interface TaxDocument {
@@ -60,6 +70,16 @@ export interface TaxDocument {
     id?: string;
     email?: string;
     name?: string;
+  };
+  customerTax?: {
+    name?: string | null;
+    taxId?: string | null;
+    email?: string | null;
+    address?: string | null;
+    country?: string | null;
+    city?: string | null;
+    phone?: string | null;
+    comment?: string | null;
   };
   appointment?: {
     date?: string;

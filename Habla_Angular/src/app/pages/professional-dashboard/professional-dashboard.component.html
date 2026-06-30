@@ -52,31 +52,94 @@
   <!-- FOTO -->
   <div class="profile-header">
 
-  <img
-  [src]="profile.image || '/default-avatar.png'"
-  class="profile-image"
-/>
+  <div class="profile-image-shell">
+    <img
+      [src]="profile.image || $any(this).professionalDefaultAvatars[0]"
+      class="profile-image"
+      alt="Imagen profesional"
+    />
+
+    <button
+      type="button"
+      class="avatar-edit-button"
+      aria-label="Editar imagen profesional"
+      (click)="$any(this).openProfessionalAvatarPicker()"
+    >
+      <ion-icon name="image-outline"></ion-icon>
+    </button>
+  </div>
 
   <input
     type="file"
     #fileInput
     accept="image/*"
-    (change)="onFileSelected($event)"
+    (change)="$any(this).onFileSelected($event)"
     style="display: none;"
   />
 
-  <ion-button
-    fill="outline"
-    size="small"
-    (click)="fileInput.click()"
+  <div
+    class="avatar-modal-backdrop"
+    *ngIf="$any(this).professionalAvatarPickerOpen"
+    (click)="$any(this).closeProfessionalAvatarPicker()"
   >
-    <ion-icon
-      slot="start"
-      name="image-outline">
-    </ion-icon>
+    <div
+      class="avatar-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="professional-avatar-modal-title"
+      (click)="$event.stopPropagation()"
+    >
+      <button
+        type="button"
+        class="avatar-modal-close"
+        aria-label="Cerrar"
+        (click)="$any(this).closeProfessionalAvatarPicker()"
+      >
+        x
+      </button>
 
-    Cambiar foto
-  </ion-button>
+      <h3 id="professional-avatar-modal-title">Editar imagen</h3>
+      <p>Elige un avatar o sube una fotografia profesional.</p>
+
+      <div class="avatar-preview">
+        <img
+          [src]="profile.image || $any(this).professionalDefaultAvatars[0]"
+          alt="Vista previa"
+        />
+      </div>
+
+      <div class="default-avatar-picker">
+        <button
+          type="button"
+          *ngFor="let avatar of $any(this).professionalDefaultAvatars"
+          [class.active]="profile.image === avatar"
+          (click)="$any(this).selectProfessionalAvatar(avatar)"
+          aria-label="Seleccionar avatar"
+        >
+          <img [src]="avatar" alt="" />
+        </button>
+      </div>
+
+      <div class="avatar-actions">
+        <ion-button
+          fill="outline"
+          size="small"
+          (click)="fileInput.click()"
+        >
+          Subir fotografia
+        </ion-button>
+
+        <ion-button
+          *ngIf="profile.image"
+          fill="clear"
+          size="small"
+          (click)="$any(this).clearProfessionalImage()"
+        >
+          Quitar imagen
+        </ion-button>
+      </div>
+    </div>
+  </div>
 
   <h2>{{ profile.name }}</h2>
 
@@ -422,6 +485,20 @@
           </span>
         </div>
 
+        <div
+          *ngIf="$any(document).customerTax"
+          class="tax-request-data"
+        >
+          <strong>Datos para emitir</strong>
+          <span>Nombre: {{ $any(document).customerTax?.name || 'No informado' }}</span>
+          <span>Documento: {{ $any(document).customerTax?.taxId || 'No informado' }}</span>
+          <span>Dirección: {{ $any(document).customerTax?.address || 'No informada' }}</span>
+          <span>Teléfono: {{ $any(document).customerTax?.phone || 'No informado' }}</span>
+          <span *ngIf="$any(document).customerTax?.comment">
+            Comentario: {{ $any(document).customerTax.comment }}
+          </span>
+        </div>
+
         <div class="document-upload">
           <input
             type="file"
@@ -668,6 +745,147 @@
           [counter]="true"
           placeholder="Cuenta brevemente tu experiencia, enfoque y como ayudas a tus pacientes."
           [(ngModel)]="profile.description">
+        </ion-textarea>
+      </ion-item>
+
+    </ion-card-content>
+
+  </ion-card>
+
+  <!-- DOCUMENTOS TRIBUTARIOS -->
+  <ion-card>
+
+    <ion-card-content>
+
+      <h2 class="section-title">
+        Emisión de documentos tributarios
+      </h2>
+
+      <p class="schedule-help">
+        Esta configuración define cómo se gestionan las boletas o facturas cuando un paciente las solicita.
+      </p>
+
+      <div class="document-emission-options">
+        <label
+          [class.active]="!$any(profile).documentAutomationEnabled"
+        >
+          <input
+            type="radio"
+            name="documentEmissionMode"
+            [checked]="!$any(profile).documentAutomationEnabled"
+            (change)="$any(this).setDocumentEmissionMode('MANUAL')"
+          />
+
+          <span>
+            <strong>Lo emito yo</strong>
+            <small>Recibirás los datos del paciente y podrás emitir o subir el documento manualmente.</small>
+          </span>
+        </label>
+
+        <label
+          [class.active]="$any(profile).documentAutomationEnabled"
+        >
+          <input
+            type="radio"
+            name="documentEmissionMode"
+            [checked]="$any(profile).documentAutomationEnabled"
+            (change)="$any(this).setDocumentEmissionMode('AUTOMATED')"
+          />
+
+          <span>
+            <strong>Gestionar automáticamente con Conecta</strong>
+            <small>Conecta preparará la emisión usando tus datos tributarios cuando el flujo automático esté disponible.</small>
+          </span>
+        </label>
+      </div>
+
+      <div
+        *ngIf="$any(profile).documentAutomationEnabled && !$any(this).isProfessionalTaxReady"
+        class="documents-empty tax-warning"
+      >
+        Completa tus datos tributarios para activar la emisión automática.
+      </div>
+
+      <div class="tax-profile-grid">
+        <ion-item class="profile-field" lines="none">
+          <ion-label position="stacked">
+            Nombre o razón social
+          </ion-label>
+
+          <ion-input
+            maxlength="120"
+            placeholder="Ej: Centro Conecta SpA"
+            [ngModel]="$any(profile).taxName"
+            (ngModelChange)="$any(profile).taxName = $event">
+          </ion-input>
+        </ion-item>
+
+        <ion-item class="profile-field" lines="none">
+          <ion-label position="stacked">
+            RUT / NIF
+          </ion-label>
+
+          <ion-input
+            maxlength="20"
+            placeholder="Ej: 12.345.678-9"
+            [ngModel]="$any(profile).taxId"
+            (ngModelChange)="$any(profile).taxId = $event">
+          </ion-input>
+        </ion-item>
+
+        <ion-item class="profile-field" lines="none">
+          <ion-label position="stacked">
+            Email tributario
+          </ion-label>
+
+          <ion-input
+            type="email"
+            maxlength="120"
+            placeholder="facturacion@correo.com"
+            [ngModel]="$any(profile).taxEmail"
+            (ngModelChange)="$any(profile).taxEmail = $event">
+          </ion-input>
+        </ion-item>
+
+        <ion-item class="profile-field" lines="none">
+          <ion-label position="stacked">
+            Ciudad
+          </ion-label>
+
+          <ion-input
+            maxlength="80"
+            placeholder="Ej: Santiago"
+            [ngModel]="$any(profile).taxCity"
+            (ngModelChange)="$any(profile).taxCity = $event">
+          </ion-input>
+        </ion-item>
+
+        <ion-item class="profile-field" lines="none">
+          <ion-label position="stacked">
+            País
+          </ion-label>
+
+          <ion-input
+            maxlength="40"
+            placeholder="Chile o España"
+            [ngModel]="$any(profile).taxCountry"
+            (ngModelChange)="$any(profile).taxCountry = $event">
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <ion-item class="profile-field profile-field-textarea" lines="none">
+        <ion-label position="stacked">
+          Dirección tributaria
+        </ion-label>
+
+        <ion-textarea
+          rows="3"
+          maxlength="160"
+          [counter]="true"
+          placeholder="Dirección que debe figurar en el documento tributario."
+          [ngModel]="$any(profile).taxAddress"
+          (ngModelChange)="$any(profile).taxAddress = $event">
         </ion-textarea>
       </ion-item>
 

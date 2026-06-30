@@ -27,7 +27,6 @@ ion-content::part(scroll) {
 .profile-image {
   width: 136px;
   height: 136px;
-  margin-bottom: 16px;
   border: 4px solid var(--app-surface);
   border-radius: 34px;
   object-fit: cover;
@@ -152,6 +151,16 @@ ion-card-content {
   font-weight: 800;
   text-align: center;
 }
+
+.document-emission-options { display: grid; gap: 10px; margin-bottom: 14px; }
+.document-emission-options label { display: flex; gap: 10px; padding: 12px; border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent); border-radius: var(--app-radius-lg); background: #fcfaff; }
+.document-emission-options label.active { border-color: var(--app-primary); background: color-mix(in srgb, var(--app-primary) 10%, var(--app-surface)); }
+.document-emission-options input { width: 18px; height: 18px; accent-color: var(--app-primary); }
+.document-emission-options span, .tax-request-data { display: grid; gap: 4px; }
+.document-emission-options strong, .tax-request-data strong { color: var(--app-text); font-weight: 900; }
+.document-emission-options small, .tax-request-data { color: var(--app-muted); font-size: 12px; }
+.tax-profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.tax-request-data { margin-top: 10px; padding: 10px; background: #fcfaff; }
 
 ion-item {
   --background: #fcfaff;
@@ -513,6 +522,10 @@ ion-textarea:focus-within {
 
 @media (max-width: 640px) {
   .documents-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .tax-profile-grid {
     grid-template-columns: 1fr;
   }
 

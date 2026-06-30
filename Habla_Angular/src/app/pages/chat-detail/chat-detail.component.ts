@@ -10,6 +10,8 @@ import {
   SupportTicket,
   SupportTicketStatus,
 } from '../../services/support-admin.service';
+import { addIcons } from 'ionicons';
+import { attachOutline, sendOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-chat-detail',
@@ -21,6 +23,8 @@ import {
 export class ChatDetailComponent {
   conversationId!: string;
   currentUserId = '';
+  currentUserName = '';
+  currentUserRole = '';
   professionalName = 'Chat';
   newMessage = '';
   activeTab: 'messages' | 'documents' | 'images' = 'messages';
@@ -38,7 +42,12 @@ export class ChatDetailComponent {
     private messagesService: MessagesService,
     private authService: AuthService,
     private supportAdminService: SupportAdminService,
-  ) {}
+  ) {
+    addIcons({
+      'attach-outline': attachOutline,
+      'send-outline': sendOutline,
+    });
+  }
 
   ionViewWillEnter() {
     this.clearRefreshInterval();
@@ -47,6 +56,8 @@ export class ChatDetailComponent {
     this.authService.getProfile().subscribe({
       next: (user: any) => {
         this.currentUserId = user.id;
+        this.currentUserName = user.name || user.email || 'Usuario';
+        this.currentUserRole = user.role || '';
         this.isAdmin = user.role === 'ADMIN';
 
         this.loadMessages();
@@ -164,6 +175,11 @@ export class ChatDetailComponent {
     const tempMessage = {
       content: text,
       senderId: this.currentUserId,
+      sender: {
+        id: this.currentUserId,
+        name: this.currentUserName,
+        role: this.currentUserRole,
+      },
       createdAt: new Date(),
     };
 
@@ -212,5 +228,34 @@ export class ChatDetailComponent {
 
   goBack() {
     window.history.back();
+  }
+
+  isCustomerMessage(message: any): boolean {
+    const senderRole = message?.sender?.role || message?.senderRole;
+
+    if (senderRole) {
+      return senderRole === 'CUSTOMER';
+    }
+
+    return message?.senderId === this.currentUserId;
+  }
+
+  getSenderLabel(message: any): string {
+    const senderRole = message?.sender?.role || message?.senderRole;
+    const senderName = message?.sender?.name;
+
+    if (senderRole === 'CUSTOMER') {
+      return senderName || 'Paciente';
+    }
+
+    if (senderRole === 'PROFESSIONAL') {
+      return senderName || this.professionalName || 'Profesional';
+    }
+
+    if (message?.senderId === this.currentUserId) {
+      return this.currentUserName || 'Usuario';
+    }
+
+    return senderName || this.professionalName || 'Profesional';
   }
 }
