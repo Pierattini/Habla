@@ -25,6 +25,7 @@ import { MeetingService } from '../meetings/meeting.service';
 import { GoogleCalendarService } from '../meetings/google-calendar.service';
 import { MicrosoftTeamsService } from '../meetings/microsoft-teams.service';
 import { ZoomService } from '../meetings/zoom.service';
+import { ProfessionalAccessService } from '../appointment-requests/professional-access.service';
 
 type AvailabilityConfig = {
   scheduleMode: ScheduleMode;
@@ -49,6 +50,7 @@ export class AppointmentsService {
     private googleCalendarService: GoogleCalendarService,
     private zoomService: ZoomService,
     private microsoftTeamsService: MicrosoftTeamsService,
+    private professionalAccess: ProfessionalAccessService,
   ) {}
   async create(
     customerId: string,
@@ -59,6 +61,13 @@ export class AppointmentsService {
       documentCurrency?: string;
       documentMode?: DocumentMode;
       attentionMode?: AttentionModality;
+      customerTaxData?: {
+        name?: string;
+        taxId?: string;
+        address?: string;
+        phone?: string;
+        comment?: string;
+      };
     } = {},
   ) {
     const now = new Date();
@@ -85,19 +94,7 @@ export class AppointmentsService {
       throw new NotFoundException('Professional not found');
     }
 
-    console.log('PLAN STATUS:', professional?.planStatus);
-    console.log('FIRST LEAD:', professional?.firstLeadReceivedAt);
-
-    if (
-      professional.planStatus === 'FREE' &&
-      professional.firstLeadReceivedAt
-    ) {
-      throw new ForbiddenException({
-        code: 'PROFESSIONAL_SUBSCRIPTION_REQUIRED',
-        message:
-          'Este profesional debe activar su plan Conecta para recibir nuevas solicitudes',
-      });
-    }
+    await this.professionalAccess.assertCanReceiveRequests(professionalId);
 
     if (professional.user.role !== 'PROFESSIONAL') {
       throw new ForbiddenException('Selected user is not a professional');
@@ -250,26 +247,21 @@ export class AppointmentsService {
     }
 
     // 👇 crear cita con precio final
-    const requestedMode = options.documentMode ?? DocumentMode.MANUAL;
     const documentRequested = options.documentRequested === true;
     const documentCurrency = options.documentCurrency ?? 'CLP';
+    const requestedMode = documentRequested && professional.documentAutomationEnabled
+      ? DocumentMode.AUTOMATED
+      : DocumentMode.MANUAL;
 
-    if (documentRequested && requestedMode === DocumentMode.AUTOMATED) {
-      if (!professional.documentAutomationEnabled) {
-        throw new BadRequestException(
-          'This professional has not enabled Conecta document management',
-        );
+    if (documentRequested) {
+      this.ensureCustomerTaxDataReady(options.customerTaxData);
+
+      if (requestedMode === DocumentMode.AUTOMATED) {
+        this.ensureProfessionalTaxDataReady(professional);
       }
     }
 
-    if (documentRequested) {
-      this.ensureTaxDataReady(customer, professional);
-    }
-
-    if (
-      professional.planStatus === 'FREE' &&
-      !professional.firstLeadReceivedAt
-    ) {
+    if (!professional.firstLeadReceivedAt) {
       await this.prisma.professional.update({
         where: { userId: professionalId },
         data: {
@@ -336,12 +328,15 @@ export class AppointmentsService {
           mode: requestedMode,
           amount: finalPrice,
           currency: documentCurrency,
-          customerTaxId: customer.taxId,
-          customerTaxName: customer.taxName || customer.name || customer.email,
+          customerTaxId: options.customerTaxData?.taxId,
+          customerTaxName:
+            options.customerTaxData?.name || customer.name || customer.email,
           customerTaxEmail: customer.taxEmail || customer.email,
-          customerTaxAddress: customer.taxAddress,
+          customerTaxAddress: options.customerTaxData?.address,
           customerTaxCountry: customer.taxCountry || customer.country,
           customerTaxCity: customer.taxCity,
+          customerTaxPhone: options.customerTaxData?.phone,
+          customerTaxComment: options.customerTaxData?.comment,
           professionalTaxId: professional.taxId,
           professionalTaxName:
             professional.taxName ||
@@ -1927,17 +1922,66 @@ export class AppointmentsService {
     );
   }
 
-  private ensureTaxDataReady(customer: any, professional: any): void {
-    const customerMissing = [
-      !customer.taxId ? 'RUT cliente' : null,
-      !customer.taxName ? 'nombre tributario cliente' : null,
-      !(customer.taxEmail || customer.email)
-        ? 'email tributario cliente'
-        : null,
-      !customer.taxAddress ? 'direccion tributaria cliente' : null,
-      !customer.taxCity ? 'ciudad/comuna cliente' : null,
+  private ensureCustomerTaxDataReady(data?: {
+    name?: string;
+    taxId?: string;
+    address?: string;
+    phone?: string;
+    comment?: string;
+  }): void {
+    const taxIdPattern = /^[a-zA-Z0-9.\-\s]{6,20}$/;
+    const phonePattern = /^[+0-9\s().-]{6,30}$/;
+    const name = data?.name?.trim();
+    const taxId = data?.taxId?.trim();
+    const address = data?.address?.trim();
+    const phone = data?.phone?.trim();
+    const comment = data?.comment?.trim();
+
+    const missing = [
+      !name ? 'nombre o razon social' : null,
+      !taxId ? 'RUT / NIF / documento tributario' : null,
+      !address ? 'direccion' : null,
+      !phone ? 'telefono' : null,
     ].filter(Boolean);
 
+    if (missing.length > 0) {
+      throw new BadRequestException(
+        `Faltan datos para documento tributario: ${missing.join(', ')}`,
+      );
+    }
+
+    if (!name || name.length < 3 || name.length > 120) {
+      throw new BadRequestException(
+        'El nombre o razon social debe tener entre 3 y 120 caracteres',
+      );
+    }
+
+    if (!taxId || !taxIdPattern.test(taxId)) {
+      throw new BadRequestException(
+        'El RUT / NIF / documento tributario debe tener entre 6 y 20 caracteres',
+      );
+    }
+
+    if (!address || address.length < 5 || address.length > 160) {
+      throw new BadRequestException(
+        'La direccion debe tener entre 5 y 160 caracteres',
+      );
+    }
+
+    if (!phone || !phonePattern.test(phone)) {
+      throw new BadRequestException(
+        'El telefono debe tener entre 6 y 30 caracteres y usar un formato valido',
+      );
+    }
+
+    if (comment && comment.length > 300) {
+      throw new BadRequestException(
+        'El comentario para la boleta o factura debe tener maximo 300 caracteres',
+      );
+    }
+  }
+
+  private ensureProfessionalTaxDataReady(professional: any): void {
     const professionalMissing = [
       !professional.taxId ? 'RUT profesional' : null,
       !professional.taxName ? 'razon social profesional' : null,
@@ -1948,11 +1992,9 @@ export class AppointmentsService {
       !professional.taxCity ? 'ciudad/comuna profesional' : null,
     ].filter(Boolean);
 
-    const missing = [...customerMissing, ...professionalMissing];
-
-    if (missing.length > 0) {
+    if (professionalMissing.length > 0) {
       throw new BadRequestException(
-        `Faltan datos tributarios para solicitar documento: ${missing.join(', ')}`,
+        `Faltan datos tributarios del profesional para emision automatica: ${professionalMissing.join(', ')}`,
       );
     }
   }

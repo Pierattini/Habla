@@ -135,122 +135,124 @@ export class UsersService {
       select: { slug: true },
     });
 
-    // PROFESSIONAL
-    await this.prisma.professional.updateMany({
-      where: {
-        userId: userId,
-      },
+    const professionalData = {
+      ...(existingProfessional && !existingProfessional.slug && {
+        slug: this.buildProfessionalSlug(dto.name || dataToUpdate.name || userId),
+      }),
 
-      data: {
-        ...(existingProfessional && !existingProfessional.slug && {
-          slug: this.buildProfessionalSlug(dto.name || dataToUpdate.name || userId),
-        }),
+      ...(dto.name !== undefined && {
+        name: dto.name,
+      }),
 
-        ...(dto.name !== undefined && {
-          name: dto.name,
-        }),
+      ...(dto.image !== undefined && {
+        image: dto.image,
+      }),
 
-        ...(dto.image !== undefined && {
-          image: dto.image,
-        }),
+      ...(dto.specialty !== undefined && {
+        specialty: dto.specialty,
+      }),
 
-        ...(dto.specialty !== undefined && {
-          specialty: dto.specialty,
-        }),
+      ...(dto.professionId !== undefined && {
+        professionId: dto.professionId || null,
+      }),
 
-        ...(dto.professionId !== undefined && {
-          professionId: dto.professionId || null,
-        }),
+      ...(dto.description !== undefined && {
+        description: dto.description,
+      }),
 
-        ...(dto.description !== undefined && {
-          description: dto.description,
-        }),
+      ...(dto.price !== undefined && {
+        price: dto.price,
+      }),
 
-        ...(dto.price !== undefined && {
-          price: dto.price,
-        }),
+      ...(dto.duration !== undefined && {
+        duration: dto.duration,
+      }),
 
-        ...(dto.duration !== undefined && {
-          duration: dto.duration,
-        }),
+      ...(dto.taxId !== undefined && {
+        taxId: dto.taxId,
+      }),
 
-        ...(dto.taxId !== undefined && {
-          taxId: dto.taxId,
-        }),
+      ...(dto.taxName !== undefined && {
+        taxName: dto.taxName,
+      }),
 
-        ...(dto.taxName !== undefined && {
-          taxName: dto.taxName,
-        }),
+      ...(dto.taxEmail !== undefined && {
+        taxEmail: dto.taxEmail,
+      }),
 
-        ...(dto.taxEmail !== undefined && {
-          taxEmail: dto.taxEmail,
-        }),
+      ...(dto.taxAddress !== undefined && {
+        taxAddress: dto.taxAddress,
+      }),
 
-        ...(dto.taxAddress !== undefined && {
-          taxAddress: dto.taxAddress,
-        }),
+      ...(dto.taxCountry !== undefined && {
+        taxCountry: dto.taxCountry,
+      }),
 
-        ...(dto.taxCountry !== undefined && {
-          taxCountry: dto.taxCountry,
-        }),
+      ...(dto.taxCity !== undefined && {
+        taxCity: dto.taxCity,
+      }),
 
-        ...(dto.taxCity !== undefined && {
-          taxCity: dto.taxCity,
-        }),
+      ...(dto.documentAutomationEnabled !== undefined && {
+        documentAutomationEnabled: dto.documentAutomationEnabled,
+      }),
 
-        ...(dto.documentAutomationEnabled !== undefined && {
-          documentAutomationEnabled: dto.documentAutomationEnabled,
-        }),
+      ...(dto.manualDocumentMode !== undefined && {
+        manualDocumentMode: dto.manualDocumentMode,
+      }),
 
-        ...(dto.manualDocumentMode !== undefined && {
-          manualDocumentMode: dto.manualDocumentMode,
-        }),
+      ...(dto.taxProvider !== undefined && {
+        taxProvider: dto.taxProvider,
+      }),
 
-        ...(dto.taxProvider !== undefined && {
-          taxProvider: dto.taxProvider,
-        }),
+      ...(dto.attentionMode !== undefined && {
+        attentionMode: dto.attentionMode,
+      }),
 
-        ...(dto.attentionMode !== undefined && {
-          attentionMode: dto.attentionMode,
-        }),
+      ...(dto.officeAddress !== undefined && {
+        officeAddress: dto.officeAddress,
+      }),
 
-        ...(dto.officeAddress !== undefined && {
-          officeAddress: dto.officeAddress,
-        }),
+      ...(dto.officeCity !== undefined && {
+        officeCity: dto.officeCity,
+      }),
 
-        ...(dto.officeCity !== undefined && {
-          officeCity: dto.officeCity,
-        }),
+      ...(dto.officeRegion !== undefined && {
+        officeRegion: dto.officeRegion,
+      }),
 
-        ...(dto.officeRegion !== undefined && {
-          officeRegion: dto.officeRegion,
-        }),
+      ...(dto.officeCountry !== undefined && {
+        officeCountry: dto.officeCountry,
+      }),
 
-        ...(dto.officeCountry !== undefined && {
-          officeCountry: dto.officeCountry,
-        }),
+      ...(dto.officeLatitude !== undefined && {
+        officeLatitude: dto.officeLatitude,
+      }),
 
-        ...(dto.officeLatitude !== undefined && {
-          officeLatitude: dto.officeLatitude,
-        }),
+      ...(dto.officeLongitude !== undefined && {
+        officeLongitude: dto.officeLongitude,
+      }),
 
-        ...(dto.officeLongitude !== undefined && {
-          officeLongitude: dto.officeLongitude,
-        }),
+      ...(dto.arrivalInstructions !== undefined && {
+        arrivalInstructions: dto.arrivalInstructions,
+      }),
 
-        ...(dto.arrivalInstructions !== undefined && {
-          arrivalInstructions: dto.arrivalInstructions,
-        }),
+      ...(dto.videoProvider !== undefined && {
+        videoProvider: dto.videoProvider,
+      }),
 
-        ...(dto.videoProvider !== undefined && {
-          videoProvider: dto.videoProvider,
-        }),
+      ...(dto.customVideoUrl !== undefined && {
+        customVideoUrl: dto.customVideoUrl,
+      }),
+    };
 
-        ...(dto.customVideoUrl !== undefined && {
-          customVideoUrl: dto.customVideoUrl,
-        }),
-      },
-    });
+    if (Object.keys(professionalData).length > 0) {
+      await this.prisma.professional.updateMany({
+        where: {
+          userId: userId,
+        },
+        data: professionalData,
+      });
+    }
 
     return this.prisma.user.findUnique({
       where: {

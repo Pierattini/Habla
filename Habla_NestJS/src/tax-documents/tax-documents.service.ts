@@ -71,6 +71,8 @@ export class TaxDocumentsService {
         customerTaxAddress: appointment.customer.taxAddress,
         customerTaxCountry: appointment.customer.taxCountry,
         customerTaxCity: appointment.customer.taxCity,
+        customerTaxPhone: null,
+        customerTaxComment: null,
         professionalTaxId: appointment.professional.professional?.taxId,
         professionalTaxName: appointment.professional.professional?.taxName,
         professionalTaxEmail: appointment.professional.professional?.taxEmail,
@@ -215,6 +217,16 @@ export class TaxDocumentsService {
       currency: document.currency,
       status: document.status,
       createdAt: document.createdAt,
+      customerTax: {
+        name: document.customerTaxName,
+        taxId: document.customerTaxId,
+        email: document.customerTaxEmail,
+        address: document.customerTaxAddress,
+        country: document.customerTaxCountry,
+        city: document.customerTaxCity,
+        phone: document.customerTaxPhone,
+        comment: document.customerTaxComment,
+      },
     }));
   }
 

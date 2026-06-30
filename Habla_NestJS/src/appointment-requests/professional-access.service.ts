@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export type ProfessionalAccess = {
   subscriptionStatus: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
+  canReceiveRequests: boolean;
   canReceiveUnlimitedRequests: boolean;
   canManageRequests: boolean;
   canReplyMessages: boolean;
@@ -52,6 +53,7 @@ export class ProfessionalAccessService {
     if (isActive) {
       return {
         subscriptionStatus: 'ACTIVE',
+        canReceiveRequests: true,
         canReceiveUnlimitedRequests: true,
         canManageRequests: true,
         canReplyMessages: true,
@@ -72,6 +74,46 @@ export class ProfessionalAccessService {
   async hasActiveSubscription(userId: string): Promise<boolean> {
     const access = await this.getAccessByUserId(userId);
     return access.subscriptionStatus === 'ACTIVE';
+  }
+
+  async assertCanReceiveRequests(userId: string): Promise<ProfessionalAccess> {
+    const professional = await (this.prisma as any).professional.findUnique({
+      where: { userId },
+      include: {
+        subscription: true,
+        user: {
+          select: {
+            isActive: true,
+            country: true,
+          },
+        },
+      },
+    });
+
+    if (!professional || !professional.user?.isActive) {
+      throw new ForbiddenException({
+        code: 'PROFESSIONAL_NOT_AVAILABLE',
+        message: 'Este profesional no puede recibir solicitudes en este momento.',
+      });
+    }
+
+    if (['SUSPENDED', 'CANCELLED'].includes(professional.planStatus)) {
+      throw new ForbiddenException({
+        code: 'PROFESSIONAL_NOT_AVAILABLE',
+        message: 'Este profesional no puede recibir solicitudes en este momento.',
+      });
+    }
+
+    const access = await this.getAccessByUserId(userId);
+
+    if (!access.canReceiveRequests) {
+      throw new ForbiddenException({
+        code: 'PROFESSIONAL_SUBSCRIPTION_REQUIRED',
+        message: access.activationMessage || 'Este profesional debe activar su plan Conecta para recibir nuevas solicitudes.',
+      });
+    }
+
+    return access;
   }
 
   async getStatsByUserId(userId: string): Promise<ProfessionalStats> {
@@ -151,6 +193,7 @@ export class ProfessionalAccessService {
   ): ProfessionalAccess {
     return {
       subscriptionStatus: status,
+      canReceiveRequests: status === 'TRIAL',
       canReceiveUnlimitedRequests: false,
       canManageRequests: false,
       canReplyMessages: false,

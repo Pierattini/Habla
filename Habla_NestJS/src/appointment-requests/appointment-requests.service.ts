@@ -49,23 +49,8 @@ export class AppointmentRequestsService {
       throw new NotFoundException('Professional not found');
     }
 
-    const isActive = await this.professionalAccess.hasActiveSubscription(professional.id);
-    const openStatuses = ['PENDING', 'LOCKED_PENDING_SUBSCRIPTION'];
-
-    if (!isActive) {
-      const openRequests = await (this.prisma as any).appointmentRequest.count({
-        where: {
-          professionalId: professional.id,
-          status: { in: openStatuses },
-        },
-      });
-
-      if (openRequests >= 1) {
-        throw new ForbiddenException(
-          'Este profesional debe activar su plan antes de recibir nuevas solicitudes.',
-        );
-      }
-    }
+    const access = await this.professionalAccess.assertCanReceiveRequests(professional.id);
+    const isActive = access.subscriptionStatus === 'ACTIVE';
 
     let conversation = await this.prisma.conversation.findUnique({
       where: {

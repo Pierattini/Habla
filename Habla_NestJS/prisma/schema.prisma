@@ -485,6 +485,8 @@ model TaxDocument {
   customerTaxAddress String?
   customerTaxCountry String?
   customerTaxCity    String?
+  customerTaxPhone   String?
+  customerTaxComment String?
 
   professionalTaxId      String?
   professionalTaxName    String?

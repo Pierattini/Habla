@@ -43,6 +43,15 @@ export class AppointmentsController {
         documentCurrency: body.documentCurrency,
         documentMode: body.documentMode,
         attentionMode: body.attentionMode,
+        customerTaxData: body.documentRequested
+          ? {
+              name: body.customerTaxName,
+              taxId: body.customerTaxId,
+              address: body.customerTaxAddress,
+              phone: body.customerTaxPhone,
+              comment: body.customerTaxComment,
+            }
+          : undefined,
       },
     );
   }

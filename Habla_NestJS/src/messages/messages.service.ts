@@ -399,6 +399,15 @@ export class MessagesService {
         fileUrl,
         fileName,
       },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+          },
+        },
+      },
     });
   }
   async getConversations(userId: string) {
@@ -490,6 +499,15 @@ export class MessagesService {
     return this.prisma.message.findMany({
       where: {
         conversationId,
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'asc',
@@ -587,6 +605,15 @@ export class MessagesService {
         fileUrl,
         fileName,
       },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+          },
+        },
+      },
     });
 
     this.notifySupportTicketMessage(conversationId, senderId, content);
@@ -637,6 +664,15 @@ export class MessagesService {
 
       orderBy: {
         createdAt: 'desc',
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+          },
+        },
       },
     });
 
@@ -702,6 +738,15 @@ export class MessagesService {
         fileName: file.originalname,
         fileType: file.mimetype,
         fileSize: file.size,
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+          },
+        },
       },
     });
   }
