@@ -230,6 +230,28 @@ ion-modal.reschedule-modal .slots ion-button[color="primary"] {
   --background: #2563eb;
   --color: white;
 }
+
+ion-modal.payment-data-modal {
+  --width: min(360px, calc(100vw - 32px));
+  --height: auto;
+  --max-height: min(82vh, 620px);
+  --border-radius: 26px;
+  --box-shadow: var(--app-shadow-strong);
+  align-items: center;
+  justify-content: center;
+}
+
+ion-modal.payment-data-modal::part(backdrop) {
+  background: rgba(17, 24, 39, 0.44);
+  opacity: 1;
+  backdrop-filter: blur(2px);
+}
+
+ion-modal.payment-data-modal::part(content) {
+  overflow: hidden;
+  border-radius: 26px;
+  background: transparent;
+}
 /* 🔥 MODAL REAGENDAR (FIX REAL FINAL) */
 
 ion-modal.reschedule-modal {

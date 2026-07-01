@@ -927,7 +927,9 @@ async openPayment(appt: any) {
     componentProps: {
       paymentData: data,
       appointmentId: appt.id
-    }
+    },
+    cssClass: 'payment-data-modal',
+    backdropDismiss: true
   });
 
   await modal.present();

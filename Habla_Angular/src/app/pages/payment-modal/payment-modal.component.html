@@ -1,56 +1,97 @@
-<ion-header>
-  <ion-toolbar>
-    <ion-title>
-      {{ mode === 'PAYMENT' ? 'Datos de pago' : 'Reembolso' }}
-    </ion-title>
-    <ion-buttons slot="end">
-      <ion-button (click)="close()">Cerrar</ion-button>
-    </ion-buttons>
-  </ion-toolbar>
-</ion-header>
+<ion-content>
+  <section class="payment-sheet">
+    <button
+      type="button"
+      class="modal-close"
+      aria-label="Cerrar"
+      (click)="close()"
+    >
+      ×
+    </button>
 
-<ion-content class="ion-padding">
+    <ng-container *ngIf="mode === 'PAYMENT'">
+      <div class="modal-icon" aria-hidden="true">
+        <span></span>
+      </div>
 
-  <!-- 💳 MODO PAGO (lo que ya tenías) -->
-  <ng-container *ngIf="mode === 'PAYMENT'">
+      <h2>Datos de pago</h2>
+      <p class="modal-helper">
+        Transfiere usando estos datos y luego confirma para avisar al profesional.
+      </p>
 
-     <p><strong>Nombre:</strong> {{ paymentData?.name }}</p>
-     <p><strong>Banco:</strong> {{ paymentData?.bankName }}</p>
-     <p><strong>Número de cuenta:</strong> {{ paymentData?.accountNumber }}</p>
-     <p><strong>Tipo de cuenta:</strong> {{ paymentData?.accountType }}</p>
-     <p><strong>Correo:</strong> {{ paymentData?.accountEmail }}</p>
+      <div class="payment-data-list">
+        <div class="payment-data-row">
+          <span>Nombre</span>
+          <strong>{{ paymentData?.name || 'No informado' }}</strong>
+        </div>
 
-    <ion-button expand="block" color="success" (click)="confirmarPago()">
-      Ya transferí
-    </ion-button>
+        <div class="payment-data-row">
+          <span>Banco</span>
+          <strong>{{ paymentData?.bankName || 'No informado' }}</strong>
+        </div>
 
-  </ng-container>
+        <div class="payment-data-row">
+          <span>Número de cuenta</span>
+          <strong>{{ paymentData?.accountNumber || 'No informado' }}</strong>
+        </div>
 
-  <!-- 💸 MODO REEMBOLSO (nuevo) -->
-  <ng-container *ngIf="mode === 'REFUND'">
+        <div class="payment-data-row">
+          <span>Tipo de cuenta</span>
+          <strong>{{ paymentData?.accountType || 'No informado' }}</strong>
+        </div>
 
-    <ion-item>
-      <ion-label position="stacked">Banco</ion-label>
-      <ion-input [(ngModel)]="bank"></ion-input>
-    </ion-item>
+        <div class="payment-data-row">
+          <span>Correo</span>
+          <strong>{{ paymentData?.accountEmail || 'No informado' }}</strong>
+        </div>
+      </div>
 
-    <ion-item>
-      <ion-label position="stacked">Número de cuenta</ion-label>
-      <ion-input [(ngModel)]="account"></ion-input>
-    </ion-item>
+      <ion-button
+        expand="block"
+        class="confirm-payment-btn"
+        (click)="confirmarPago()"
+      >
+        Ya transferí
+      </ion-button>
+    </ng-container>
 
-    <ion-item>
-      <ion-label position="stacked">Tipo de cuenta</ion-label>
-      <ion-select [(ngModel)]="accountType">
-        <ion-select-option value="corriente">Corriente</ion-select-option>
-        <ion-select-option value="ahorro">Ahorro</ion-select-option>
-      </ion-select>
-    </ion-item>
+    <ng-container *ngIf="mode === 'REFUND'">
+      <div class="modal-icon refund" aria-hidden="true">
+        <span></span>
+      </div>
 
-    <ion-button expand="block" color="danger" (click)="confirmRefund()">
-      Solicitar reembolso
-    </ion-button>
+      <h2>Reembolso</h2>
+      <p class="modal-helper">
+        Ingresa tus datos bancarios para solicitar el reembolso.
+      </p>
 
-  </ng-container>
+      <div class="refund-form">
+        <ion-item lines="none">
+          <ion-label position="stacked">Banco</ion-label>
+          <ion-input [(ngModel)]="bank"></ion-input>
+        </ion-item>
 
+        <ion-item lines="none">
+          <ion-label position="stacked">Número de cuenta</ion-label>
+          <ion-input [(ngModel)]="account"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none">
+          <ion-label position="stacked">Tipo de cuenta</ion-label>
+          <ion-select [(ngModel)]="accountType">
+            <ion-select-option value="corriente">Corriente</ion-select-option>
+            <ion-select-option value="ahorro">Ahorro</ion-select-option>
+          </ion-select>
+        </ion-item>
+      </div>
+
+      <ion-button
+        expand="block"
+        class="refund-btn"
+        (click)="confirmRefund()"
+      >
+        Solicitar reembolso
+      </ion-button>
+    </ng-container>
+  </section>
 </ion-content>

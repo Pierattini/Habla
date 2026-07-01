@@ -182,6 +182,28 @@ ion-card {
   font-weight: 800;
 }
 
+.appointment-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-primary-light) 6%, var(--app-surface));
+}
+
+.appointment-status-row > span {
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.appointment-status-row .estado {
+  margin: 0;
+}
+
 .success {
   background: color-mix(in srgb, var(--app-success) 14%, var(--app-surface));
   color: var(--app-success);
@@ -225,6 +247,9 @@ ion-card {
 
 .appointment-summary div {
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
   border-radius: var(--app-radius-md);
@@ -232,15 +257,16 @@ ion-card {
 }
 
 .appointment-summary span {
-  display: block;
-  margin-bottom: 4px;
+  display: inline-flex;
+  margin-bottom: 0;
   color: var(--app-muted);
   font-size: 11px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .appointment-summary strong {
-  display: block;
+  display: inline-flex;
   color: var(--app-text);
   font-size: 12px;
   font-weight: 900;
@@ -528,6 +554,14 @@ ion-card {
   box-shadow: 0 8px 18px color-mix(in srgb, var(--app-primary) 8%, transparent);
 }
 
+.documento-toggle-static {
+  cursor: default;
+}
+
+.documento-toggle-static > div {
+  min-width: 0;
+}
+
 .documento-toggle span {
   display: block;
   margin: 0 0 4px;
@@ -593,6 +627,16 @@ ion-card {
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
+}
+
+.appointment-modality .appointment-modality-row {
+  display: grid;
+  grid-template-columns: minmax(94px, auto) 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 14px;
+  background: #fff;
 }
 
 .appointment-modality span {
@@ -1130,16 +1174,28 @@ ion-button[size="small"] {
 }
 
 :host .card-cita .documento-tributario {
-  padding: 10px;
+  padding: 8px;
   gap: 8px;
+  display: grid;
+  width: 100%;
+  overflow: hidden;
 }
 
 :host .card-cita .documento-toggle {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  padding: 12px;
+  padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
-  border-radius: 16px;
+  border-radius: 18px;
   background: #fff;
+  color: var(--app-text);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--app-primary) 7%, transparent);
 }
 
 :host .card-cita .documento-toggle span {
@@ -1148,27 +1204,121 @@ ion-button[size="small"] {
 }
 
 :host .card-cita .documento-toggle p {
-  max-width: 180px;
+  max-width: 100%;
   line-height: 1.35;
+}
+
+:host .card-cita .documento-toggle-side {
+  align-items: flex-end;
 }
 
 :host .card-cita .documento-toggle-side strong {
   max-width: 118px;
+  min-width: 86px;
   text-align: center;
   line-height: 1.15;
 }
 
+:host .card-cita .documento-toggle-side i {
+  display: none;
+}
+
 :host .card-cita .documento-panel {
-  padding: 4px 2px 2px;
+  display: none !important;
+}
+
+:host .card-cita .documento-panel {
+  display: grid;
+  gap: 8px;
+  padding: 2px;
 }
 
 :host .card-cita .documento-grid {
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: grid;
+  gap: 6px;
 }
 
 :host .card-cita .documento-grid div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   background: #fff;
   border: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
+  border-radius: 999px;
+  padding: 8px 10px;
+}
+
+:host .card-cita .documento-grid span {
+  color: var(--app-muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+:host .card-cita .documento-grid strong {
+  min-width: 0;
+  color: var(--app-text);
+  font-size: 11px;
+  font-weight: 900;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+:host .card-cita .documento-timeline {
+  display: flex;
+  gap: 6px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--app-primary-light) 7%, #fff);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+:host .card-cita .documento-timeline::-webkit-scrollbar {
+  display: none;
+}
+
+:host .card-cita .timeline-item {
+  flex: 0 0 auto;
+  display: inline-flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 7px 10px;
+  border-bottom: 0;
+  border-right: 1px solid color-mix(in srgb, var(--app-primary) 8%, transparent);
+}
+
+:host .card-cita .timeline-item:last-child {
+  border-right: 0;
+}
+
+:host .card-cita .timeline-item strong {
+  color: var(--app-text);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+:host .card-cita .timeline-item small {
+  margin-top: 0;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+:host .card-cita .timeline-dot {
+  margin-top: 0;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 380px) {
+  :host .card-cita .documento-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 :host .card-cita .botones {
