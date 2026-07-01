@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA 
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin, Observable } from 'rxjs';
+import { finalize, forkJoin, Observable } from 'rxjs';
 import {
   DashboardTaxDocument,
   TaxDocument,
@@ -108,6 +108,9 @@ export class ProfessionalDashboardComponent {
   publicProfileUrl = '';
   publicProfileMessage = '';
   planActionMessage = '';
+  profileFeedbackMessage = '';
+  profileFeedbackType: 'success' | 'error' | 'warning' = 'success';
+  private profileFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
   subscriptionActionRunning = false;
   statsLoading = false;
   planPricing: ProfessionalPlanPricing = {
@@ -385,7 +388,7 @@ export class ProfessionalDashboardComponent {
     const validationErrors = this.validateAgenda();
 
     if (validationErrors.length > 0) {
-      alert(validationErrors[0]);
+      this.showProfileFeedback(validationErrors[0], 'warning', 2200);
       return;
     }
 
@@ -407,6 +410,7 @@ export class ProfessionalDashboardComponent {
         image: this.profile.image,
         specialty: this.profile.specialty,
         description: this.profile.description,
+        rules: this.profile.rules,
         price: Number(this.profile.price),
         duration: Number(this.profile.duration),
         attentionMode: this.profile.attentionMode,
@@ -429,19 +433,39 @@ export class ProfessionalDashboardComponent {
         taxCity: this.profile.taxCity,
       }),
       ...availabilityRequests,
-    ]).subscribe({
+    ])
+    .pipe(finalize(() => {
+      this.isSaving = false;
+    }))
+    .subscribe({
       next: () => {
-        alert('Perfil y agenda actualizados');
+        this.showProfileFeedback('Perfil y agenda actualizados', 'success');
         this.loadProfile();
       },
       error: (err) => {
         console.error(err);
-        alert(err?.error?.message || 'Error actualizando perfil');
-      },
-      complete: () => {
-        this.isSaving = false;
+        this.showProfileFeedback(err?.error?.message || 'Error actualizando perfil', 'error', 2200);
       }
     });
+  }
+
+  private showProfileFeedback(
+    message: string,
+    type: 'success' | 'error' | 'warning' = 'success',
+    duration = 1000,
+  ): void {
+    this.profileFeedbackMessage = message;
+    this.profileFeedbackType = type;
+
+    if (this.profileFeedbackTimer) {
+      clearTimeout(this.profileFeedbackTimer);
+    }
+
+    this.profileFeedbackTimer = setTimeout(() => {
+      this.profileFeedbackMessage = '';
+      this.profileFeedbackTimer = null;
+      this.cdr.detectChanges();
+    }, duration);
   }
 
   loadGoogleConnectionStatus(): void {
@@ -612,32 +636,34 @@ export class ProfessionalDashboardComponent {
       });
   }
 
-onFileSelected(event: Event) {
-
-  console.log('INPUT OK');
-
+async onFileSelected(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
 
   if (!file) return;
 
-  const reader = new FileReader();
+  if (!file.type.startsWith('image/')) {
+    alert('Selecciona una imagen valida.');
+    input.value = '';
+    return;
+  }
 
-  reader.onload = (e: ProgressEvent<FileReader>) => {
-
-    console.log('IMAGEN CARGADA');
-
+  try {
+    const image = await this.prepareProfileImage(file);
     this.profile = {
       ...this.profile,
-      image: String(e.target?.result || '')
+      image
     };
+    this.imageVersion = Date.now();
     this.closeProfessionalAvatarPicker();
-    //this.imageVersion = Date.now();
-  };
-
-  reader.readAsDataURL(file);
-
+    this.cdr.detectChanges();
+  } catch (error) {
+    console.error(error);
+    alert('No se pudo cargar la imagen. Intenta con otra foto.');
+  } finally {
+    input.value = '';
   }
+}
 
 selectProfessionalAvatar(avatar: string) {
   this.profile = {
@@ -680,6 +706,51 @@ private buildDefaultAvatar(primary: string, secondary: string): string {
   `;
 
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+private prepareProfileImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('No se pudo procesar la imagen.'));
+
+      img.onload = () => {
+        const maxSide = 640;
+        const ratio = Math.min(1, maxSide / Math.max(img.width, img.height));
+        const width = Math.max(1, Math.round(img.width * ratio));
+        const height = Math.max(1, Math.round(img.height * ratio));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('No se pudo preparar la imagen.'));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        let quality = 0.78;
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+        while (dataUrl.length > 180_000 && quality > 0.42) {
+          quality -= 0.08;
+          dataUrl = canvas.toDataURL('image/jpeg', quality);
+        }
+
+        resolve(dataUrl);
+      };
+
+      img.src = String(reader.result || '');
+    };
+
+    reader.readAsDataURL(file);
+  });
 }
 
   loadProfile() {

@@ -327,7 +327,7 @@ ion-card {
 .penalty-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 10000;
   display: grid;
   place-items: center;
   padding: 20px;
@@ -338,12 +338,13 @@ ion-card {
 .calendar-modal,
 .penalty-modal {
   position: relative;
-  width: min(340px, 100%);
-  padding: 26px 26px 20px;
+  width: min(360px, 100%);
+  padding: 24px;
   border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
-  border-radius: var(--app-radius-md);
+  border-radius: 26px;
   background: var(--app-surface);
-  box-shadow: var(--app-shadow-soft);
+  box-shadow: 0 26px 70px rgba(31, 22, 45, 0.24);
+  animation: modalIn 160ms ease-out;
 }
 
 .calendar-modal {
@@ -398,11 +399,11 @@ ion-card {
 
 .calendar-modal h2,
 .penalty-modal h2 {
-  max-width: 240px;
-  margin: 0 0 14px;
+  max-width: 260px;
+  margin: 0 0 10px;
   color: var(--app-text);
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 21px;
+  font-weight: 900;
   line-height: 1.1;
 }
 
@@ -414,8 +415,9 @@ ion-card {
 .penalty-modal p {
   margin: 0;
   color: var(--app-muted);
-  font-size: 16px;
-  line-height: 1.25;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
 }
 
 .calendar-intro {
@@ -513,19 +515,62 @@ ion-card {
 }
 
 .penalty-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 26px;
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 .penalty-actions button {
-  border: 0;
-  background: transparent;
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  min-height: 66px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 18%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--app-primary-light) 9%, #fff);
+  color: var(--app-text);
+  font: inherit;
+  text-align: left;
+}
+
+.penalty-actions button strong {
   color: var(--app-primary);
   font-size: 14px;
   font-weight: 900;
-  text-transform: uppercase;
+}
+
+.penalty-actions button small {
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.penalty-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  color: #fff;
+  font-size: 26px;
+  font-weight: 900;
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--app-primary) 26%, transparent);
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 
@@ -1362,5 +1407,253 @@ ion-button[size="small"] {
     height: 64px !important;
     min-width: 64px !important;
     border-radius: 20px;
+  }
+}
+
+/* Tarjeta moderna de citas */
+:host .card-cita {
+  border: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, #fff, color-mix(in srgb, var(--app-primary-light) 5%, #fff));
+  box-shadow: 0 18px 38px color-mix(in srgb, var(--app-primary) 10%, transparent);
+  opacity: 1;
+}
+
+:host .card-cita ion-card-content {
+  padding: 14px;
+  gap: 12px;
+}
+
+:host .card-cita .header-cita {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
+:host .card-cita .avatar {
+  width: 100% !important;
+  height: clamp(168px, 52vw, 230px) !important;
+  min-width: 0 !important;
+  border: 0;
+  border-radius: 20px;
+  background: var(--app-secondary);
+  box-shadow: none;
+}
+
+:host .card-cita img.appointment-photo,
+:host .card-cita .avatar img {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  border-radius: 20px;
+  object-fit: cover !important;
+}
+
+:host .card-cita .info {
+  width: 100%;
+}
+
+:host .card-cita .appointment-title-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+:host .card-cita .nombre {
+  color: var(--app-text);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+:host .card-cita .especialidad {
+  margin-top: 3px;
+  color: var(--app-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+:host .card-cita .estado {
+  align-self: start;
+  white-space: nowrap;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+:host .card-cita .appointment-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+:host .card-cita .appointment-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 7px 11px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--app-primary) 6%, transparent);
+}
+
+:host .card-cita .appointment-chip.mode {
+  background: color-mix(in srgb, var(--app-primary-light) 12%, #fff);
+  color: var(--app-primary);
+}
+
+:host .card-cita .appointment-summary {
+  display: block;
+}
+
+:host .card-cita .appointment-summary .appointment-date-row {
+  display: grid;
+  grid-template-columns: 34px minmax(82px, auto) 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 12px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--app-primary-light) 7%, #fff);
+}
+
+:host .card-cita .appointment-summary-icon {
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+}
+
+:host .card-cita .appointment-summary-icon::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 2px solid #fff;
+  border-radius: 4px;
+}
+
+:host .card-cita .appointment-summary span:not(.appointment-summary-icon) {
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+:host .card-cita .appointment-summary strong {
+  justify-self: end;
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: right;
+}
+
+:host .card-cita .appointment-details-toggle {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  background: #fff;
+  box-shadow: 0 10px 20px color-mix(in srgb, var(--app-primary) 7%, transparent);
+}
+
+:host .card-cita .appointment-modality {
+  gap: 8px;
+  padding: 10px;
+}
+
+:host .card-cita .appointment-modality .appointment-modality-row {
+  grid-template-columns: minmax(96px, auto) 1fr;
+  padding: 9px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 8%, transparent);
+}
+
+:host .card-cita .documento-tributario {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+:host .card-cita .documento-toggle {
+  padding: 11px 12px;
+  border-radius: 18px;
+}
+
+:host .card-cita .documento-toggle span {
+  margin: 0;
+}
+
+:host .card-cita .documento-toggle-side strong {
+  max-width: 150px;
+  min-width: 86px;
+}
+
+:host .card-cita .botones,
+:host .card-cita .acciones-secundarias {
+  gap: 9px;
+}
+
+:host .card-cita .action-row-payment,
+:host .card-cita .action-row-secondary,
+:host .card-cita .action-row-extra {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+:host .card-cita .action-row-message {
+  display: flex;
+  justify-content: center;
+}
+
+:host .card-cita .btn-main::part(native),
+:host .card-cita .btn-sec::part(native),
+:host .card-cita .btn-principal::part(native) {
+  min-height: 38px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+:host .card-cita .btn-main[color="success"]::part(native) {
+  background: var(--app-success);
+  color: #fff;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--app-success) 18%, transparent);
+}
+
+:host .card-cita .btn-sec[color="danger"]::part(native) {
+  color: var(--app-primary);
+}
+
+@media (max-width: 380px) {
+  :host .card-cita .avatar {
+    height: 168px !important;
+  }
+
+  :host .card-cita .appointment-title-row {
+    grid-template-columns: 1fr;
+  }
+
+  :host .card-cita .estado {
+    justify-self: start;
+  }
+
+  :host .card-cita .appointment-summary .appointment-date-row {
+    grid-template-columns: 30px 1fr;
+  }
+
+  :host .card-cita .appointment-summary strong {
+    grid-column: 2;
+    justify-self: start;
+    text-align: left;
   }
 }

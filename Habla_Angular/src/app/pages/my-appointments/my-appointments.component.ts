@@ -85,6 +85,10 @@ setFilter(filter: string) {
   this.selectedFilter = filter;
 }
 
+isTerminalAppointment(appt: any): boolean {
+  return ['CANCELLED', 'COMPLETED', 'REFUNDED'].includes(appt?.status);
+}
+
 getVisibleUpcomingGroups(): any[] {
   if (this.selectedFilter === 'today') return this.todayAppointments;
   if (this.selectedFilter === 'upcoming') return this.futureAppointments;
@@ -214,16 +218,14 @@ finishAppointmentsLoad() {
     next: async (res: any) => {
 
       this.loadingId = null;
+      this.selectedFilter = 'history';
 
-      // Si es menos de 48h, mostrar opciones
-     if (
-  res.status === 'PENDING_PAYMENT' ||
-  res.penalty !== undefined
-) {
+      if (res.requiresPenaltyResolution === true) {
+        this.showCancelOptions(id);
+        this.loadAppointments();
+        return;
+      }
 
-  this.showCancelOptions(id);
-  return;
-}
       await this.presentToast('Cita cancelada correctamente', 'danger');
       this.loadAppointments();
     },
@@ -239,6 +241,7 @@ resolvePenalty(id: string, option: 'CREDIT' | 'REFUND', data?: any) {
 
   this.appointmentsService.resolvePenalty(id, option, data).subscribe({
     next: async () => {
+      this.selectedFilter = 'history';
       await this.presentToast(
         option === 'CREDIT'
           ? 'Saldo guardado como crédito'

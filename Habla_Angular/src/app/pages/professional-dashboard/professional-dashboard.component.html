@@ -65,7 +65,7 @@
       aria-label="Editar imagen profesional"
       (click)="$any(this).openProfessionalAvatarPicker()"
     >
-      <ion-icon name="image-outline"></ion-icon>
+      <span aria-hidden="true">✎</span>
     </button>
   </div>
 
@@ -1438,3 +1438,22 @@
   </ion-button>
 
 </ion-content>
+
+<div
+  class="conecta-feedback-backdrop"
+  *ngIf="$any(this).profileFeedbackMessage"
+>
+  <div
+    class="conecta-feedback-card"
+    [class.success]="$any(this).profileFeedbackType === 'success'"
+    [class.error]="$any(this).profileFeedbackType === 'error'"
+    [class.warning]="$any(this).profileFeedbackType === 'warning'"
+    role="status"
+    aria-live="polite"
+  >
+    <span class="conecta-feedback-icon" aria-hidden="true">
+      {{ $any(this).profileFeedbackType === 'success' ? '✓' : ($any(this).profileFeedbackType === 'warning' ? '!' : '×') }}
+    </span>
+    <p>{{ $any(this).profileFeedbackMessage }}</p>
+  </div>
+</div>

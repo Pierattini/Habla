@@ -109,7 +109,7 @@
 </ng-template>
 <ng-template #accionesOrdenadas let-appt>
   <div class="acciones-secundarias">
-    <div class="action-row action-row-secondary">
+    <div class="action-row action-row-secondary" *ngIf="!$any(this).isTerminalAppointment(appt)">
       <ion-button
         fill="outline"
         color="medium"
@@ -144,7 +144,7 @@
 
     <div
       class="action-row action-row-extra"
-      *ngIf="$any(this).canJoinVideoCall(appt) || $any(this).canAddToCalendar(appt) || $any(this).canReviewAppointment(appt) || $any(this).canCompleteAppointment(appt)"
+      *ngIf="!$any(this).isTerminalAppointment(appt) && ($any(this).canJoinVideoCall(appt) || $any(this).canAddToCalendar(appt) || $any(this).canReviewAppointment(appt) || $any(this).canCompleteAppointment(appt))"
     >
       <ion-button
         fill="solid"
@@ -296,46 +296,55 @@
 </div>
 
               <div class="info">
-                <div class="nombre">
-  {{ getNombre(appt) }}
-</div>
+                <div class="appointment-title-row">
+                  <div>
+                    <div class="nombre">
+                      {{ getNombre(appt) }}
+                    </div>
 
-              <div class="especialidad">
+                    <div class="especialidad">
+                      {{
+                        role === 'PROFESSIONAL'
+                          ? ('Email: ' + appt.customer?.email)
+                          : appt.professional?.professional?.specialty
+                      }}
+                    </div>
+                  </div>
 
-  {{
-    role === 'PROFESSIONAL'
-      ? ('Email: ' + appt.customer?.email)
-      : appt.professional?.professional?.specialty
-  }}
-</div>
-
-<div
-  class="extra"
-  *ngIf="role !== 'PROFESSIONAL'">
-  Precio {{ appt.professional?.professional?.price }} CLP
-  · Duración {{ appt.professional?.professional?.duration }} min
-</div>
+                  <strong class="estado" [ngClass]="getStatusColor(appt.status)">
+                    {{ getStatusLabel(appt.status) }}
+                  </strong>
+                </div>
               </div>
 
             </div>
 
-            <div class="appointment-status-row">
-              <span>Estado</span>
-              <strong class="estado" [ngClass]="getStatusColor(appt.status)">
-                {{ getStatusLabel(appt.status) }}
-              </strong>
+            <div class="appointment-chip-row">
+              <span
+                class="appointment-chip"
+                *ngIf="role !== 'PROFESSIONAL'"
+              >
+                Precio {{ appt.professional?.professional?.price }} CLP
+              </span>
+
+              <span
+                class="appointment-chip"
+                *ngIf="role !== 'PROFESSIONAL'"
+              >
+                {{ appt.professional?.professional?.duration }} min
+              </span>
+
+              <span class="appointment-chip mode">
+                {{ $any(this).getAppointmentModeLabel(appt) }}
+              </span>
             </div>
 
 <!-- Penalizacion -->
 <div class="appointment-summary">
-  <div>
-    <span>Fecha y hora:&nbsp;</span>
+  <div class="appointment-date-row">
+    <span class="appointment-summary-icon" aria-hidden="true"></span>
+    <span>Fecha y hora</span>
     <strong>{{ appt.date | date:'dd/MM/yyyy HH:mm' }}</strong>
-  </div>
-
-  <div>
-    <span>Modalidad:&nbsp;</span>
-    <strong>{{ $any(this).getAppointmentModeLabel(appt) }}</strong>
   </div>
 </div>
 
@@ -345,7 +354,7 @@
   (click)="$any(this).toggleAppointmentDetails(appt.id)"
   [attr.aria-expanded]="$any(this).isAppointmentDetailsExpanded(appt.id)"
 >
-  <span>{{ $any(this).isAppointmentDetailsExpanded(appt.id) ? 'Ocultar información' : 'Más información' }}</span>
+  <span>{{ $any(this).isAppointmentDetailsExpanded(appt.id) ? 'Ocultar detalles' : 'Ver detalles' }}</span>
   <i>{{ $any(this).isAppointmentDetailsExpanded(appt.id) ? '▲' : '▼' }}</i>
 </button>
 
@@ -379,7 +388,7 @@
 
   <div
     class="action-row action-row-payment"
-    *ngIf="role !== 'PROFESSIONAL' && canPay(appt)"
+    *ngIf="!$any(this).isTerminalAppointment(appt) && role !== 'PROFESSIONAL' && canPay(appt)"
   >
   <!-- VER DATOS DE PAGO -->
   <ion-button
@@ -405,7 +414,7 @@
   <!-- ESTADO ESPERA -->
   <div
     class="estado-espera"
-    *ngIf="canShowPaymentWaiting(appt)">
+    *ngIf="!$any(this).isTerminalAppointment(appt) && canShowPaymentWaiting(appt)">
     Esperando confirmación del profesional
   </div>
 
@@ -414,7 +423,7 @@
     expand="block"
     color="success"
     class="btn-principal"
-    *ngIf="canProfessionalConfirm(appt)"
+    *ngIf="!$any(this).isTerminalAppointment(appt) && canProfessionalConfirm(appt)"
     (click)="confirmAppointment(appt.id)">
     Confirmar pago
   </ion-button>
@@ -483,43 +492,55 @@
         </div>
 
         <div class="info">
+          <div class="appointment-title-row">
+            <div>
+              <div class="nombre">
+                {{ getNombre(appt) }}
+              </div>
 
-          <div class="nombre">
-            {{ getNombre(appt) }}
-          </div>
+              <div class="especialidad">
+                {{
+                  role === 'PROFESSIONAL'
+                    ? ('Email: ' + appt.customer?.email)
+                    : appt.professional?.professional?.specialty
+                }}
+              </div>
+            </div>
 
-          <div class="especialidad">
-            {{
-              role === 'PROFESSIONAL'
-                ? ('Email: ' + appt.customer?.email)
-                : appt.professional?.professional?.specialty
-            }}
-          </div>
-
-          <div
-            class="extra"
-            *ngIf="role !== 'PROFESSIONAL'">
-            Precio {{ appt.professional?.professional?.price }} CLP
-            · Duración {{ appt.professional?.professional?.duration }} min
+            <strong class="estado" [ngClass]="getStatusColor(appt.status)">
+              {{ getStatusLabel(appt.status) }}
+            </strong>
           </div>
 
         </div>
 
       </div>
 
-      <div class="estado" [ngClass]="getStatusColor(appt.status)">
-        {{ getStatusLabel(appt.status) }}
+      <div class="appointment-chip-row">
+        <span
+          class="appointment-chip"
+          *ngIf="role !== 'PROFESSIONAL'"
+        >
+          Precio {{ appt.professional?.professional?.price }} CLP
+        </span>
+
+        <span
+          class="appointment-chip"
+          *ngIf="role !== 'PROFESSIONAL'"
+        >
+          {{ appt.professional?.professional?.duration }} min
+        </span>
+
+        <span class="appointment-chip mode">
+          {{ $any(this).getAppointmentModeLabel(appt) }}
+        </span>
       </div>
 
 <div class="appointment-summary">
-  <div>
+  <div class="appointment-date-row">
+    <span class="appointment-summary-icon" aria-hidden="true"></span>
     <span>Fecha y hora</span>
     <strong>{{ appt.date | date:'dd/MM/yyyy HH:mm' }}</strong>
-  </div>
-
-  <div>
-    <span>Modalidad</span>
-    <strong>{{ $any(this).getAppointmentModeLabel(appt) }}</strong>
   </div>
 </div>
 
@@ -529,13 +550,18 @@
   (click)="$any(this).toggleAppointmentDetails(appt.id)"
   [attr.aria-expanded]="$any(this).isAppointmentDetailsExpanded(appt.id)"
 >
-  <span>{{ $any(this).isAppointmentDetailsExpanded(appt.id) ? 'Ocultar información' : 'Más información' }}</span>
+  <span>{{ $any(this).isAppointmentDetailsExpanded(appt.id) ? 'Ocultar detalles' : 'Ver detalles' }}</span>
   <i>{{ $any(this).isAppointmentDetailsExpanded(appt.id) ? '▲' : '▼' }}</i>
 </button>
 
 <div class="appointment-modality" *ngIf="$any(this).isAppointmentDetailsExpanded(appt.id)">
-  <div>
-    <span>{{ $any(this).getAppointmentModeLabel(appt) }}</span>
+  <div class="appointment-modality-row">
+    <span>Modalidad:&nbsp;</span>
+    <strong>{{ $any(this).getAppointmentModeLabel(appt) }}</strong>
+  </div>
+
+  <div class="appointment-modality-row">
+    <span>Videollamada:&nbsp;</span>
     <strong>{{ $any(this).getAppointmentModeDetail(appt) }}</strong>
   </div>
 
@@ -714,6 +740,8 @@
   </div>
 </div>
 
+ </ion-content>
+
 <div
   class="penalty-modal-backdrop"
   *ngIf="$any(this).penaltyCancelAppointmentId"
@@ -732,27 +760,30 @@
       aria-label="Cerrar"
       (click)="$any(this).closePenaltyModal()"
     >
-      x
+      ×
     </button>
 
-    <h2 id="penalty-modal-title">Cancelacion con penalizacion</h2>
+    <div class="penalty-icon" aria-hidden="true">!</div>
+
+    <h2 id="penalty-modal-title">Cancelación con penalización</h2>
     <p>
-      Cancelaste con menos de 48 horas. Se retendra el 50%.
-      Que deseas hacer?
+      Cancelaste con menos de 48 horas. Se retendrá el 50%.
+      Elige cómo quieres resolver el saldo restante.
     </p>
 
     <div class="penalty-actions">
       <button type="button" (click)="$any(this).choosePenaltyCredit()">
-        <span>Credito</span>
+        <strong>Usar como crédito</strong>
+        <small>Queda disponible para reagendar otra cita.</small>
       </button>
 
       <button type="button" (click)="$any(this).choosePenaltyRefund()">
-        <span>Reembolso</span>
+        <strong>Solicitar reembolso</strong>
+        <small>Ingresa tus datos bancarios para procesarlo.</small>
       </button>
     </div>
   </div>
 </div>
-</ion-content>
 
 
 
