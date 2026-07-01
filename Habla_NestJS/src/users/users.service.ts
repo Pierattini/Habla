@@ -160,6 +160,10 @@ export class UsersService {
         description: dto.description,
       }),
 
+      ...(dto.rules !== undefined && {
+        rules: dto.rules,
+      }),
+
       ...(dto.price !== undefined && {
         price: dto.price,
       }),

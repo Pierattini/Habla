@@ -197,6 +197,7 @@ model Professional {
   customProfession String?
   specialty   String?
   description String?
+  rules       String?
   name        String?
   price       Int?
   duration    Int?

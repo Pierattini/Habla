@@ -586,7 +586,7 @@ export class AppointmentsService {
       const updated = await this.prisma.appointment.update({
         where: { id },
         data: {
-          status: AppointmentStatus.PENDING_PAYMENT,
+          status: AppointmentStatus.CANCELLED,
           penalty,
         },
       });
@@ -597,7 +597,10 @@ export class AppointmentsService {
       );
       await this.deleteExternalMeetingIfNeeded(appointment);
 
-      return updated;
+      return {
+        ...updated,
+        requiresPenaltyResolution: penalty > 0,
+      };
     }
 
     // 🔥 NO PAGADA Y MENOS DE 48H
@@ -605,7 +608,7 @@ export class AppointmentsService {
       const updated = await this.prisma.appointment.update({
         where: { id },
         data: {
-          status: AppointmentStatus.PENDING_PAYMENT,
+          status: AppointmentStatus.CANCELLED,
           penalty: price * 0.5,
         },
       });
@@ -616,7 +619,10 @@ export class AppointmentsService {
       );
       await this.deleteExternalMeetingIfNeeded(appointment);
 
-      return updated;
+      return {
+        ...updated,
+        requiresPenaltyResolution: false,
+      };
     }
 
     // 🔥 MÁS DE 48H

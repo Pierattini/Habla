@@ -73,6 +73,10 @@ export class UpdateProfileDto {
   description?: string;
 
   @IsOptional()
+  @IsString()
+  rules?: string;
+
+  @IsOptional()
   @IsInt()
   @Min(0)
   price?: number;
