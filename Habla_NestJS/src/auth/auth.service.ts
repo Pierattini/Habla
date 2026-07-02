@@ -201,6 +201,9 @@ export class AuthService {
     const professionalSpecialty = role === Role.PROFESSIONAL
       ? this.normalizeProfessionText(data.professionId ? data.specialty || '' : customProfession || data.specialty || '')
       : '';
+    const professionalSlug = role === Role.PROFESSIONAL
+      ? await this.buildUniqueProfessionalSlug(normalizedName)
+      : null;
 
     const user = await this.prisma.user.create({
       data: {
@@ -217,7 +220,7 @@ export class AuthService {
           professional: {
             create: {
               name: normalizedName,
-              slug: this.buildProfessionalSlug(normalizedName),
+              slug: professionalSlug,
               specialty: professionalSpecialty || null,
               professionId: data.professionId || null,
               customProfession: data.professionId ? null : customProfession || null,
@@ -291,7 +294,25 @@ export class AuthService {
       .replace(/(^-|-$)/g, '')
       .slice(0, 70);
 
-    return `${base || 'profesional'}-${Date.now().toString(36)}`;
+    return base || 'profesional';
+  }
+
+  private async buildUniqueProfessionalSlug(name: string): Promise<string> {
+    const base = this.buildProfessionalSlug(name);
+
+    for (let index = 1; index <= 50; index += 1) {
+      const candidate = index === 1 ? base : `${base}-${index}`;
+      const existing = await this.prisma.professional.findFirst({
+        where: { slug: candidate },
+        select: { id: true },
+      });
+
+      if (!existing) {
+        return candidate;
+      }
+    }
+
+    return `${base}-${Date.now().toString(36)}`;
   }
 
   private validateRegisterPayload(data: RegisterInput): void {

@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import type { NotificationTemplate } from './notification.types';
 
+const CONECTA_EMAIL = 'app.info.conect@gmail.com';
+const CONECTA_EMAIL_FROM = `Conecta <${CONECTA_EMAIL}>`;
+
 @Injectable()
 export class NotificationEmailService {
   async send(to: string, template: NotificationTemplate) {
@@ -20,17 +23,13 @@ export class NotificationEmailService {
       port: Number(process.env.SMTP_PORT || 587),
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
-        user: process.env.SMTP_USER || process.env.EMAIL_USER,
+        user: this.getMailUser(),
         pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
       },
     });
 
     await transporter.sendMail({
-      from:
-        process.env.EMAIL_FROM ||
-        process.env.MAIL_FROM ||
-        process.env.SMTP_USER ||
-        process.env.EMAIL_USER,
+      from: this.getMailFrom(),
       to,
       subject: template.subject,
       text: template.text,
@@ -50,7 +49,7 @@ export class NotificationEmailService {
       port: Number(process.env.SMTP_PORT || 587),
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
-        user: process.env.SMTP_USER || process.env.EMAIL_USER,
+        user: this.getMailUser(),
         pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
       },
     });
@@ -63,5 +62,19 @@ export class NotificationEmailService {
       provider: 'gmail-smtp',
       verified: true,
     };
+  }
+
+  private getMailUser() {
+    return process.env.SMTP_USER || process.env.EMAIL_USER || CONECTA_EMAIL;
+  }
+
+  private getMailFrom() {
+    return (
+      process.env.EMAIL_FROM ||
+      process.env.MAIL_FROM ||
+      process.env.SMTP_USER ||
+      process.env.EMAIL_USER ||
+      CONECTA_EMAIL_FROM
+    );
   }
 }

@@ -3,6 +3,11 @@ import type {
   NotificationTemplate,
   NotificationType,
 } from './notification.types';
+import {
+  buildConectaEmail,
+  conectaButton,
+  escapeEmailHtml,
+} from '../email/conecta-email-template';
 
 type TemplateData = Record<string, string | number | Date | null | undefined>;
 
@@ -224,32 +229,17 @@ function normalizeValues(data: TemplateData): Record<string, string> {
 }
 
 function button(url: string, label: string): string {
-  if (!url) return '';
-
-  return `
-    <p>
-      <a href="${escapeHtml(url)}" style="display: inline-block; padding: 12px 18px; background: #8b5cf6; color: #ffffff; text-decoration: none; border-radius: 10px; font-weight: 800;">
-        ${escapeHtml(label)}
-      </a>
-    </p>
-  `;
+  return conectaButton(url, label);
 }
 
 function wrapHtml(title: string, body: string): string {
-  return `
-    <div style="font-family: Arial, sans-serif; max-width: 560px; padding: 24px; color: #20172f;">
-      <h2 style="margin: 0 0 18px; color: #8b5cf6;">${escapeHtml(title)}</h2>
-      <p style="font-size: 15px; line-height: 1.55;">${body}</p>
-      <p style="margin-top: 24px; color: #6b6478;">Equipo Conecta</p>
-    </div>
-  `;
+  return buildConectaEmail({
+    title,
+    preview: title,
+    body,
+  });
 }
 
 function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+  return escapeEmailHtml(value);
 }

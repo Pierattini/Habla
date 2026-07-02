@@ -134,10 +134,20 @@ export class UsersService {
       where: { userId },
       select: { slug: true },
     });
+    const requestedProfessionalName = dto.name || dataToUpdate.name || userId;
+    const cleanProfessionalSlug = await this.buildUniqueProfessionalSlug(
+      requestedProfessionalName,
+      userId,
+    );
 
     const professionalData = {
-      ...(existingProfessional && !existingProfessional.slug && {
-        slug: this.buildProfessionalSlug(dto.name || dataToUpdate.name || userId),
+      ...(existingProfessional &&
+        (!existingProfessional.slug ||
+          this.shouldRefreshProfessionalSlug(
+            existingProfessional.slug,
+            requestedProfessionalName,
+          )) && {
+        slug: cleanProfessionalSlug,
       }),
 
       ...(dto.name !== undefined && {
@@ -246,6 +256,26 @@ export class UsersService {
 
       ...(dto.customVideoUrl !== undefined && {
         customVideoUrl: dto.customVideoUrl,
+      }),
+
+      ...(dto.bankName !== undefined && {
+        bankName: dto.bankName,
+      }),
+
+      ...(dto.accountType !== undefined && {
+        accountType: dto.accountType,
+      }),
+
+      ...(dto.accountNumber !== undefined && {
+        accountNumber: dto.accountNumber,
+      }),
+
+      ...(dto.accountHolder !== undefined && {
+        accountHolder: dto.accountHolder,
+      }),
+
+      ...(dto.accountEmail !== undefined && {
+        accountEmail: dto.accountEmail,
       }),
     };
 
@@ -504,7 +534,7 @@ export class UsersService {
   }
 
   async getPublicProfessionalBySlug(slug: string) {
-    const professional = await this.prisma.professional.findUnique({
+    let professional = await this.prisma.professional.findUnique({
       where: { slug },
       include: {
         user: true,
@@ -515,6 +545,29 @@ export class UsersService {
         },
       },
     });
+
+    if (!professional) {
+      const legacyMatches = await this.prisma.professional.findMany({
+        where: {
+          slug: {
+            startsWith: `${slug}-`,
+          },
+        },
+        include: {
+          user: true,
+          profession: {
+            include: {
+              category: true,
+            },
+          },
+        },
+        take: 10,
+      });
+
+      professional =
+        legacyMatches.find((item) => this.isLegacyRandomSlug(item.slug, slug)) ||
+        null;
+    }
 
     if (!professional) return null;
 
@@ -821,10 +874,7 @@ export class UsersService {
   }
 
   async recordProfessionalProfileEvent(slug: string, type: 'VIEW' | 'COPY_LINK' | 'SHARE') {
-    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
-      SELECT "id" FROM "Professional" WHERE "slug" = ${slug} LIMIT 1
-    `;
-    const professional = rows[0];
+    const professional = await this.findPublicProfessionalIdBySlug(slug);
 
     if (!professional) return null;
 
@@ -836,6 +886,46 @@ export class UsersService {
     `;
 
     return { id: eventId };
+  }
+
+  private async findPublicProfessionalIdBySlug(slug: string): Promise<{ id: string } | null> {
+    const exact = await this.prisma.professional.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+
+    if (exact) {
+      return exact;
+    }
+
+    const legacyMatches = await this.prisma.professional.findMany({
+      where: {
+        slug: {
+          startsWith: `${slug}-`,
+        },
+      },
+      select: {
+        id: true,
+        slug: true,
+      },
+      take: 10,
+    });
+
+    const legacy = legacyMatches.find((item) =>
+      this.isLegacyRandomSlug(item.slug, slug),
+    );
+
+    return legacy ? { id: legacy.id } : null;
+  }
+
+  private isLegacyRandomSlug(currentSlug: string | null | undefined, cleanSlug: string): boolean {
+    if (!currentSlug || !cleanSlug) {
+      return false;
+    }
+
+    const suffix = currentSlug.replace(`${cleanSlug}-`, '');
+
+    return currentSlug.startsWith(`${cleanSlug}-`) && /^[a-z0-9]{6,}$/.test(suffix);
   }
 
   private getProtectedProfessionalName(name?: string | null): string {
@@ -872,15 +962,56 @@ export class UsersService {
   }
 
   private buildProfessionalSlug(name: string): string {
-    const base = String(name || 'profesional')
+    return String(name || 'profesional')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '')
       .slice(0, 70);
+  }
 
-    return `${base || 'profesional'}-${Date.now().toString(36)}`;
+  private async buildUniqueProfessionalSlug(
+    name: string,
+    currentUserId: string,
+  ): Promise<string> {
+    const base = this.buildProfessionalSlug(name) || 'profesional';
+
+    for (let index = 1; index <= 50; index += 1) {
+      const candidate = index === 1 ? base : `${base}-${index}`;
+      const existing = await this.prisma.professional.findFirst({
+        where: {
+          slug: candidate,
+          userId: {
+            not: currentUserId,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!existing) {
+        return candidate;
+      }
+    }
+
+    return `${base}-${Date.now().toString(36)}`;
+  }
+
+  private shouldRefreshProfessionalSlug(
+    currentSlug: string,
+    name: string,
+  ): boolean {
+    const base = this.buildProfessionalSlug(name) || 'profesional';
+
+    if (currentSlug === base) {
+      return false;
+    }
+
+    const suffix = currentSlug.replace(`${base}-`, '');
+
+    return currentSlug.startsWith(`${base}-`) && /^[a-z0-9]{6,}$/.test(suffix);
   }
 
   private isProfessionalTaxReady(professional: {
@@ -958,6 +1089,7 @@ export class UsersService {
               },
             },
             description: true,
+            rules: true,
             price: true,
             duration: true,
             image: true,

@@ -138,6 +138,26 @@ export class UpdateProfileDto {
   customVideoUrl?: string;
 
   @IsOptional()
+  @IsString()
+  bankName?: string;
+
+  @IsOptional()
+  @IsString()
+  accountType?: string;
+
+  @IsOptional()
+  @IsString()
+  accountNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  accountHolder?: string;
+
+  @IsOptional()
+  @IsString()
+  accountEmail?: string;
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   customerInterests?: string[];

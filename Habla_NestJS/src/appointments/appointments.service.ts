@@ -26,6 +26,12 @@ import { GoogleCalendarService } from '../meetings/google-calendar.service';
 import { MicrosoftTeamsService } from '../meetings/microsoft-teams.service';
 import { ZoomService } from '../meetings/zoom.service';
 import { ProfessionalAccessService } from '../appointment-requests/professional-access.service';
+import {
+  buildConectaEmail,
+  conectaInfoCard,
+  emailRow,
+  escapeEmailHtml,
+} from '../email/conecta-email-template';
 
 type AvailabilityConfig = {
   scheduleMode: ScheduleMode;
@@ -41,6 +47,14 @@ type TimeRange = {
   endMinute: number;
 };
 
+const RESERVED_APPOINTMENT_STATUSES = [
+  AppointmentStatus.CONFIRMED,
+  AppointmentStatus.RESCHEDULED,
+];
+
+const CONECTA_EMAIL = 'app.info.conect@gmail.com';
+const CONECTA_EMAIL_FROM = `Conecta <${CONECTA_EMAIL}>`;
+
 @Injectable()
 export class AppointmentsService {
   constructor(
@@ -52,6 +66,29 @@ export class AppointmentsService {
     private microsoftTeamsService: MicrosoftTeamsService,
     private professionalAccess: ProfessionalAccessService,
   ) {}
+
+  private createMailTransporter() {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER || process.env.EMAIL_USER || CONECTA_EMAIL,
+        pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
+      },
+    });
+  }
+
+  private getMailFrom() {
+    return (
+      process.env.EMAIL_FROM ||
+      process.env.MAIL_FROM ||
+      process.env.SMTP_USER ||
+      process.env.EMAIL_USER ||
+      CONECTA_EMAIL_FROM
+    );
+  }
+
   async create(
     customerId: string,
     professionalId: string,
@@ -127,6 +164,7 @@ export class AppointmentsService {
     const endDate = new Date(
       date.getTime() + appointmentDurationInMinutes * 60000,
     );
+    this.assertDateWithinBookingWindow(date);
     // 🔎 Verificar disponibilidad del profesional
 
     const dayMap = [
@@ -153,12 +191,6 @@ export class AppointmentsService {
       where: {
         professionalId,
         day: appointmentDay,
-        startMinute: {
-          lte: minutesFromMidnight,
-        },
-        endMinute: {
-          gte: minutesFromMidnight + appointmentDurationInMinutes,
-        },
       },
     });
 
@@ -183,7 +215,7 @@ export class AppointmentsService {
       where: {
         professionalId, // ← user id
         status: {
-          notIn: [AppointmentStatus.CANCELLED, AppointmentStatus.REFUNDED],
+          in: RESERVED_APPOINTMENT_STATUSES,
         },
         AND: [
           {
@@ -211,7 +243,7 @@ export class AppointmentsService {
         professionalId, // ← user id
         date,
         status: {
-          notIn: [AppointmentStatus.CANCELLED, AppointmentStatus.REFUNDED],
+          in: RESERVED_APPOINTMENT_STATUSES,
         },
       },
     });
@@ -575,11 +607,13 @@ export class AppointmentsService {
     });
 
     const price = professional?.price || 0;
+    const isConfirmedReservation =
+      appointment.status === AppointmentStatus.CONFIRMED ||
+      appointment.status === AppointmentStatus.RESCHEDULED;
 
     // 🔥 SI YA PAGÓ
     if (
-      appointment.status === AppointmentStatus.PAYMENT_REVIEW ||
-      appointment.status === AppointmentStatus.CONFIRMED
+      isConfirmedReservation
     ) {
       const penalty = diffHours < 48 ? price * 0.5 : 0;
 
@@ -609,7 +643,7 @@ export class AppointmentsService {
         where: { id },
         data: {
           status: AppointmentStatus.CANCELLED,
-          penalty: price * 0.5,
+          penalty: 0,
         },
       });
 
@@ -643,6 +677,8 @@ export class AppointmentsService {
     return updated;
   }
   async getAvailableSlots(professionalId: string, date: Date) {
+    this.assertDateWithinBookingWindow(date);
+
     const professional = await this.prisma.professional.findUnique({
       where: { userId: professionalId },
       include: { user: true },
@@ -655,16 +691,6 @@ export class AppointmentsService {
     const duration =
       professional.duration ?? professional.user.sessionDuration ?? 60;
 
-    const dayMap = [
-      WeekDay.SUN,
-      WeekDay.MON,
-      WeekDay.TUE,
-      WeekDay.WED,
-      WeekDay.THU,
-      WeekDay.FRI,
-      WeekDay.SAT,
-    ];
-
     const cleanDate = new Date(date);
 
     if (isNaN(cleanDate.getTime())) {
@@ -673,13 +699,7 @@ export class AppointmentsService {
 
     cleanDate.setHours(0, 0, 0, 0);
 
-    const appointmentDay = dayMap[cleanDate.getDay()] as WeekDay;
-
-    console.log('DATE RAW:', date);
-    console.log('CLEAN DATE:', cleanDate);
-    console.log('DAY CALCULADO:', appointmentDay);
-    console.log('PROFESSIONAL ID:', professionalId);
-    console.log('DURATION:', duration);
+    const appointmentDay = this.getWeekDay(cleanDate);
 
     const availability = await this.prisma.availability.findMany({
       where: {
@@ -687,8 +707,6 @@ export class AppointmentsService {
         day: appointmentDay,
       },
     });
-
-    console.log('AVAILABILITY:', availability);
 
     const startOfDay = new Date(cleanDate);
     const endOfDay = new Date(cleanDate);
@@ -702,7 +720,7 @@ export class AppointmentsService {
           lte: endOfDay,
         },
         status: {
-          notIn: [AppointmentStatus.CANCELLED, AppointmentStatus.REFUNDED],
+          in: RESERVED_APPOINTMENT_STATUSES,
         },
       },
     });
@@ -808,6 +826,28 @@ export class AppointmentsService {
     }
 
     return slots;
+  }
+
+  private assertDateWithinBookingWindow(date: Date) {
+    if (isNaN(date.getTime())) {
+      throw new ForbiddenException('Fecha invalida');
+    }
+
+    const selectedDay = new Date(date);
+    selectedDay.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const maxDate = new Date(today);
+    maxDate.setMonth(maxDate.getMonth() + 6);
+    maxDate.setHours(23, 59, 59, 999);
+
+    if (selectedDay < today || date > maxDate) {
+      throw new ForbiddenException(
+        'Solo puedes agendar dentro de los proximos 6 meses',
+      );
+    }
   }
 
   private getSpecificSlots(value: unknown) {
@@ -928,6 +968,7 @@ export class AppointmentsService {
 
     const startDate = newDate;
     const endDate = new Date(newDate.getTime() + duration * 60000);
+    this.assertDateWithinBookingWindow(newDate);
 
     // 🔎 DISPONIBILIDAD
     const dayMap = [
@@ -947,8 +988,6 @@ export class AppointmentsService {
       where: {
         professionalId: appointment.professionalId,
         day: appointmentDay,
-        startMinute: { lte: minutesFromMidnight },
-        endMinute: { gte: minutesFromMidnight + duration },
       },
     });
 
@@ -972,7 +1011,7 @@ export class AppointmentsService {
         professionalId: appointment.professionalId,
         id: { not: id },
         status: {
-          notIn: [AppointmentStatus.CANCELLED, AppointmentStatus.REFUNDED],
+          in: RESERVED_APPOINTMENT_STATUSES,
         },
         AND: [
           { date: { lt: endDate } },
@@ -994,11 +1033,14 @@ export class AppointmentsService {
     const alreadyPenalized =
       (appointment.penalty ?? 0) > 0 &&
       appointment.status === AppointmentStatus.PENDING_PAYMENT;
+    const isConfirmedReschedule =
+      appointment.status === AppointmentStatus.CONFIRMED ||
+      appointment.status === AppointmentStatus.RESCHEDULED;
     const oldDate = new Date(appointment.date);
 
     const diffHours = (oldDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-    if (!alreadyPenalized && diffHours < 48) {
+    if (isConfirmedReschedule && !alreadyPenalized && diffHours < 48) {
       const price = professional.price || 0;
       const penalty = price * 0.5;
 
@@ -1219,68 +1261,48 @@ export class AppointmentsService {
     return updated;
   }
   async sendPaymentEmail(to: string, appointmentId: string) {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    const transporter = this.createMailTransporter();
 
     const confirmLink = `${this.getPublicApiUrl()}/appointments/${appointmentId}/confirm-payment-link`;
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: this.getMailFrom(),
       to,
       subject: 'Pago recibido - Confirmar cita',
-      html: `
-    <h2>💳 Pago recibido</h2>
-    <p>Un cliente indicó que ya realizó el pago.</p>
-
-    <table cellspacing="0" cellpadding="0" style="margin-top:15px;">
-      <tr>
-        <td align="center" bgcolor="#16a34a" style="border-radius:6px;">
-          <a href="${confirmLink}"
-             style="
-               display:inline-block;
-               padding:14px 24px;
-               font-family: Arial, sans-serif;
-               font-size:16px;
-               font-weight:bold;
-               color:#ffffff;
-               text-decoration:none;
-             ">
-             Confirmar pago
-          </a>
-        </td>
-      </tr>
-    </table>
-  `,
+      html: buildConectaEmail({
+        title: 'Pago recibido',
+        preview: 'Un cliente indico que ya realizo el pago.',
+        body: `
+          <p>Un cliente indico que ya realizo el pago.</p>
+          <p>Confirma el pago para continuar con la gestion de la cita.</p>
+        `,
+        action: {
+          label: 'Confirmar pago',
+          url: confirmLink,
+          variant: 'success',
+        },
+      }),
     });
   }
-
   async sendMeetEmail(to: string, meetLink: string) {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    const transporter = this.createMailTransporter();
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: this.getMailFrom(),
       to,
-      subject: '📹 Tu videollamada está lista',
-      html: `
-      <h2>📅 Recordatorio de cita</h2>
-      <p>Tu sesión comenzará en 10 minutos.</p>
-
-      <a href="${meetLink}" 
-         style="padding:10px 20px; background:#2563eb; color:white; text-decoration:none; border-radius:8px;">
-         Unirse a la videollamada
-      </a>
-    `,
+      subject: 'Tu videollamada esta lista',
+      html: buildConectaEmail({
+        title: 'Tu videollamada esta lista',
+        preview: 'Tu sesion comenzara pronto.',
+        body: `
+          <p>Tu sesion comenzara en 10 minutos.</p>
+          <p>Ingresa desde el boton cuando sea la hora de tu cita.</p>
+        `,
+        action: {
+          label: 'Unirse a la videollamada',
+          url: meetLink,
+        },
+      }),
     });
   }
   async confirmPaymentFromLink(id: string) {
@@ -1423,55 +1445,34 @@ export class AppointmentsService {
     customerEmail: string,
     customerName: string,
   ) {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    const transporter = this.createMailTransporter();
 
     const confirmLink = `${this.getPublicApiUrl()}/appointments/${appointmentId}/refund-done`;
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: this.getMailFrom(),
       to,
-      subject: '💸 Solicitud de reembolso',
-      html: `
-  <div style="font-family:Arial,sans-serif; max-width:520px; padding:20px;">
-    <h2 style="margin-bottom:16px;">💸 Solicitud de reembolso</h2>
-
-    <p>Un cliente solicitó un reembolso.</p>
-
-    <div style="font-size:16px; line-height:1.7; margin-top:16px;">
-      <p><strong>Nombre:</strong> ${customerName}</p>
-      <p><strong>Correo:</strong> ${customerEmail}</p>
-      <p><strong>Banco:</strong> ${bank}</p>
-      <p><strong>Tipo de cuenta:</strong> ${accountType}</p>
-      <p><strong>Número de cuenta:</strong> ${account}</p>
-      <p><strong>Monto:</strong> $${amount}</p>
-    </div>
-
-    <div style="margin-top:24px;">
-      <a href="${confirmLink}"
-         style="
-           display:inline-block;
-           background-color:#16a34a;
-           color:#ffffff;
-           padding:14px 22px;
-           text-decoration:none;
-           border-radius:8px;
-           font-size:16px;
-           font-weight:bold;
-           line-height:20px;
-           min-width:180px;
-           text-align:center;
-         ">
-        Reembolso realizado
-      </a>
-    </div>
-  </div>
-`,
+      subject: 'Solicitud de reembolso',
+      html: buildConectaEmail({
+        title: 'Solicitud de reembolso',
+        preview: 'Un cliente solicito un reembolso.',
+        body: `
+          <p>Un cliente solicito un reembolso.</p>
+          ${conectaInfoCard(`
+            ${emailRow('Nombre', customerName)}
+            ${emailRow('Correo', customerEmail)}
+            ${emailRow('Banco', bank)}
+            ${emailRow('Tipo de cuenta', accountType)}
+            ${emailRow('Numero de cuenta', account)}
+            ${emailRow('Monto', `$${amount}`)}
+          `)}
+        `,
+        action: {
+          label: 'Reembolso realizado',
+          url: confirmLink,
+          variant: 'success',
+        },
+      }),
     });
   }
   async refundDone(id: string) {
@@ -1500,36 +1501,24 @@ export class AppointmentsService {
     });
   }
   async sendRefundConfirmedEmail(to: string, name: string) {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    const transporter = this.createMailTransporter();
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: this.getMailFrom(),
       to,
-      subject: '💸 Reembolso realizado',
-      html: `
-      <div style="font-family:Arial; padding:20px;">
-        <h2>💸 Reembolso confirmado</h2>
-
-        <p>Hola ${name},</p>
-
-        <p>El profesional ya ha realizado tu reembolso.</p>
-
-        <p>El dinero debería verse reflejado en tu cuenta según tu banco.</p>
-
-        <br/>
-
-        <p>Gracias por usar Conecta 👋</p>
-      </div>
-    `,
+      subject: 'Reembolso realizado',
+      html: buildConectaEmail({
+        title: 'Reembolso confirmado',
+        preview: 'El profesional ya realizo tu reembolso.',
+        body: `
+          <p>Hola ${escapeEmailHtml(name)},</p>
+          <p>El profesional ya realizo tu reembolso.</p>
+          <p>El dinero deberia verse reflejado en tu cuenta segun los tiempos de tu banco.</p>
+          <p>Gracias por usar Conecta.</p>
+        `,
+      }),
     });
   }
-
   private scheduleVideoConferenceEmails(
     customerEmail: string,
     professionalEmail: string,
@@ -2005,4 +1994,6 @@ export class AppointmentsService {
     }
   }
 }
+
+
 
