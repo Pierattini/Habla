@@ -32,6 +32,11 @@ export interface ProfessionalProfile {
   arrivalInstructions: string;
   videoProvider: VideoProvider;
   customVideoUrl: string;
+  bankName: string;
+  accountType: string;
+  accountNumber: string;
+  accountHolder: string;
+  accountEmail: string;
   documentAutomationEnabled: boolean;
   manualDocumentMode: boolean;
   taxId: string;

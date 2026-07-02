@@ -1,10 +1,18 @@
 <ion-header>
   <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-button (click)="close()">←</ion-button>
-    </ion-buttons>
-    <ion-title>Reagendar cita</ion-title>
-  </ion-toolbar>
+<ion-buttons slot="start">
+  <ion-button
+    fill="clear"
+    class="reschedule-back-button"
+    (click)="close()">
+    ←
+  </ion-button>
+</ion-buttons>
+  <ion-title class="reschedule-title">
+    Reagendar cita
+  </ion-title>
+
+</ion-toolbar>
 </ion-header>
 
 <ion-content class="ion-padding">

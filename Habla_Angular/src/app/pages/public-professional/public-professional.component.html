@@ -97,6 +97,8 @@
         <ion-card-content>
           <ion-datetime
             presentation="date"
+            [min]="minBookingDate"
+            [max]="maxBookingDate"
             [(ngModel)]="selectedDate"
             (ionChange)="onDateChange($event)">
           </ion-datetime>

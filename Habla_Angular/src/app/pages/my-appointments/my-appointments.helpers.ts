@@ -66,7 +66,7 @@ export function getStatusColor(status: string): string {
 }
 
 export function canPay(appt: any): boolean {
-  return appt.status === 'PENDING';
+  return appt.status === 'PENDING' || appt.status === 'PENDING_PAYMENT';
 }
 
 export function canShowPaymentWaiting(appt: any): boolean {
@@ -77,7 +77,8 @@ export function canReschedule(appt: any): boolean {
   if (
     appt.status === 'CANCELLED' ||
     appt.status === 'REFUNDED' ||
-    appt.status === 'COMPLETED'
+    appt.status === 'COMPLETED' ||
+    appt.status === 'PAYMENT_REVIEW'
   ) {
     return false;
   }

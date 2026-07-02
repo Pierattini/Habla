@@ -47,6 +47,8 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
   slug = '';
   publicUrl = '';
   selectedDate = new Date().toISOString().split('T')[0];
+  minBookingDate = this.toDateInputValue(new Date());
+  maxBookingDate = this.toDateInputValue(this.addMonths(new Date(), 6));
   selectedHour: string | null = null;
   selectedAttentionMode: 'ONLINE' | 'PRESENTIAL' = 'ONLINE';
   availableHours: string[] = [];
@@ -75,6 +77,16 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
     this.title.setTitle('Conecta');
   }
 
+  private addMonths(date: Date, months: number): Date {
+    const next = new Date(date);
+    next.setMonth(next.getMonth() + months);
+    return next;
+  }
+
+  private toDateInputValue(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
+
   loadProfile(): void {
     if (!this.slug) {
       this.loading = false;
@@ -90,6 +102,7 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
           professional.attentionMode === 'PRESENTIAL' ? 'PRESENTIAL' : 'ONLINE';
         this.updateSeo();
         this.recordEvent('VIEW');
+        this.loading = false;
         this.loadAvailability();
       },
       error: () => {
@@ -111,6 +124,7 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
   loadAvailability(): void {
     if (!this.professional?.id || !this.selectedDate) {
       this.loading = false;
+      this.loadingHours = false;
       return;
     }
 

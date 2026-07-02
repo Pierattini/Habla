@@ -1132,6 +1132,83 @@
 
   </ion-card>
 
+  <ion-card>
+
+    <ion-card-content>
+
+      <h2 class="section-title">
+        Datos para transferencia
+      </h2>
+
+      <p class="field-rule">
+        Estos datos se mostrarán al paciente cuando presione Ver datos para pagar por transferencia.
+      </p>
+
+      <ion-item class="profile-field" lines="none">
+        <ion-label position="stacked">
+          Banco
+        </ion-label>
+
+        <ion-input
+          maxlength="80"
+          placeholder="Ej: Banco Estado"
+          [(ngModel)]="profile.bankName">
+        </ion-input>
+      </ion-item>
+
+      <ion-item class="profile-field" lines="none">
+        <ion-label position="stacked">
+          Tipo de cuenta
+        </ion-label>
+
+        <ion-input
+          maxlength="60"
+          placeholder="Ej: Cuenta corriente, cuenta vista"
+          [(ngModel)]="profile.accountType">
+        </ion-input>
+      </ion-item>
+
+      <ion-item class="profile-field" lines="none">
+        <ion-label position="stacked">
+          Número de cuenta
+        </ion-label>
+
+        <ion-input
+          maxlength="60"
+          placeholder="Ej: 123456789"
+          [(ngModel)]="profile.accountNumber">
+        </ion-input>
+      </ion-item>
+
+      <ion-item class="profile-field" lines="none">
+        <ion-label position="stacked">
+          Titular de la cuenta
+        </ion-label>
+
+        <ion-input
+          maxlength="100"
+          placeholder="Nombre o razón social"
+          [(ngModel)]="profile.accountHolder">
+        </ion-input>
+      </ion-item>
+
+      <ion-item class="profile-field" lines="none">
+        <ion-label position="stacked">
+          Correo asociado
+        </ion-label>
+
+        <ion-input
+          type="email"
+          maxlength="120"
+          placeholder="correo@ejemplo.com"
+          [(ngModel)]="profile.accountEmail">
+        </ion-input>
+      </ion-item>
+
+    </ion-card-content>
+
+  </ion-card>
+
   <!-- CONFIG SESIÓN -->
   <ion-card>
 

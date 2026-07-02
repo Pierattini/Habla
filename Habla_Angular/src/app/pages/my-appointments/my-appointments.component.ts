@@ -6,7 +6,6 @@ import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { AlertController } from '@ionic/angular';
-import { PaymentModalComponent } from '../payment-modal/payment-modal.component';
 import { RescheduleModalComponent } from '../reschedule-modal/reschedule-modal.component';
 import { ViewWillEnter } from '@ionic/angular';
 import { AppointmentsService } from '../../services/appointments.service';
@@ -73,7 +72,13 @@ getHeaders() {
   loadingId: string | null = null;
   videoContinuationLoadingId: string | null = null;
   penaltyCancelAppointmentId: string | null = null;
+  penaltyModalStep: 'confirm' | 'resolve' | 'refund' = 'confirm';
+  refundBank = '';
+  refundAccount = '';
+  refundAccountType = '';
   calendarModalAppointment: any | null = null;
+  paymentModalAppointment: any | null = null;
+  paymentModalData: any | null = null;
   reviewAppointment: any | null = null;
   reviewSubmitting = false;
   reviewRating = 5;
@@ -126,9 +131,30 @@ isAppointmentDetailsExpanded(appointmentId: string): boolean {
 //}
 
 ionViewWillEnter() {
-  this.role = localStorage.getItem('role');
+  this.role = this.getCurrentRole();
   this.applyRouteFilter();
   this.loadAppointments();
+}
+
+private getCurrentRole(): string | null {
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    return localStorage.getItem('role');
+  }
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1] || ''));
+    const role = payload?.role || localStorage.getItem('role');
+
+    if (role) {
+      localStorage.setItem('role', role);
+    }
+
+    return role;
+  } catch {
+    return localStorage.getItem('role');
+  }
 }
 
 private applyRouteFilter() {
@@ -212,6 +238,19 @@ finishAppointmentsLoad() {
   this.cdr.detectChanges();
 }
   cancelAppointment(id: string) {
+  const appointment = this.appointments.find((item) => item.id === id);
+
+  if (this.shouldConfirmPenaltyBeforeCancel(appointment)) {
+    this.penaltyCancelAppointmentId = id;
+    this.penaltyModalStep = 'confirm';
+    this.cdr.detectChanges();
+    return;
+  }
+
+  this.performCancelAppointment(id);
+}
+
+private performCancelAppointment(id: string) {
   this.loadingId = id;
 
   this.appointmentsService.cancelAppointment(id).subscribe({
@@ -219,14 +258,20 @@ finishAppointmentsLoad() {
 
       this.loadingId = null;
       this.selectedFilter = 'history';
+      this.markAppointmentAsCancelled(id, res);
 
       if (res.requiresPenaltyResolution === true) {
-        this.showCancelOptions(id);
+        this.penaltyCancelAppointmentId = id;
+        this.penaltyModalStep = 'resolve';
+        this.cdr.detectChanges();
         this.loadAppointments();
         return;
       }
 
-      await this.presentToast('Cita cancelada correctamente', 'danger');
+      const message = res?.penalty === 0 && res?.status === 'CANCELLED'
+        ? 'Cita cancelada sin penalización'
+        : 'Cita cancelada correctamente';
+      await this.presentToast(message, 'danger');
       this.loadAppointments();
     },
 
@@ -236,6 +281,34 @@ finishAppointmentsLoad() {
     }
   });
 }
+
+private shouldConfirmPenaltyBeforeCancel(appt: any): boolean {
+  if (!appt || this.isTerminalAppointment(appt)) return false;
+  if (appt.status !== 'CONFIRMED' && appt.status !== 'RESCHEDULED') return false;
+
+  const appointmentTime = new Date(appt.date).getTime();
+  const diffHours = (appointmentTime - Date.now()) / (1000 * 60 * 60);
+
+  return diffHours > 0 && diffHours < 48;
+}
+
+private markAppointmentAsCancelled(id: string, updatedAppointment?: any): void {
+  this.appointments = this.appointments.map((appointment) =>
+    appointment.id === id
+      ? {
+          ...appointment,
+          ...updatedAppointment,
+          status: updatedAppointment?.status || 'CANCELLED',
+        }
+      : appointment
+  );
+
+  this.groupAppointments();
+  this.loaded = true;
+  this.loading = false;
+  this.cdr.detectChanges();
+}
+
 resolvePenalty(id: string, option: 'CREDIT' | 'REFUND', data?: any) {
   this.closePenaltyModal();
 
@@ -262,6 +335,10 @@ async showCancelOptions(id: string) {
 
 closePenaltyModal(): void {
   this.penaltyCancelAppointmentId = null;
+  this.penaltyModalStep = 'confirm';
+  this.refundBank = '';
+  this.refundAccount = '';
+  this.refundAccountType = '';
 }
 
 choosePenaltyCredit(): void {
@@ -270,12 +347,33 @@ choosePenaltyCredit(): void {
   this.resolvePenalty(this.penaltyCancelAppointmentId, 'CREDIT');
 }
 
-choosePenaltyRefund(): void {
+confirmPenaltyCancellation(): void {
   if (!this.penaltyCancelAppointmentId) return;
 
   const appointmentId = this.penaltyCancelAppointmentId;
   this.closePenaltyModal();
-  this.askRefundData(appointmentId);
+  this.performCancelAppointment(appointmentId);
+}
+
+choosePenaltyRefund(): void {
+  if (!this.penaltyCancelAppointmentId) return;
+
+  this.penaltyModalStep = 'refund';
+}
+
+submitPenaltyRefund(): void {
+  if (!this.penaltyCancelAppointmentId) return;
+
+  if (!this.refundBank.trim() || !this.refundAccount.trim() || !this.refundAccountType.trim()) {
+    void this.presentToast('Completa los datos bancarios para solicitar reembolso', 'warning');
+    return;
+  }
+
+  this.resolvePenalty(this.penaltyCancelAppointmentId, 'REFUND', {
+    bank: this.refundBank.trim(),
+    account: this.refundAccount.trim(),
+    accountType: this.refundAccountType.trim()
+  });
 }
 async askRefundData(id: string) {
   const alert = await this.alertCtrl.create({
@@ -915,34 +1013,54 @@ generateContinuationLink(appt: any): void {
 }
 async openPayment(appt: any) {
 
+  const professionalProfile = appt.professional?.professional || {};
+  const professionalUser = appt.professional || {};
   const data = {
-  ...appt.professional?.professional,
-  name: appt.professional?.name
-};
+    ...professionalProfile,
+    name:
+      professionalProfile.accountHolder ||
+      professionalUser.accountHolder ||
+      professionalUser.name ||
+      professionalProfile.name,
+    bankName: professionalProfile.bankName || professionalUser.bankName || '',
+    accountType: professionalProfile.accountType || professionalUser.accountType || '',
+    accountNumber: professionalProfile.accountNumber || professionalUser.accountNumber || '',
+    accountHolder:
+      professionalProfile.accountHolder ||
+      professionalUser.accountHolder ||
+      professionalUser.name ||
+      professionalProfile.name ||
+      '',
+    accountEmail:
+      professionalProfile.accountEmail ||
+      professionalUser.accountEmail ||
+      professionalUser.email ||
+      '',
+  };
 
-  if (!data) {
+  if (!appt?.professional) {
     await this.presentToast('No hay datos de pago disponibles', 'danger');
     return;
   }
 
-  const modal = await this.modalCtrl.create({
-    component: PaymentModalComponent,
-    componentProps: {
-      paymentData: data,
-      appointmentId: appt.id
-    },
-    cssClass: 'payment-data-modal',
-    backdropDismiss: true
-  });
-
-  await modal.present();
-
-  const { data: result } = await modal.onDidDismiss();
-
-  if (result?.paid) {
-    this.markAsPaid(result.id);
-  }
+  this.paymentModalAppointment = appt;
+  this.paymentModalData = data;
+  this.cdr.detectChanges();
 }
+
+closePaymentModal(): void {
+  this.paymentModalAppointment = null;
+  this.paymentModalData = null;
+}
+
+confirmPaymentFromModal(): void {
+  if (!this.paymentModalAppointment?.id) return;
+
+  const appointmentId = this.paymentModalAppointment.id;
+  this.closePaymentModal();
+  this.markAsPaid(appointmentId);
+}
+
 async reschedule(appt: any) {
 
   const modal = await this.modalCtrl.create({
@@ -1034,8 +1152,13 @@ private handleNormalReschedule(appt: any, data: any) {
 
       this.loadAppointments();
     },
-    error: async () => {
-      await this.presentToast('Error al reagendar', 'danger');
+    error: async (error) => {
+      const message =
+        error?.error?.message ||
+        error?.message ||
+        'Error al reagendar';
+
+      await this.presentToast(message, 'danger');
     }
   });
 }
@@ -1046,8 +1169,20 @@ private handleNormalReschedule(appt: any, data: any) {
   return canPayHelper(appt);
 }
 
+canShowPaymentActions(appt: any): boolean {
+  return !this.isTerminalAppointment(appt) &&
+    this.role !== 'PROFESSIONAL' &&
+    this.canPay(appt);
+}
+
 canShowPaymentWaiting(appt: any): boolean {
   return canShowPaymentWaitingHelper(appt);
+}
+
+isAwaitingReservationConfirmation(appt: any): boolean {
+  return appt?.status === 'PENDING' ||
+    appt?.status === 'PENDING_PAYMENT' ||
+    appt?.status === 'PAYMENT_REVIEW';
 }
 
 canProfessionalConfirm(appt: any): boolean {

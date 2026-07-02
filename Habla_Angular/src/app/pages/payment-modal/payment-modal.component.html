@@ -6,7 +6,7 @@
       aria-label="Cerrar"
       (click)="close()"
     >
-      ×
+      x
     </button>
 
     <ng-container *ngIf="mode === 'PAYMENT'">
@@ -31,7 +31,7 @@
         </div>
 
         <div class="payment-data-row">
-          <span>Número de cuenta</span>
+          <span>Numero de cuenta</span>
           <strong>{{ paymentData?.accountNumber || 'No informado' }}</strong>
         </div>
 
@@ -51,7 +51,7 @@
         class="confirm-payment-btn"
         (click)="confirmarPago()"
       >
-        Ya transferí
+        Ya transferi
       </ion-button>
     </ng-container>
 
@@ -72,7 +72,7 @@
         </ion-item>
 
         <ion-item lines="none">
-          <ion-label position="stacked">Número de cuenta</ion-label>
+          <ion-label position="stacked">Numero de cuenta</ion-label>
           <ion-input [(ngModel)]="account"></ion-input>
         </ion-item>
 

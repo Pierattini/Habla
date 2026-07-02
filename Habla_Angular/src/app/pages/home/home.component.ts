@@ -800,12 +800,16 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   goToDetail(professional: any) {
-    if (professional?.slug) {
-      this.router.navigate(['/profesional', professional.slug]);
+    if (professional?.id) {
+      this.router.navigate(['/tabs/professional', professional.id], {
+        state: { professional },
+      });
       return;
     }
 
-    this.router.navigate(['/tabs/professional', professional?.id]);
+    if (professional?.slug) {
+      this.router.navigate(['/profesional', professional.slug]);
+    }
   }
 
   goToProfile() {

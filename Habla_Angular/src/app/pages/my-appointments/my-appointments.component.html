@@ -87,7 +87,7 @@
     color="medium"
     size="small"
     class="btn-sec"
-    *ngIf="role === 'PROFESSIONAL' || canReschedule(appt)"
+    *ngIf="canReschedule(appt)"
     (click)="reschedule(appt)">
     Reagendar
   </ion-button>
@@ -115,7 +115,7 @@
         color="medium"
         size="small"
         class="btn-sec"
-        *ngIf="role === 'PROFESSIONAL' || canReschedule(appt)"
+        *ngIf="canReschedule(appt)"
         (click)="reschedule(appt)">
         Reagendar
       </ion-button>
@@ -343,10 +343,17 @@
 <div class="appointment-summary">
   <div class="appointment-date-row">
     <span class="appointment-summary-icon" aria-hidden="true"></span>
-    <span>Fecha y hora</span>
+    <span>Fecha y hora:&nbsp;</span>
     <strong>{{ appt.date | date:'dd/MM/yyyy HH:mm' }}</strong>
   </div>
 </div>
+
+<p
+  class="reservation-pending-note"
+  *ngIf="$any(this).isAwaitingReservationConfirmation(appt)"
+>
+  Tu reserva aún no está confirmada. La hora quedará reservada únicamente cuando el pago sea confirmado.
+</p>
 
 <button
   type="button"
@@ -388,7 +395,7 @@
 
   <div
     class="action-row action-row-payment"
-    *ngIf="!$any(this).isTerminalAppointment(appt) && role !== 'PROFESSIONAL' && canPay(appt)"
+    *ngIf="$any(this).canShowPaymentActions(appt)"
   >
   <!-- VER DATOS DE PAGO -->
   <ion-button
@@ -539,7 +546,7 @@
 <div class="appointment-summary">
   <div class="appointment-date-row">
     <span class="appointment-summary-icon" aria-hidden="true"></span>
-    <span>Fecha y hora</span>
+    <span>Fecha y hora:&nbsp;</span>
     <strong>{{ appt.date | date:'dd/MM/yyyy HH:mm' }}</strong>
   </div>
 </div>
@@ -740,7 +747,73 @@
   </div>
 </div>
 
- </ion-content>
+<div
+  class="payment-modal-backdrop"
+  *ngIf="$any(this).paymentModalAppointment"
+  (click)="$any(this).closePaymentModal()"
+>
+  <div
+    class="payment-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="payment-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <button
+      type="button"
+      class="payment-close"
+      aria-label="Cerrar"
+      (click)="$any(this).closePaymentModal()"
+    >
+      x
+    </button>
+
+    <div class="payment-modal-icon" aria-hidden="true">
+      <span></span>
+    </div>
+
+    <h2 id="payment-modal-title">Datos para transferir</h2>
+    <p class="payment-intro">
+      Transfiere al profesional con estos datos. Luego presiona
+      <strong>Ya transferi</strong> para avisar que el pago fue realizado.
+    </p>
+
+    <div class="payment-data-list">
+      <div class="payment-data-row">
+        <span>Titular</span>
+        <strong>{{ $any(this).paymentModalData?.accountHolder || $any(this).paymentModalData?.name || 'No informado' }}</strong>
+      </div>
+
+      <div class="payment-data-row">
+        <span>Banco</span>
+        <strong>{{ $any(this).paymentModalData?.bankName || 'No informado' }}</strong>
+      </div>
+
+      <div class="payment-data-row">
+        <span>Tipo de cuenta</span>
+        <strong>{{ $any(this).paymentModalData?.accountType || 'No informado' }}</strong>
+      </div>
+
+      <div class="payment-data-row">
+        <span>Numero de cuenta</span>
+        <strong>{{ $any(this).paymentModalData?.accountNumber || 'No informado' }}</strong>
+      </div>
+
+      <div class="payment-data-row">
+        <span>Correo</span>
+        <strong>{{ $any(this).paymentModalData?.accountEmail || 'No informado' }}</strong>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="payment-confirm"
+      (click)="$any(this).confirmPaymentFromModal()"
+    >
+      Ya transferi
+    </button>
+  </div>
+</div>
 
 <div
   class="penalty-modal-backdrop"
@@ -763,27 +836,103 @@
       ×
     </button>
 
-    <div class="penalty-icon" aria-hidden="true">!</div>
+    <ng-container *ngIf="$any(this).penaltyModalStep === 'confirm'">
+      <div class="penalty-icon" aria-hidden="true">!</div>
 
-    <h2 id="penalty-modal-title">Cancelación con penalización</h2>
-    <p>
-      Cancelaste con menos de 48 horas. Se retendrá el 50%.
-      Elige cómo quieres resolver el saldo restante.
-    </p>
+      <h2 id="penalty-modal-title">Cancelar cita con penalización</h2>
+      <p>
+        Esta cita ya fue confirmada y la hora quedó reservada para ti.
+        Si cancelas ahora se aplicará la penalización del 50%.
+      </p>
 
-    <div class="penalty-actions">
-      <button type="button" (click)="$any(this).choosePenaltyCredit()">
-        <strong>Usar como crédito</strong>
-        <small>Queda disponible para reagendar otra cita.</small>
-      </button>
+      <div class="penalty-actions">
+        <button type="button" class="secondary" (click)="$any(this).closePenaltyModal()">
+          <strong>Volver</strong>
+          <small>No cancelar la cita.</small>
+        </button>
 
-      <button type="button" (click)="$any(this).choosePenaltyRefund()">
-        <strong>Solicitar reembolso</strong>
-        <small>Ingresa tus datos bancarios para procesarlo.</small>
-      </button>
-    </div>
+        <button type="button" class="danger-action" (click)="$any(this).confirmPenaltyCancellation()">
+          <strong>Cancelar con penalización</strong>
+          <small>Se retendrá el 50% por cancelar tarde.</small>
+        </button>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="$any(this).penaltyModalStep === 'resolve'">
+      <div class="penalty-icon" aria-hidden="true">%</div>
+
+      <h2 id="penalty-modal-title">Saldo restante</h2>
+      <p>
+        La cita fue cancelada. Puedes usar el 50% restante como crédito
+        para una próxima cita o solicitar el reembolso.
+      </p>
+
+      <div class="penalty-actions">
+        <button type="button" class="secondary" (click)="$any(this).choosePenaltyCredit()">
+          <strong>Usar como crédito</strong>
+          <small>Queda disponible para reagendar otra cita.</small>
+        </button>
+
+        <button type="button" class="danger-action" (click)="$any(this).choosePenaltyRefund()">
+          <strong>Solicitar reembolso</strong>
+          <small>Ingresa tus datos bancarios para procesarlo.</small>
+        </button>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="$any(this).penaltyModalStep === 'refund'">
+      <div class="penalty-icon" aria-hidden="true">$</div>
+
+      <h2 id="penalty-modal-title">Datos de reembolso</h2>
+      <p>
+        Completa tus datos bancarios para solicitar el reembolso del 50% restante.
+      </p>
+
+      <div class="penalty-refund-form">
+        <label>
+          <span>Banco</span>
+          <input
+            type="text"
+            [ngModel]="$any(this).refundBank"
+            (ngModelChange)="$any(this).refundBank = $event"
+            placeholder="Nombre del banco"
+          >
+        </label>
+
+        <label>
+          <span>Tipo de cuenta</span>
+          <input
+            type="text"
+            [ngModel]="$any(this).refundAccountType"
+            (ngModelChange)="$any(this).refundAccountType = $event"
+            placeholder="Cuenta corriente, vista..."
+          >
+        </label>
+
+        <label>
+          <span>Número de cuenta</span>
+          <input
+            type="text"
+            [ngModel]="$any(this).refundAccount"
+            (ngModelChange)="$any(this).refundAccount = $event"
+            placeholder="Número de cuenta"
+          >
+        </label>
+      </div>
+
+      <div class="penalty-actions">
+        <button type="button" class="secondary" (click)="$any(this).penaltyModalStep = 'resolve'">
+          <strong>Volver</strong>
+          <small>Elegir otra opción.</small>
+        </button>
+
+        <button type="button" class="danger-action" (click)="$any(this).submitPenaltyRefund()">
+          <strong>Enviar solicitud</strong>
+          <small>Conecta avisará al profesional.</small>
+        </button>
+      </div>
+    </ng-container>
   </div>
 </div>
 
-
-
+ </ion-content>

@@ -1,3 +1,39 @@
+.reschedule-title {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  pointer-events: none;
+  text-align: center;
+}
+
+.reschedule-back-button {
+  --background: transparent !important;
+  --background-hover: transparent !important;
+  --background-activated: transparent !important;
+  --background-focused: transparent !important;
+  --box-shadow: none !important;
+  --color: #b832f5 !important;
+
+  color: #b832f5 !important;
+  font-size: 30px;
+  font-weight: 700;
+  min-width: 40px;
+}
+
+.reschedule-back-button ion-icon {
+  color: #b832f5 !important;
+  font-size: 28px;
+  opacity: 1 !important;
+  display: block;
+}
+
+.reschedule-back-button ion-icon {
+  font-size: 28px;
+}
+
 .slots {
   display: flex;
   flex-wrap: wrap;

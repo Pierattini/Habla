@@ -2,9 +2,8 @@
   <ion-toolbar class="detail-toolbar">
 
     <ion-buttons slot="start">
-      <ion-button class="back-button" fill="clear" (click)="goHome()">
+      <ion-button class="back-button" fill="clear" aria-label="Volver" (click)="goHome()">
         <span aria-hidden="true">&larr;</span>
-        Volver
       </ion-button>
     </ion-buttons>
 
@@ -158,6 +157,8 @@
       <ion-card-content>
         <ion-datetime
           presentation="date"
+          [min]="minBookingDate"
+          [max]="maxBookingDate"
           [(ngModel)]="selectedDate"
           (ionChange)="onDateChange($event)">
         </ion-datetime>

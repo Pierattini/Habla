@@ -72,6 +72,8 @@ export class ProfessionalDetailComponent {
   private profileViewRecordedFor = '';
 
   selectedDate: string = new Date().toISOString().split('T')[0];
+  minBookingDate: string = this.toDateInputValue(new Date());
+  maxBookingDate: string = this.toDateInputValue(this.addMonths(new Date(), 6));
   availableHours: string[] = [];
   selectedHour: string | null = null;
   isBooking: boolean = false;
@@ -100,6 +102,16 @@ export class ProfessionalDetailComponent {
   private cdr: ChangeDetectorRef,
   private router: Router,
   private alertCtrl: AlertController ) {}
+
+  private addMonths(date: Date, months: number): Date {
+    const next = new Date(date);
+    next.setMonth(next.getMonth() + months);
+    return next;
+  }
+
+  private toDateInputValue(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
 
   ionViewWillEnter() {
     const routeId = this.route.snapshot.paramMap.get('id');
@@ -134,6 +146,27 @@ export class ProfessionalDetailComponent {
       this.loading = false;
       this.loaded = true;
       this.cdr.detectChanges();
+      return;
+    }
+
+    const stateProfessional = history.state?.professional;
+
+    if (
+      !this.slug &&
+      stateProfessional?.id &&
+      String(stateProfessional.id) === String(this.id)
+    ) {
+      this.professional = {
+        ...stateProfessional,
+        sessionDuration: stateProfessional.sessionDuration ?? stateProfessional.duration,
+      };
+      this.professionalTaxReady = this.professional?.taxDocumentReady === true;
+      this.selectedAttentionMode =
+        this.professional?.attentionMode === 'PRESENTIAL'
+          ? 'PRESENTIAL'
+          : 'ONLINE';
+      this.applyDefaultDocumentMode();
+      this.loadAvailability();
       return;
     }
 

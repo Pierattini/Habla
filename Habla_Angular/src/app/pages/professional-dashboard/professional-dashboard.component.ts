@@ -205,6 +205,11 @@ export class ProfessionalDashboardComponent {
     arrivalInstructions: '',
     videoProvider: 'CONNECTA_AUTO',
     customVideoUrl: '',
+    bankName: '',
+    accountType: '',
+    accountNumber: '',
+    accountHolder: '',
+    accountEmail: '',
     documentAutomationEnabled: false,
     manualDocumentMode: true,
     taxId: '',
@@ -423,6 +428,11 @@ export class ProfessionalDashboardComponent {
         arrivalInstructions: this.profile.arrivalInstructions,
         videoProvider: this.profile.videoProvider,
         customVideoUrl: this.profile.customVideoUrl,
+        bankName: this.profile.bankName,
+        accountType: this.profile.accountType,
+        accountNumber: this.profile.accountNumber,
+        accountHolder: this.profile.accountHolder,
+        accountEmail: this.profile.accountEmail,
         documentAutomationEnabled: this.profile.documentAutomationEnabled,
         manualDocumentMode: !this.profile.documentAutomationEnabled,
         taxId: this.profile.taxId,
@@ -782,6 +792,11 @@ private prepareProfileImage(file: File): Promise<string> {
         arrivalInstructions: res.professional?.arrivalInstructions || '',
         videoProvider: this.normalizeVideoProvider(res.professional?.videoProvider),
         customVideoUrl: res.professional?.customVideoUrl || '',
+        bankName: res.professional?.bankName || '',
+        accountType: res.professional?.accountType || '',
+        accountNumber: res.professional?.accountNumber || '',
+        accountHolder: res.professional?.accountHolder || '',
+        accountEmail: res.professional?.accountEmail || '',
         documentAutomationEnabled: res.professional?.documentAutomationEnabled === true,
         manualDocumentMode: res.professional?.manualDocumentMode !== false,
         taxId: res.professional?.taxId || '',
@@ -1701,7 +1716,29 @@ private prepareProfileImage(file: File): Promise<string> {
   private buildPublicProfileUrl(slug: string): string {
     if (!slug) return '';
 
-    return `https://conecta.app/profesional/${slug}`;
+    return `https://conecta.app/profesional/${this.getReadablePublicSlug(slug)}`;
+  }
+
+  private getReadablePublicSlug(slug: string): string {
+    const cleanNameSlug = this.toPublicSlug(this.profile.name || '');
+
+    if (!cleanNameSlug || !slug.startsWith(`${cleanNameSlug}-`)) {
+      return slug;
+    }
+
+    const suffix = slug.replace(`${cleanNameSlug}-`, '');
+
+    return /^[a-z0-9]{6,}$/.test(suffix) ? cleanNameSlug : slug;
+  }
+
+  private toPublicSlug(value: string): string {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .slice(0, 70);
   }
 
   private async copyToClipboard(value: string): Promise<void> {
