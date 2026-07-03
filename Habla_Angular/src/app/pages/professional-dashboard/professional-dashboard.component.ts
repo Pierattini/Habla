@@ -145,8 +145,11 @@ export class ProfessionalDashboardComponent {
   requestActionIds: Record<string, boolean> = {};
   taxProviderCredential: TaxProviderCredentialStatus | null = null;
   taxProviderRut = '';
-  taxProviderToken = '';
+  taxProviderCertificatePassword = '';
+  taxProviderCertificateFile: File | null = null;
+  taxProviderEnvironment: 'CERTIFICATION' | 'PRODUCTION' = 'PRODUCTION';
   taxProviderSaving = false;
+  taxProviderTesting = false;
   taxProviderMessage = '';
   private professionalUserId = '';
   private dashboardRequestsPending = 0;
@@ -1229,41 +1232,79 @@ private prepareProfileImage(file: File): Promise<string> {
       next: (credential) => {
         this.taxProviderCredential = credential;
         this.taxProviderRut = credential.rut || this.profile.taxId || '';
+        this.taxProviderEnvironment = credential.environment || 'PRODUCTION';
       },
       error: (err) => {
-        console.error('Error cargando credenciales LibreDTE:', err);
+        console.error('Error cargando credenciales SII:', err);
         this.taxProviderCredential = null;
       }
     });
   }
 
+  onTaxProviderCertificateSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+
+    if (!file) return;
+
+    const lowerName = file.name.toLowerCase();
+    if (!lowerName.endsWith('.pfx') && !lowerName.endsWith('.p12')) {
+      this.taxProviderCertificateFile = null;
+      this.taxProviderMessage = 'El certificado debe ser un archivo .pfx o .p12.';
+      input.value = '';
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      this.taxProviderCertificateFile = null;
+      this.taxProviderMessage = 'El certificado no puede superar 2MB.';
+      input.value = '';
+      return;
+    }
+
+    this.taxProviderCertificateFile = file;
+    this.taxProviderMessage = '';
+  }
+
   saveTaxProviderCredential(): void {
     const rut = this.taxProviderRut.trim();
-    const apiToken = this.taxProviderToken.trim();
+    const certificatePassword = this.taxProviderCertificatePassword.trim();
 
     if (!rut || rut.length < 6) {
       this.taxProviderMessage = 'Ingresa un RUT emisor valido.';
       return;
     }
 
-    if (!apiToken || apiToken.length < 12) {
-      this.taxProviderMessage = 'Ingresa un token LibreDTE valido.';
+    if (!this.taxProviderCertificateFile) {
+      this.taxProviderMessage = 'Selecciona el certificado digital .pfx o .p12.';
+      return;
+    }
+
+    if (!certificatePassword || certificatePassword.length < 4) {
+      this.taxProviderMessage = 'Ingresa la clave del certificado digital.';
       return;
     }
 
     this.taxProviderSaving = true;
     this.taxProviderMessage = '';
 
-    this.taxProviderService.saveMyCredential({ rut, apiToken }).subscribe({
+    this.taxProviderService.saveMyCredential({
+      rut,
+      certificatePassword,
+      certificate: this.taxProviderCertificateFile,
+      environment: this.taxProviderEnvironment,
+    }).subscribe({
       next: (credential) => {
         this.taxProviderCredential = credential;
         this.taxProviderRut = credential.rut || rut;
-        this.taxProviderToken = '';
-        this.taxProviderMessage = 'Credenciales LibreDTE guardadas.';
+        this.taxProviderEnvironment = credential.environment || this.taxProviderEnvironment;
+        this.taxProviderCertificatePassword = '';
+        this.taxProviderCertificateFile = null;
+        this.taxProviderMessage = 'Certificado SII guardado de forma segura.';
       },
       error: (err) => {
-        console.error('Error guardando credenciales LibreDTE:', err);
-        this.taxProviderMessage = 'No se pudieron guardar las credenciales.';
+        console.error('Error guardando credenciales SII:', err);
+        this.taxProviderMessage = 'No se pudo guardar el certificado SII.';
         this.taxProviderSaving = false;
       },
       complete: () => {
@@ -1282,16 +1323,50 @@ private prepareProfileImage(file: File): Promise<string> {
       next: (credential) => {
         this.taxProviderCredential = credential;
         this.taxProviderRut = '';
-        this.taxProviderToken = '';
-        this.taxProviderMessage = 'Credenciales LibreDTE eliminadas.';
+        this.taxProviderCertificatePassword = '';
+        this.taxProviderCertificateFile = null;
+        this.taxProviderMessage = 'Certificado SII eliminado.';
       },
       error: (err) => {
-        console.error('Error eliminando credenciales LibreDTE:', err);
+        console.error('Error eliminando credenciales SII:', err);
         this.taxProviderMessage = 'No se pudieron eliminar las credenciales.';
         this.taxProviderSaving = false;
       },
       complete: () => {
         this.taxProviderSaving = false;
+      }
+    });
+  }
+
+  testTaxProviderAuthentication(): void {
+    if (this.taxProviderSaving || this.taxProviderTesting) return;
+
+    if (!this.taxProviderCredential?.configured) {
+      this.taxProviderMessage = 'Primero guarda tu certificado SII.';
+      return;
+    }
+
+    this.taxProviderTesting = true;
+    this.taxProviderMessage = '';
+
+    this.taxProviderService.testSiiAuthentication().subscribe({
+      next: (result) => {
+        this.taxProviderMessage = result.message || 'Conexion con SII validada.';
+        if (this.taxProviderCredential) {
+          this.taxProviderCredential = {
+            ...this.taxProviderCredential,
+            lastValidatedAt: result.lastValidatedAt,
+            status: 'CONFIGURED',
+          };
+        }
+      },
+      error: (err) => {
+        console.error('Error probando conexion SII:', err);
+        this.taxProviderMessage = err?.error?.message || 'No se pudo validar la conexion con SII.';
+        this.taxProviderTesting = false;
+      },
+      complete: () => {
+        this.taxProviderTesting = false;
       }
     });
   }

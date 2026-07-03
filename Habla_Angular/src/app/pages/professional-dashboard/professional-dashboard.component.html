@@ -796,7 +796,7 @@
 
   </ion-card>
 
-  <!-- CREDENCIALES LIBREDTE -->
+  <!-- CONFIGURACION SII DIRECTO -->
   <ion-card>
 
     <ion-card-content>
@@ -815,7 +815,8 @@
       </div>
 
       <p class="schedule-help">
-        Guarda las credenciales LibreDTE del profesional. El token se almacena cifrado y no se vuelve a mostrar.
+        Configura la emision directa con SII. El unico costo externo esperado para el profesional es su certificado digital.
+        El archivo y su clave se guardan cifrados y no se vuelven a mostrar.
       </p>
 
       <div class="tax-profile-grid">
@@ -832,24 +833,79 @@
           </ion-input>
         </ion-item>
 
-        <ion-item class="profile-field" lines="none">
-          <ion-label position="stacked">
-            Token LibreDTE
-          </ion-label>
+        <div class="choice-field">
+          <p class="subsection-title">Ambiente SII</p>
+          <div class="mode-selector">
+            <label>
+              <input
+                type="radio"
+                name="taxProviderEnvironment"
+                value="PRODUCTION"
+                [ngModel]="$any(this).taxProviderEnvironment"
+                (ngModelChange)="$any(this).taxProviderEnvironment = $event"
+              />
+              Produccion
+            </label>
 
-          <ion-input
-            type="password"
-            maxlength="400"
-            autocomplete="off"
-            placeholder="Pega tu token LibreDTE"
-            [ngModel]="$any(this).taxProviderToken"
-            (ngModelChange)="$any(this).taxProviderToken = $event">
-          </ion-input>
-        </ion-item>
+            <label>
+              <input
+                type="radio"
+                name="taxProviderEnvironment"
+                value="CERTIFICATION"
+                [ngModel]="$any(this).taxProviderEnvironment"
+                (ngModelChange)="$any(this).taxProviderEnvironment = $event"
+              />
+              Certificacion
+            </label>
+          </div>
+        </div>
       </div>
 
+      <div class="document-upload">
+        <input
+          type="file"
+          #siiCertificateInput
+          accept=".pfx,.p12"
+          (change)="$any(this).onTaxProviderCertificateSelected($event)"
+          hidden
+        />
+
+        <ion-button
+          fill="outline"
+          size="small"
+          (click)="siiCertificateInput.click()"
+        >
+          Seleccionar certificado digital
+        </ion-button>
+
+        <span class="selected-file-name">
+          {{ $any(this).taxProviderCertificateFile?.name || $any(this).taxProviderCredential?.certificateFileName || 'Archivo .pfx o .p12' }}
+        </span>
+      </div>
+
+      <ion-item class="profile-field" lines="none">
+        <ion-label position="stacked">
+          Clave del certificado
+        </ion-label>
+
+        <ion-input
+          type="password"
+          maxlength="200"
+          autocomplete="off"
+          placeholder="Clave del archivo .pfx/.p12"
+          [ngModel]="$any(this).taxProviderCertificatePassword"
+          (ngModelChange)="$any(this).taxProviderCertificatePassword = $event">
+        </ion-input>
+      </ion-item>
+
       <p class="field-rule">
-        Estado: {{ $any(this).taxProviderCredential?.configured ? 'credenciales guardadas de forma segura' : 'sin credenciales guardadas' }}.
+        Estado: {{ $any(this).taxProviderCredential?.configured ? 'certificado guardado de forma segura' : 'sin certificado configurado' }}.
+        <ng-container *ngIf="$any(this).taxProviderCredential?.certificateUploadedAt">
+          Subido el {{ $any(this).taxProviderCredential?.certificateUploadedAt | date:'dd/MM/yyyy HH:mm' }}.
+        </ng-container>
+        <ng-container *ngIf="$any(this).taxProviderCredential?.lastValidatedAt">
+          Validado el {{ $any(this).taxProviderCredential?.lastValidatedAt | date:'dd/MM/yyyy HH:mm' }}.
+        </ng-container>
       </p>
 
       <p
@@ -862,7 +918,7 @@
       <div class="document-actions">
         <ion-button
           size="small"
-          [disabled]="$any(this).taxProviderSaving"
+          [disabled]="$any(this).taxProviderSaving || $any(this).taxProviderTesting"
           (click)="$any(this).saveTaxProviderCredential()"
         >
           {{ $any(this).taxProviderSaving ? 'Guardando...' : 'Guardar credenciales' }}
@@ -871,8 +927,17 @@
         <ion-button
           fill="outline"
           size="small"
+          [disabled]="!$any(this).taxProviderCredential?.configured || $any(this).taxProviderSaving || $any(this).taxProviderTesting"
+          (click)="$any(this).testTaxProviderAuthentication()"
+        >
+          {{ $any(this).taxProviderTesting ? 'Validando...' : 'Probar conexión SII' }}
+        </ion-button>
+
+        <ion-button
+          fill="outline"
+          size="small"
           color="medium"
-          [disabled]="!$any(this).taxProviderCredential?.configured || $any(this).taxProviderSaving"
+          [disabled]="!$any(this).taxProviderCredential?.configured || $any(this).taxProviderSaving || $any(this).taxProviderTesting"
           (click)="$any(this).deleteTaxProviderCredential()"
         >
           Eliminar credenciales
