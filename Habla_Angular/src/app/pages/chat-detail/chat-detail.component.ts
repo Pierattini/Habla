@@ -230,6 +230,10 @@ export class ChatDetailComponent {
     window.history.back();
   }
 
+  isOwnMessage(message: any): boolean {
+    return message?.senderId === this.currentUserId || message?.sender?.id === this.currentUserId;
+  }
+
   isCustomerMessage(message: any): boolean {
     const senderRole = message?.sender?.role || message?.senderRole;
 

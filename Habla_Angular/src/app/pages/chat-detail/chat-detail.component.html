@@ -83,8 +83,8 @@
   <div
     *ngFor="let msg of messages"
     class="message-wrapper"
-    [class.customer-message]="$any(this).isCustomerMessage(msg)"
-    [class.professional-message]="!$any(this).isCustomerMessage(msg)"
+    [class.own-message]="$any(this).isOwnMessage(msg)"
+    [class.other-message]="!$any(this).isOwnMessage(msg)"
   >
     <div class="message-bubble">
 

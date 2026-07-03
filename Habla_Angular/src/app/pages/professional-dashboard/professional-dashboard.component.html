@@ -65,7 +65,7 @@
       aria-label="Editar imagen profesional"
       (click)="$any(this).openProfessionalAvatarPicker()"
     >
-      <span aria-hidden="true">✎</span>
+      <span aria-hidden="true">&#9998;</span>
     </button>
   </div>
 
@@ -415,7 +415,51 @@
   </ion-card>
 
   <!-- DOCUMENTOS -->
-  <section class="documents-summary">
+  <ion-card>
+    <ion-card-content>
+      <div class="documents-title-row">
+        <h2 class="section-title">
+          Documentos tributarios
+        </h2>
+
+        <span class="document-badge">
+          Modulo separado
+        </span>
+      </div>
+
+      <section class="documents-summary compact">
+        <div class="metric-card">
+          <span>Documentos pendientes</span>
+          <strong>{{ $any(this).dashboardView.pendingDocumentsCount }}</strong>
+        </div>
+
+        <div class="metric-card">
+          <span>Emitidos este mes</span>
+          <strong>{{ $any(this).dashboardView.emittedThisMonthCount }}</strong>
+        </div>
+
+        <div class="metric-card">
+          <span>Documentos con error</span>
+          <strong>{{ $any(this).failedDocumentsCount }}</strong>
+        </div>
+      </section>
+
+      <p class="documents-empty">
+        El detalle de boletas, filtros, reenvios, cargas y sincronizacion ahora vive en el modulo dedicado.
+      </p>
+
+      <div class="document-actions">
+        <ion-button
+          size="small"
+          (click)="$any(this).goToTaxDocuments()"
+        >
+          Ver documentos tributarios
+        </ion-button>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <section *ngIf="false" class="documents-summary">
     <div class="metric-card">
       <span>Documentos pendientes</span>
       <strong>{{ $any(this).dashboardView.pendingDocumentsCount }}</strong>
@@ -432,7 +476,7 @@
     </div>
   </section>
 
-  <ion-card id="professional-profile-form">
+  <ion-card *ngIf="false">
 
     <ion-card-content>
 
@@ -595,7 +639,7 @@
 
   </ion-card>
 
-  <ion-card>
+  <ion-card *ngIf="false">
 
     <ion-card-content>
 
@@ -702,7 +746,7 @@
   </ion-card>
 
   <!-- PERFIL -->
-  <ion-card>
+  <ion-card id="professional-profile-form">
 
     <ion-card-content>
 
@@ -747,6 +791,93 @@
           [(ngModel)]="profile.description">
         </ion-textarea>
       </ion-item>
+
+    </ion-card-content>
+
+  </ion-card>
+
+  <!-- CREDENCIALES LIBREDTE -->
+  <ion-card>
+
+    <ion-card-content>
+
+      <div class="documents-title-row">
+        <h2 class="section-title">
+          Configuración tributaria
+        </h2>
+
+        <span
+          class="document-badge"
+          [class.success]="$any(this).taxProviderCredential?.configured"
+        >
+          {{ $any(this).taxProviderCredential?.configured ? 'Configurado' : 'No configurado' }}
+        </span>
+      </div>
+
+      <p class="schedule-help">
+        Guarda las credenciales LibreDTE del profesional. El token se almacena cifrado y no se vuelve a mostrar.
+      </p>
+
+      <div class="tax-profile-grid">
+        <ion-item class="profile-field" lines="none">
+          <ion-label position="stacked">
+            RUT emisor
+          </ion-label>
+
+          <ion-input
+            maxlength="20"
+            placeholder="Ej: 12.345.678-9"
+            [ngModel]="$any(this).taxProviderRut"
+            (ngModelChange)="$any(this).taxProviderRut = $event">
+          </ion-input>
+        </ion-item>
+
+        <ion-item class="profile-field" lines="none">
+          <ion-label position="stacked">
+            Token LibreDTE
+          </ion-label>
+
+          <ion-input
+            type="password"
+            maxlength="400"
+            autocomplete="off"
+            placeholder="Pega tu token LibreDTE"
+            [ngModel]="$any(this).taxProviderToken"
+            (ngModelChange)="$any(this).taxProviderToken = $event">
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <p class="field-rule">
+        Estado: {{ $any(this).taxProviderCredential?.configured ? 'credenciales guardadas de forma segura' : 'sin credenciales guardadas' }}.
+      </p>
+
+      <p
+        *ngIf="$any(this).taxProviderMessage"
+        class="public-profile-message"
+      >
+        {{ $any(this).taxProviderMessage }}
+      </p>
+
+      <div class="document-actions">
+        <ion-button
+          size="small"
+          [disabled]="$any(this).taxProviderSaving"
+          (click)="$any(this).saveTaxProviderCredential()"
+        >
+          {{ $any(this).taxProviderSaving ? 'Guardando...' : 'Guardar credenciales' }}
+        </ion-button>
+
+        <ion-button
+          fill="outline"
+          size="small"
+          color="medium"
+          [disabled]="!$any(this).taxProviderCredential?.configured || $any(this).taxProviderSaving"
+          (click)="$any(this).deleteTaxProviderCredential()"
+        >
+          Eliminar credenciales
+        </ion-button>
+      </div>
 
     </ion-card-content>
 

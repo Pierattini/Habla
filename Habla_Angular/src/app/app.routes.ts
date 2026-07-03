@@ -90,6 +90,13 @@ export const routes: Routes = [
             .then(m => m.ProfessionalDashboardComponent),
       },
       {
+        path: 'tax-documents',
+        canActivate: [professionalGuard],
+        loadComponent: () =>
+          import('./pages/tax-documents/tax-documents.component')
+            .then(m => m.TaxDocumentsComponent),
+      },
+      {
   path: 'messages',
   loadComponent: () =>
     import('./pages/messages/messages.component').then(

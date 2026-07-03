@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA 
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { finalize, forkJoin, Observable } from 'rxjs';
 import {
   DashboardTaxDocument,
@@ -22,6 +23,10 @@ import {
   ProfessionalStats,
   ProfessionalPlanService
 } from '../../services/professional-plan.service';
+import {
+  TaxProviderCredentialStatus,
+  TaxProviderService,
+} from '../../services/tax-provider.service';
 import { API_URL } from '../../core/config/api.config';
 import { environment } from '../../../environments/environment';
 
@@ -138,8 +143,14 @@ export class ProfessionalDashboardComponent {
   };
   teamsConnectionLoading = false;
   requestActionIds: Record<string, boolean> = {};
+  taxProviderCredential: TaxProviderCredentialStatus | null = null;
+  taxProviderRut = '';
+  taxProviderToken = '';
+  taxProviderSaving = false;
+  taxProviderMessage = '';
   private professionalUserId = '';
   private dashboardRequestsPending = 0;
+  private readonly profileCacheKey = 'conecta.professionalDashboard.profile';
   documentFilters = [
     { label: 'Todos', value: 'ALL' },
     { label: 'Pendientes', value: 'DOCUMENT_PENDING' },
@@ -163,19 +174,25 @@ export class ProfessionalDashboardComponent {
   constructor(
     private professionalProfileService: ProfessionalProfileService,
     private taxDocumentsService: TaxDocumentsService,
+    private taxProviderService: TaxProviderService,
     private professionalPlanService: ProfessionalPlanService,
     private http: HttpClient,
+    private router: Router,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    this.restoreCachedProfile();
+  }
 
   ionViewWillEnter() {
-    this.loading = true;
-    this.loaded = false;
+    const hasRenderableProfile = Boolean(this.profile.name || this.profile.image || this.profile.specialty);
+    this.loading = !hasRenderableProfile;
+    this.loaded = hasRenderableProfile;
     this.dashboardRequestsPending = 5;
 
     this.loadProfile();
     this.loadPendingTaxDocuments();
     this.loadTaxDocuments();
+    this.loadTaxProviderCredential();
     this.loadProfessionalAccess();
     this.loadAppointmentRequests();
   }
@@ -806,6 +823,7 @@ private prepareProfileImage(file: File): Promise<string> {
         taxCountry: res.professional?.taxCountry || res.professional?.officeCountry || '',
         taxCity: res.professional?.taxCity || ''
       };
+      this.cacheProfile();
       this.publicProfileUrl = this.buildPublicProfileUrl(this.profile.slug || '');
       this.loadPlanPricing(this.profile.officeCountry || 'CL');
       this.loadGoogleConnectionStatus();
@@ -821,6 +839,33 @@ private prepareProfileImage(file: File): Promise<string> {
       }
     });
 
+  }
+
+  private restoreCachedProfile(): void {
+    try {
+      const rawProfile = sessionStorage.getItem(this.profileCacheKey);
+      if (!rawProfile) return;
+
+      const cachedProfile = JSON.parse(rawProfile) as Partial<ProfessionalProfile>;
+      this.profile = {
+        ...this.profile,
+        ...cachedProfile,
+        videoProvider: this.normalizeVideoProvider(cachedProfile.videoProvider),
+      };
+      this.publicProfileUrl = this.buildPublicProfileUrl(this.profile.slug || '');
+      this.loading = false;
+      this.loaded = true;
+    } catch {
+      sessionStorage.removeItem(this.profileCacheKey);
+    }
+  }
+
+  private cacheProfile(): void {
+    try {
+      sessionStorage.setItem(this.profileCacheKey, JSON.stringify(this.profile));
+    } catch {
+      // Cache is only a UX optimization; saving the profile must not depend on it.
+    }
   }
 
   private normalizeVideoProvider(provider?: string | null): VideoProvider {
@@ -1179,6 +1224,78 @@ private prepareProfileImage(file: File): Promise<string> {
     });
   }
 
+  loadTaxProviderCredential(): void {
+    this.taxProviderService.getMyCredential().subscribe({
+      next: (credential) => {
+        this.taxProviderCredential = credential;
+        this.taxProviderRut = credential.rut || this.profile.taxId || '';
+      },
+      error: (err) => {
+        console.error('Error cargando credenciales LibreDTE:', err);
+        this.taxProviderCredential = null;
+      }
+    });
+  }
+
+  saveTaxProviderCredential(): void {
+    const rut = this.taxProviderRut.trim();
+    const apiToken = this.taxProviderToken.trim();
+
+    if (!rut || rut.length < 6) {
+      this.taxProviderMessage = 'Ingresa un RUT emisor valido.';
+      return;
+    }
+
+    if (!apiToken || apiToken.length < 12) {
+      this.taxProviderMessage = 'Ingresa un token LibreDTE valido.';
+      return;
+    }
+
+    this.taxProviderSaving = true;
+    this.taxProviderMessage = '';
+
+    this.taxProviderService.saveMyCredential({ rut, apiToken }).subscribe({
+      next: (credential) => {
+        this.taxProviderCredential = credential;
+        this.taxProviderRut = credential.rut || rut;
+        this.taxProviderToken = '';
+        this.taxProviderMessage = 'Credenciales LibreDTE guardadas.';
+      },
+      error: (err) => {
+        console.error('Error guardando credenciales LibreDTE:', err);
+        this.taxProviderMessage = 'No se pudieron guardar las credenciales.';
+        this.taxProviderSaving = false;
+      },
+      complete: () => {
+        this.taxProviderSaving = false;
+      }
+    });
+  }
+
+  deleteTaxProviderCredential(): void {
+    if (this.taxProviderSaving) return;
+
+    this.taxProviderSaving = true;
+    this.taxProviderMessage = '';
+
+    this.taxProviderService.deleteMyCredential().subscribe({
+      next: (credential) => {
+        this.taxProviderCredential = credential;
+        this.taxProviderRut = '';
+        this.taxProviderToken = '';
+        this.taxProviderMessage = 'Credenciales LibreDTE eliminadas.';
+      },
+      error: (err) => {
+        console.error('Error eliminando credenciales LibreDTE:', err);
+        this.taxProviderMessage = 'No se pudieron eliminar las credenciales.';
+        this.taxProviderSaving = false;
+      },
+      complete: () => {
+        this.taxProviderSaving = false;
+      }
+    });
+  }
+
   loadProfessionalAccess(): void {
     this.professionalPlanService.getAccess().subscribe({
       next: (access) => {
@@ -1456,6 +1573,16 @@ private prepareProfileImage(file: File): Promise<string> {
       return date.getFullYear() === now.getFullYear() &&
         date.getMonth() === now.getMonth();
     }).length;
+  }
+
+  get failedDocumentsCount(): number {
+    return this.taxDocuments.filter(
+      (document) => document.status === 'DOCUMENT_FAILED'
+    ).length;
+  }
+
+  goToTaxDocuments(): void {
+    this.router.navigate(['/tabs/tax-documents']);
   }
 
   setDocumentFilter(filter: string): void {

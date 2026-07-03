@@ -15,6 +15,7 @@ import { ChangeDetectorRef } from '@angular/core';
 export class RescheduleModalComponent {
 
   @Input() appointment: any;
+  private readonly confirmedReservationStatuses = ['CONFIRMED', 'RESCHEDULED'];
 
   selectedDate: string = '';
   selectedHour: string | null = null;
@@ -85,11 +86,19 @@ isWithin48Hours(): boolean {
   return diffHours < 48;
 }
 
+isPaymentConfirmed(): boolean {
+  return this.confirmedReservationStatuses.includes(this.appointment?.status);
+}
+
+shouldApplyPenalty(): boolean {
+  return this.isPaymentConfirmed() && this.isWithin48Hours();
+}
+
 // 💳 pago restante
 get remainingPayment(): number {
   const price = this.appointment?.professional?.professional?.price || 0;
 
-  if (this.isWithin48Hours()) {
+  if (this.shouldApplyPenalty()) {
     return price * 0.5;
   }
 
@@ -106,7 +115,7 @@ get remainingPayment(): number {
 
     newDate.setHours(Number(hour), Number(minute), 0, 0);
 
-    if (this.isWithin48Hours()) {
+    if (this.shouldApplyPenalty()) {
 
       const alert = await this.alertCtrl.create({
         header: '⚠️ Cambio con costo',
@@ -150,7 +159,7 @@ Para confirmar tu nueva cita.
 
   let message = ''; // 🔥 FALTABA ESTO
 
-  if (this.isWithin48Hours()) {
+  if (this.shouldApplyPenalty()) {
     message = `
 Se aplicará una penalización del 50%.
 

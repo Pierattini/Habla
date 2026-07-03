@@ -38,7 +38,12 @@
     >
 
       <ion-avatar slot="start">
-        <img [src]="conv.otherUser?.professional?.image || '/default-avatar.png'" />
+        <img
+          [src]="getConversationImage(conv)"
+          [class.support-avatar]="conv.isSupport"
+          (error)="onAvatarError($event)"
+          alt=""
+        />
       </ion-avatar>
 
       <ion-label>

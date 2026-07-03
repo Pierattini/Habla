@@ -86,4 +86,21 @@ export class MessagesComponent {
       }
     });
   }
+
+  getConversationImage(conv: any): string {
+    if (conv?.isSupport) {
+      return 'assets/soloimagen.png';
+    }
+
+    return (
+      conv?.otherUser?.image ||
+      conv?.otherUser?.professional?.image ||
+      '/default-avatar.png'
+    );
+  }
+
+  onAvatarError(event: Event) {
+    const image = event.target as HTMLImageElement;
+    image.src = '/default-avatar.png';
+  }
 }

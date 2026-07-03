@@ -1,0 +1,232 @@
+<ion-content class="ion-padding">
+  <div class="tax-documents-shell">
+    <header class="tax-documents-header">
+      <button type="button" class="back-button" (click)="goBack()" aria-label="Volver">
+        <- 
+      </button>
+
+      <div>
+        <span>Modulo tributario</span>
+        <h1>Documentos Tributarios</h1>
+        <p>Gestiona boletas, documentos manuales, reenvios y estados de emision.</p>
+      </div>
+    </header>
+
+    <section class="filters-panel">
+      <label class="search-field">
+        <span>Buscar</span>
+        <input
+          type="search"
+          [(ngModel)]="search"
+          (ngModelChange)="onSearchChange()"
+          placeholder="Paciente, correo o documento"
+        />
+      </label>
+
+      <label>
+        <span>Estado</span>
+        <select [(ngModel)]="status" (change)="applyFilters()">
+          <option *ngFor="let filter of documentFilters" [value]="filter.value">
+            {{ filter.label }}
+          </option>
+        </select>
+      </label>
+
+      <label>
+        <span>Paciente</span>
+        <input
+          type="text"
+          [(ngModel)]="patient"
+          (ngModelChange)="onSearchChange()"
+          placeholder="Nombre o correo"
+        />
+      </label>
+
+      <label>
+        <span>Desde</span>
+        <input type="date" [(ngModel)]="fromDate" (change)="applyFilters()" />
+      </label>
+
+      <label>
+        <span>Hasta</span>
+        <input type="date" [(ngModel)]="toDate" (change)="applyFilters()" />
+      </label>
+
+      <button type="button" class="clear-button" (click)="clearFilters()">
+        Limpiar filtros
+      </button>
+    </section>
+
+    <p *ngIf="feedbackMessage" class="feedback-message">
+      {{ feedbackMessage }}
+    </p>
+
+    <section class="documents-toolbar">
+      <div>
+        <strong>{{ total }}</strong>
+        <span>documentos encontrados</span>
+      </div>
+
+      <small>Pagina {{ page }} de {{ totalPages }}</small>
+    </section>
+
+    <section class="documents-list">
+      <article *ngFor="let document of documents" class="document-row">
+        <div class="document-row-main">
+          <div>
+            <span class="document-type">{{ document.view?.typeLabel }}</span>
+            <h2>{{ document.view?.customerName }}</h2>
+            <p>
+              Cita:
+              {{ document.view?.appointmentDate ? (document.view?.appointmentDate | date:'dd/MM/yyyy HH:mm') : 'Sin fecha' }}
+            </p>
+          </div>
+
+          <span class="status-badge" [class.error]="document.status === 'DOCUMENT_FAILED'">
+            {{ document.view?.statusLabel }}
+          </span>
+        </div>
+
+        <div class="document-meta">
+          <span>Monto: {{ document.currency || 'CLP' }} {{ (document.amount || 0) | number:'1.0-0' }}</span>
+          <span>Emision: {{ document.view?.issueDate ? (document.view?.issueDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}</span>
+          <span>Envio: {{ document.view?.sentDate ? (document.view?.sentDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}</span>
+          <span *ngIf="document.provider">Proveedor: {{ document.provider }}</span>
+        </div>
+
+        <div *ngIf="$any(document).customerTax" class="tax-request-data">
+          <strong>Datos entregados por el paciente</strong>
+          <span>Nombre: {{ $any(document).customerTax?.name || 'No informado' }}</span>
+          <span>Documento: {{ $any(document).customerTax?.taxId || 'No informado' }}</span>
+          <span>Direccion: {{ $any(document).customerTax?.address || 'No informada' }}</span>
+          <span>Telefono: {{ $any(document).customerTax?.phone || 'No informado' }}</span>
+          <span *ngIf="$any(document).customerTax?.comment">
+            Comentario: {{ $any(document).customerTax.comment }}
+          </span>
+        </div>
+
+        <div class="document-upload">
+          <input
+            type="file"
+            #taxDocumentInput
+            accept=".pdf,image/jpeg,image/jpg,image/png"
+            (change)="onTaxDocumentFileSelected(document.id, $event)"
+            hidden
+          />
+
+          <button type="button" class="outline-action" (click)="taxDocumentInput.click()">
+            Subir archivo
+          </button>
+
+          <span *ngIf="getSelectedDocumentFileName(document.id)" class="selected-file-name">
+            {{ getSelectedDocumentFileName(document.id) }}
+          </span>
+
+          <button
+            type="button"
+            class="primary-action"
+            [disabled]="!getSelectedDocumentFileName(document.id) || isUploadingDocument(document.id)"
+            (click)="uploadTaxDocument(document.id)"
+          >
+            {{ isUploadingDocument(document.id) ? 'Subiendo...' : 'Confirmar carga' }}
+          </button>
+        </div>
+
+        <div class="document-actions">
+          <button
+            type="button"
+            class="outline-action"
+            *ngIf="document.pdfUrl"
+            (click)="openDocument(document)"
+          >
+            Descargar PDF
+          </button>
+
+          <button
+            type="button"
+            class="outline-action"
+            *ngIf="document.xmlUrl"
+            (click)="openDocumentXml(document)"
+          >
+            Descargar XML
+          </button>
+
+          <button
+            type="button"
+            class="primary-action"
+            *ngIf="canFinalizeLibreDte(document)"
+            [disabled]="isDocumentActionRunning(document.id)"
+            (click)="finalizeLibreDteDocument(document.id)"
+          >
+            Completar archivos
+          </button>
+
+          <button
+            type="button"
+            class="outline-action"
+            [disabled]="isDocumentActionRunning(document.id)"
+            (click)="issueLibreDteDocument(document.id)"
+          >
+            Emitir LibreDTE
+          </button>
+
+          <button
+            type="button"
+            class="outline-action"
+            *ngIf="document.provider === 'LIBREDTE'"
+            [disabled]="isDocumentActionRunning(document.id)"
+            (click)="syncProviderStatus(document.id)"
+          >
+            Sincronizar SII
+          </button>
+
+          <button
+            type="button"
+            class="outline-action"
+            [disabled]="isDocumentActionRunning(document.id)"
+            (click)="markDocumentGenerated(document.id)"
+          >
+            Marcar generado
+          </button>
+
+          <button
+            type="button"
+            class="outline-action"
+            [disabled]="isDocumentActionRunning(document.id)"
+            (click)="markDocumentSent(document.id)"
+          >
+            Marcar enviado
+          </button>
+
+          <button
+            type="button"
+            class="outline-action"
+            *ngIf="document.pdfUrl"
+            [disabled]="isDocumentActionRunning(document.id)"
+            (click)="resendDocumentEmail(document.id)"
+          >
+            Reenviar
+          </button>
+        </div>
+      </article>
+    </section>
+
+    <div *ngIf="loading" class="empty-state">
+      Cargando documentos...
+    </div>
+
+    <div *ngIf="!loading && documents.length === 0" class="empty-state">
+      No hay documentos para los filtros seleccionados.
+    </div>
+
+    <ion-button
+      *ngIf="!loading && page < totalPages"
+      expand="block"
+      class="load-more-button"
+      [disabled]="loadingMore"
+      (click)="loadMore()"
+    >
+      {{ loadingMore ? 'Cargando...' : 'Cargar mas documentos' }}
+    </ion-button>
+  </div>
+</ion-content>

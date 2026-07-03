@@ -193,11 +193,11 @@
   display: flex;
 }
 
-.message-wrapper.customer-message {
+.message-wrapper.own-message {
   justify-content: flex-end;
 }
 
-.message-wrapper.professional-message {
+.message-wrapper.other-message {
   justify-content: flex-start;
 }
 
@@ -214,7 +214,7 @@
   line-height: 1.45;
 }
 
-.message-wrapper.customer-message .message-bubble {
+.message-wrapper.own-message .message-bubble {
   border-color: color-mix(in srgb, var(--app-primary) 18%, transparent);
   border-radius: 20px 20px 8px 20px;
   background: color-mix(in srgb, var(--app-secondary) 55%, var(--app-surface));
@@ -245,7 +245,7 @@ ion-footer {
   transform: translateX(-50%);
 }
 
-.message-wrapper.customer-message .sender-label {
+.message-wrapper.own-message .sender-label {
   color: var(--app-primary);
 }
 

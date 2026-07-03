@@ -140,6 +140,24 @@ export interface DashboardTaxDocument {
   view?: TaxDocumentView;
 }
 
+export interface ProfessionalTaxDocumentQuery {
+  search?: string;
+  status?: string;
+  patient?: string;
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface ProfessionalTaxDocumentPage {
+  data: TaxDocument[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -151,6 +169,22 @@ export class TaxDocumentsService {
   getProfessionalDocuments() {
     return this.http.get<TaxDocument[]>(
       `${this.api}/tax-documents/professional`
+    );
+  }
+
+  getProfessionalDocumentsPage(query: ProfessionalTaxDocumentQuery = {}) {
+    const params = new URLSearchParams();
+
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        params.set(key, String(value));
+      }
+    });
+
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+
+    return this.http.get<ProfessionalTaxDocumentPage>(
+      `${this.api}/tax-documents/professional${suffix}`
     );
   }
 
@@ -193,6 +227,13 @@ export class TaxDocumentsService {
   resendEmail(documentId: string) {
     return this.http.post<TaxDocument>(
       `${this.api}/tax-documents/${documentId}/resend-email`,
+      {}
+    );
+  }
+
+  finalizeLibreDte(documentId: string) {
+    return this.http.post<TaxDocument>(
+      `${this.api}/tax-documents/${documentId}/finalize-libredte`,
       {}
     );
   }
