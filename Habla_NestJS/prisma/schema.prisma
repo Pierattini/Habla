@@ -574,15 +574,22 @@ model TaxDocumentJob {
 }
 
 model ProfessionalTaxProviderCredential {
-  id                String                      @id @default(uuid())
-  professionalId    String
-  provider          TaxProvider                 @default(LIBREDTE)
-  rut               String
-  encryptedApiToken String
-  status            TaxProviderCredentialStatus @default(CONFIGURED)
-  lastValidatedAt   DateTime?
-  createdAt         DateTime                    @default(now())
-  updatedAt         DateTime                    @updatedAt
+  id                           String                      @id @default(uuid())
+  professionalId               String
+  provider                     TaxProvider                 @default(SII)
+  rut                          String
+  encryptedApiToken            String?
+  encryptedCertificate         String?
+  encryptedCertificatePassword String?
+  certificateFileName          String?
+  certificateMimeType          String?
+  certificateFingerprint       String?
+  certificateUploadedAt        DateTime?
+  environment                  String                      @default("PRODUCTION")
+  status                       TaxProviderCredentialStatus @default(CONFIGURED)
+  lastValidatedAt              DateTime?
+  createdAt                    DateTime                    @default(now())
+  updatedAt                    DateTime                    @updatedAt
 
   professional User @relation("ProfessionalTaxProviderCredentials", fields: [professionalId], references: [id], onDelete: Cascade)
 

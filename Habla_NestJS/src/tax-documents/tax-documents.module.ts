@@ -7,11 +7,12 @@ import { TaxProviderModule } from '../tax-provider/tax-provider.module';
 import { TaxDocumentJobsService } from './tax-document-jobs.service';
 import { TaxDocumentsController } from './tax-documents.controller';
 import { TaxDocumentsService } from './tax-documents.service';
+import { SiiDteDraftService } from './sii-dte-draft.service';
 
 @Module({
   imports: [PrismaModule, CloudinaryModule, EmailModule, LibreDteModule, TaxProviderModule],
   controllers: [TaxDocumentsController],
-  providers: [TaxDocumentsService, TaxDocumentJobsService],
+  providers: [TaxDocumentsService, TaxDocumentJobsService, SiiDteDraftService],
   exports: [TaxDocumentsService, TaxDocumentJobsService],
 })
 export class TaxDocumentsModule {}

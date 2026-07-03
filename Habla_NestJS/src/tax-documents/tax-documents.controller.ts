@@ -170,6 +170,11 @@ export class TaxDocumentsController {
     );
   }
 
+  @Post(':id/prepare-sii-draft')
+  prepareSiiDraft(@Param('id') id: string, @Request() req: AuthRequest) {
+    return this.taxDocumentsService.prepareSiiDraft(id, req.user);
+  }
+
   @Post(':id/sync-provider-status')
   syncProviderStatus(@Param('id') id: string, @Request() req: AuthRequest) {
     return this.taxDocumentsService.syncLibreDteStatus(id, req.user);

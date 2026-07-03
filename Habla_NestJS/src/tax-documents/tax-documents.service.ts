@@ -13,6 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TaxProviderService } from '../tax-provider/tax-provider.service';
 import { CreateTaxDocumentDto } from './dto/create-tax-document.dto';
 import { TaxDocumentUser } from './interfaces/tax-document-user.interface';
+import { SiiDteDraftService } from './sii-dte-draft.service';
 
 type AdminTaxDocumentFilters = {
   status?: string;
@@ -51,6 +52,7 @@ export class TaxDocumentsService {
     private readonly emailService: EmailService,
     private readonly libreDteService: LibreDteService,
     private readonly taxProviderService: TaxProviderService,
+    private readonly siiDteDraftService: SiiDteDraftService,
   ) {}
 
   async createDocument(user: TaxDocumentUser, dto: CreateTaxDocumentDto) {
@@ -526,6 +528,91 @@ export class TaxDocumentsService {
       'DOCUMENT_CANCELLED',
       message,
     );
+  }
+
+  async prepareSiiDraft(id: string, user: TaxDocumentUser) {
+    const document = await this.prisma.taxDocument.findUnique({
+      where: { id },
+      include: {
+        appointment: true,
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Tax document not found');
+    }
+
+    this.ensureProfessionalAccess(document.appointment, user);
+
+    if (document.providerDocumentId || document.folio || document.siiTrackId) {
+      throw new BadRequestException(
+        'Este documento ya tiene datos de emision tributaria',
+      );
+    }
+
+    const credential = await this.prisma.professionalTaxProviderCredential.findUnique({
+      where: {
+        professionalId_provider: {
+          professionalId: document.appointment.professionalId,
+          provider: TaxProvider.SII,
+        },
+      },
+    });
+
+    if (!credential?.encryptedCertificate) {
+      throw new BadRequestException(
+        'El profesional debe configurar su certificado SII antes de preparar el XML',
+      );
+    }
+
+    const draft = this.siiDteDraftService.buildDraft(document);
+    const providerPayload = this.mergeProviderPayload(document.providerPayload, {
+      siiDirect: {
+        status: 'DRAFT_READY',
+        environment: credential.environment,
+        dteCode: draft.dteCode,
+        generatedAt: draft.generatedAt.toISOString(),
+        xml: draft.xml,
+        warnings: draft.warnings,
+      },
+    });
+
+    const updatedDocument = await this.prisma.taxDocument.update({
+      where: { id },
+      data: {
+        provider: TaxProvider.SII,
+        providerPayload,
+        dteCode: draft.dteCode,
+        events: {
+          create: {
+            actorId: user.id,
+            type: 'SII_DTE_DRAFT_CREATED',
+            message: 'Borrador XML SII preparado. Aun no fue enviado al SII.',
+            metadata: {
+              environment: credential.environment,
+              dteCode: draft.dteCode,
+              warnings: draft.warnings,
+            },
+          },
+        },
+      },
+      include: {
+        appointment: true,
+        events: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    return {
+      ...updatedDocument,
+      siiDraft: {
+        dteCode: draft.dteCode,
+        environment: credential.environment,
+        generatedAt: draft.generatedAt,
+        warnings: draft.warnings,
+      },
+    };
   }
 
   async issueAutomaticForConfirmedPayment(
@@ -1580,6 +1667,21 @@ export class TaxDocumentsService {
     }
 
     return date;
+  }
+
+  private mergeProviderPayload(
+    current: Prisma.JsonValue | null,
+    next: Record<string, unknown>,
+  ): Prisma.InputJsonValue {
+    const currentObject =
+      current && typeof current === 'object' && !Array.isArray(current)
+        ? (current as Record<string, unknown>)
+        : {};
+
+    return {
+      ...currentObject,
+      ...next,
+    } as Prisma.InputJsonValue;
   }
 
   private async syncAppointmentDocumentStatus(
