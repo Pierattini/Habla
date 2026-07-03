@@ -5,9 +5,16 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { MeetingsModule } from '../meetings/meetings.module';
 import { AppointmentRequestsModule } from '../appointment-requests/appointment-requests.module';
+import { TaxDocumentsModule } from '../tax-documents/tax-documents.module';
 
 @Module({
-  imports: [PrismaModule, NotificationsModule, MeetingsModule, AppointmentRequestsModule],
+  imports: [
+    PrismaModule,
+    NotificationsModule,
+    MeetingsModule,
+    AppointmentRequestsModule,
+    TaxDocumentsModule,
+  ],
   controllers: [AppointmentsController],
   providers: [AppointmentsService],
 })

@@ -107,10 +107,7 @@ export class MessagesService {
     }));
   }
 
-  async updateSupportTicketStatus(
-    id: string,
-    status: SupportTicketStatus,
-  ) {
+  async updateSupportTicketStatus(id: string, status: SupportTicketStatus) {
     if (!Object.values(SupportTicketStatus).includes(status)) {
       throw new BadRequestException('Invalid support ticket status');
     }
@@ -204,7 +201,9 @@ export class MessagesService {
     }
 
     if (user.role === Role.ADMIN) {
-      throw new ForbiddenException('Admin users cannot open support as clients');
+      throw new ForbiddenException(
+        'Admin users cannot open support as clients',
+      );
     }
 
     const admin = await this.prisma.user.findFirst({
@@ -295,6 +294,8 @@ export class MessagesService {
         id: admin.id,
         email: admin.email,
         name: admin.name || 'Soporte Conecta',
+        image: admin.image,
+        role: admin.role,
       },
       lastMessage: conversation.messages[0] ?? null,
       updatedAt: conversation.updatedAt,
@@ -422,6 +423,8 @@ export class MessagesService {
             id: true,
             email: true,
             name: true,
+            image: true,
+            role: true,
           },
         },
 
@@ -430,6 +433,8 @@ export class MessagesService {
             id: true,
             email: true,
             name: true,
+            image: true,
+            role: true,
             professional: {
               select: {
                 specialty: true,
@@ -466,15 +471,23 @@ export class MessagesService {
     });
 
     return conversations.map((conv) => {
-      const otherUser =
+      const otherUser: any =
         conv.customerId === userId ? conv.professional : conv.customer;
+      const professionalImage = otherUser.professional?.image;
+      const isSupport = otherUser.role === Role.ADMIN;
 
       return {
         conversationId: conv.id,
-        otherUser,
+        otherUser: {
+          ...otherUser,
+          image: isSupport
+            ? null
+            : professionalImage || otherUser.image || null,
+        },
         lastMessage: conv.messages[0] ?? null,
         updatedAt: conv.updatedAt,
         unreadCount: conv._count.messages,
+        isSupport,
       };
     });
   }

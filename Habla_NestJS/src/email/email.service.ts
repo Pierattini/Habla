@@ -15,7 +15,11 @@ interface TaxDocumentEmailParams {
   customerEmail: string;
   fileName: string;
   pdfUrl: string;
+  xmlUrl?: string | null;
   uploadedAt: Date;
+  appointmentDate?: Date | string | null;
+  professionalName?: string | null;
+  professionalEmail?: string | null;
 }
 
 interface SupportTicketEmailParams {
@@ -90,8 +94,15 @@ export class EmailService {
   async sendTaxDocumentEmail(params: TaxDocumentEmailParams) {
     const transporter = nodemailer.createTransport(this.getTransportConfig());
     const uploadedAt = this.formatDate(params.uploadedAt);
+    const appointmentDate = params.appointmentDate
+      ? this.formatDate(new Date(params.appointmentDate))
+      : null;
     const customerName = this.escapeHtml(params.customerName);
     const pdfUrl = this.escapeHtml(params.pdfUrl);
+    const xmlUrl = params.xmlUrl ? this.escapeHtml(params.xmlUrl) : null;
+    const professionalName = params.professionalName
+      ? this.escapeHtml(params.professionalName)
+      : null;
 
     await transporter.sendMail({
       from: this.getMailFrom(),
@@ -105,10 +116,17 @@ export class EmailService {
           <p>Tu documento asociado a tu cita ya se encuentra disponible.</p>
           ${conectaInfoCard(`
             ${emailRow('Documento', params.fileName)}
+            ${appointmentDate ? emailRow('Cita', appointmentDate) : ''}
+            ${professionalName ? emailRow('Profesional', professionalName) : ''}
             ${emailRow('Fecha', uploadedAt)}
           `)}
-          <p>Puedes revisarlo desde el siguiente boton.</p>
+          <p>Puedes revisar el PDF desde el siguiente boton.</p>
           <p style="word-break:break-all; color:#6f6780; font-size:13px;">${pdfUrl}</p>
+          ${
+            xmlUrl
+              ? `<p style="word-break:break-all; color:#6f6780; font-size:13px;">XML: ${xmlUrl}</p>`
+              : ''
+          }
         `,
         action: {
           label: 'Ver documento',

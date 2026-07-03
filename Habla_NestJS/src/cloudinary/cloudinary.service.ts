@@ -52,4 +52,34 @@ export class CloudinaryService {
         .end(file.buffer);
     });
   }
+
+  async uploadTaxDocumentBuffer(
+    documentId: string,
+    buffer: Buffer,
+    fileName: string,
+    mimeType?: string,
+  ) {
+    return new Promise<any>((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          {
+            resource_type: 'auto',
+            folder: `conecta-tax-documents/${documentId}`,
+            public_id: fileName.replace(/\.[^.]+$/, ''),
+            use_filename: true,
+            unique_filename: true,
+            format: fileName.split('.').pop(),
+            context: mimeType ? { mime_type: mimeType } : undefined,
+          },
+          (error, result) => {
+            if (error) {
+              return reject(new Error(String(error.message)));
+            }
+
+            resolve(result);
+          },
+        )
+        .end(buffer);
+    });
+  }
 }

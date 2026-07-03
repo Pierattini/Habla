@@ -6,6 +6,12 @@ import {
   LibreDteStatusResult,
 } from './libredte.types';
 
+export type LibreDteDownloadedResource = {
+  buffer: Buffer;
+  contentType: string;
+  fileName: string;
+};
+
 @Injectable()
 export class LibreDteClient {
   private readonly baseUrl: string;
@@ -32,11 +38,14 @@ export class LibreDteClient {
     this.timeoutMs = Number(this.config.get<string>('LIBREDTE_TIMEOUT_MS') || 15000);
   }
 
-  async issue(payload: Record<string, unknown>): Promise<LibreDteIssueResult> {
+  async issue(
+    payload: Record<string, unknown>,
+    apiKey?: string,
+  ): Promise<LibreDteIssueResult> {
     const response = await this.request(this.issuePath, {
       method: 'POST',
       body: JSON.stringify(payload),
-    });
+    }, apiKey);
 
     return {
       dteCode: Number(payload.dte),
@@ -77,8 +86,78 @@ export class LibreDteClient {
     );
   }
 
-  private async request(path: string, init: RequestInit): Promise<unknown> {
-    if (!this.apiKey) {
+  async downloadResource(
+    providerDocumentId: string,
+    format: LibreDteResourceFormat,
+    apiKey?: string,
+  ): Promise<LibreDteDownloadedResource> {
+    const requestApiKey = apiKey || this.apiKey;
+
+    if (!requestApiKey) {
+      throw new ServiceUnavailableException(
+        'LIBREDTE_API_KEY is not configured',
+      );
+    }
+
+    const url = this.buildUrl(
+      this.resourcePath
+        .replace('{id}', encodeURIComponent(providerDocumentId))
+        .replace('{format}', format),
+    );
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${requestApiKey}`,
+          'X-API-Key': requestApiKey,
+        },
+      });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new BadGatewayException({
+          message: 'LibreDTE resource download failed',
+          status: response.status,
+          response: text ? this.parseBody(text) : null,
+        });
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const contentType =
+        response.headers.get('content-type') ||
+        (format === 'pdf' ? 'application/pdf' : 'application/xml');
+
+      return {
+        buffer: Buffer.from(arrayBuffer),
+        contentType,
+        fileName: `documento-${providerDocumentId}.${format}`,
+      };
+    } catch (error) {
+      if (error instanceof BadGatewayException) {
+        throw error;
+      }
+
+      throw new BadGatewayException({
+        message: 'LibreDTE resource is not available',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  private async request(
+    path: string,
+    init: RequestInit,
+    apiKey?: string,
+  ): Promise<unknown> {
+    const requestApiKey = apiKey || this.apiKey;
+
+    if (!requestApiKey) {
       throw new ServiceUnavailableException(
         'LIBREDTE_API_KEY is not configured',
       );
@@ -94,8 +173,8 @@ export class LibreDteClient {
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
-          'X-API-Key': this.apiKey,
+          Authorization: `Bearer ${requestApiKey}`,
+          'X-API-Key': requestApiKey,
           ...(init.headers || {}),
         },
       });

@@ -30,6 +30,16 @@ type AdminTaxDocumentQuery = {
   toDate?: string;
 };
 
+type ProfessionalTaxDocumentQuery = {
+  search?: string;
+  status?: string;
+  patient?: string;
+  fromDate?: string;
+  toDate?: string;
+  page?: string;
+  limit?: string;
+};
+
 @Controller('tax-documents')
 @UseGuards(JwtAuthGuard)
 export class TaxDocumentsController {
@@ -60,8 +70,11 @@ export class TaxDocumentsController {
   }
 
   @Get('professional')
-  getDocumentsByProfessional(@Request() req: AuthRequest) {
-    return this.taxDocumentsService.getDocumentsByProfessional(req.user);
+  getDocumentsByProfessional(
+    @Request() req: AuthRequest,
+    @Query() query: ProfessionalTaxDocumentQuery,
+  ) {
+    return this.taxDocumentsService.getDocumentsByProfessional(req.user, query);
   }
 
   @Get('professional/pending')
@@ -134,6 +147,14 @@ export class TaxDocumentsController {
   @Post(':id/resend-email')
   resendEmail(@Param('id') id: string, @Request() req: AuthRequest) {
     return this.taxDocumentsService.resendTaxDocumentEmail(id, req.user);
+  }
+
+  @Post(':id/finalize-libredte')
+  finalizeLibreDteDocument(
+    @Param('id') id: string,
+    @Request() req: AuthRequest,
+  ) {
+    return this.taxDocumentsService.finalizeLibreDteDocument(id, req.user);
   }
 
   @Post(':id/issue-libredte')

@@ -26,6 +26,7 @@ import { GoogleCalendarService } from '../meetings/google-calendar.service';
 import { MicrosoftTeamsService } from '../meetings/microsoft-teams.service';
 import { ZoomService } from '../meetings/zoom.service';
 import { ProfessionalAccessService } from '../appointment-requests/professional-access.service';
+import { TaxDocumentJobsService } from '../tax-documents/tax-document-jobs.service';
 import {
   buildConectaEmail,
   conectaInfoCard,
@@ -65,6 +66,7 @@ export class AppointmentsService {
     private zoomService: ZoomService,
     private microsoftTeamsService: MicrosoftTeamsService,
     private professionalAccess: ProfessionalAccessService,
+    private taxDocumentJobsService: TaxDocumentJobsService,
   ) {}
 
   private createMailTransporter() {
@@ -942,7 +944,8 @@ export class AppointmentsService {
     // 🚫 NO PERMITIR REAGENDAR ESTOS ESTADOS
     if (
       appointment.status === AppointmentStatus.CANCELLED ||
-      appointment.status === AppointmentStatus.PAYMENT_REVIEW
+      appointment.status === AppointmentStatus.COMPLETED ||
+      appointment.status === AppointmentStatus.REFUNDED
     ) {
       throw new ForbiddenException('No se puede reagendar esta cita');
     }
@@ -1063,12 +1066,16 @@ export class AppointmentsService {
     }
 
     // 🔥 CASO >48h → GRATIS
+    const nextStatus = isConfirmedReschedule
+      ? AppointmentStatus.RESCHEDULED
+      : appointment.status;
+
     const updated = await this.prisma.appointment.update({
       where: { id },
       data: {
         date: newDate,
-        status: AppointmentStatus.RESCHEDULED,
-        penalty: 0,
+        status: nextStatus,
+        penalty: isConfirmedReschedule ? 0 : appointment.penalty ?? 0,
       },
     });
 
@@ -1332,6 +1339,8 @@ export class AppointmentsService {
       const meetingAppointment =
         await this.meetingService.generateMeetingForAppointment(updated.id);
 
+      await this.issueAutomaticTaxDocumentAfterPayment(meetingAppointment.id);
+
       await this.sendAppointmentNotificationById(
         meetingAppointment.id,
         'APPOINTMENT_CONFIRMATION',
@@ -1339,6 +1348,8 @@ export class AppointmentsService {
 
       return meetingAppointment;
     }
+
+    await this.issueAutomaticTaxDocumentAfterPayment(updated.id);
 
     await this.sendAppointmentNotificationById(
       updated.id,
@@ -1842,6 +1853,19 @@ export class AppointmentsService {
       ]);
     } catch {
       // Las notificaciones no deben bloquear el flujo de citas.
+    }
+  }
+
+  private async issueAutomaticTaxDocumentAfterPayment(
+    appointmentId: string,
+  ): Promise<void> {
+    try {
+      await this.taxDocumentJobsService.enqueueAutomaticIssue(appointmentId);
+    } catch (error) {
+      console.error(
+        `[TaxDocuments] Automatic issue job enqueue failed for appointment ${appointmentId}`,
+        error,
+      );
     }
   }
 

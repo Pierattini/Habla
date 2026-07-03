@@ -18,6 +18,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { AdminModule } from './admin/admin.module';
+import { TaxProviderModule } from './tax-provider/tax-provider.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AdminModule } from './admin/admin.module';
     MeetingsModule,
     ReviewsModule,
     AdminModule,
+    TaxProviderModule,
   ],
   controllers: [AppController],
   providers: [AppService],

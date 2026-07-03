@@ -45,6 +45,7 @@ export class LibreDteService {
   async issueDocument(
     document: TaxDocumentForIssue,
     kind?: LibreDteDocumentKind,
+    apiToken?: string,
   ) {
     const resolvedKind = kind || this.mapper.resolveKind(document.type);
     const input: LibreDteIssueInput = {
@@ -59,7 +60,7 @@ export class LibreDteService {
     };
     const payload = this.mapper.buildIssuePayload(input);
 
-    return this.client.issue(payload);
+    return this.client.issue(payload, apiToken);
   }
 
   syncStatus(providerDocumentId: string) {
@@ -68,6 +69,14 @@ export class LibreDteService {
 
   getResourceUrl(providerDocumentId: string, format: LibreDteResourceFormat) {
     return this.client.getResourceUrl(providerDocumentId, format);
+  }
+
+  downloadResource(
+    providerDocumentId: string,
+    format: LibreDteResourceFormat,
+    apiToken?: string,
+  ) {
+    return this.client.downloadResource(providerDocumentId, format, apiToken);
   }
 
   getSuccessStatus(resultStatus?: string | null): DocumentStatus {

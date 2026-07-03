@@ -24,15 +24,15 @@ model Availability {
 }
 
 model User {
-  id              String   @id @default(uuid())
-  email           String   @unique
-  name            String?
-  image           String?
-  password        String
-  role            Role
-  createdAt       DateTime @default(now())
-  isActive        Boolean  @default(false)
-  sessionDuration Int?
+  id                     String    @id @default(uuid())
+  email                  String    @unique
+  name                   String?
+  image                  String?
+  password               String
+  role                   Role
+  createdAt              DateTime  @default(now())
+  isActive               Boolean   @default(false)
+  sessionDuration        Int?
   passwordResetTokenHash String?
   passwordResetExpiresAt DateTime?
 
@@ -45,46 +45,47 @@ model User {
   taxAddress                String?
   taxCountry                String?
   taxCity                   String?
-  wantsTaxDocumentByDefault Boolean @default(false)
-  customerInterests         String[] @default([])
+  wantsTaxDocumentByDefault Boolean            @default(false)
+  customerInterests         String[]           @default([])
   preferredAttentionMode    AttentionModality?
   preferredCity             String?
   preferredRegion           String?
 
-  customerAppointments     Appointment[]  @relation("CustomerAppointments")
-  professionalAppointments Appointment[]  @relation("ProfessionalAppointments")
-  customerReviews          Review[]       @relation("CustomerReviews")
-  professionalReviews      Review[]       @relation("ProfessionalReviews")
+  customerAppointments            Appointment[]        @relation("CustomerAppointments")
+  professionalAppointments        Appointment[]        @relation("ProfessionalAppointments")
+  customerReviews                 Review[]             @relation("CustomerReviews")
+  professionalReviews             Review[]             @relation("ProfessionalReviews")
   customerAppointmentRequests     AppointmentRequest[] @relation("CustomerAppointmentRequests")
   professionalAppointmentRequests AppointmentRequest[] @relation("ProfessionalAppointmentRequests")
-  availabilities           Availability[]
-  professional             Professional?
-  deviceTokens             UserDeviceToken[]
+  availabilities                  Availability[]
+  professional                    Professional?
+  deviceTokens                    UserDeviceToken[]
 
-  customerConversations     Conversation[]  @relation("CustomerConversations")
-  professionalConversations Conversation[]  @relation("ProfessionalConversations")
-  sentMessages              Message[]       @relation("SentMessages")
-  supportTicketsAsCustomer  SupportTicket[] @relation("SupportTicketCustomer")
-  supportTicketsAsAdmin     SupportTicket[] @relation("SupportTicketAdmin")
+  customerConversations     Conversation[]                      @relation("CustomerConversations")
+  professionalConversations Conversation[]                      @relation("ProfessionalConversations")
+  sentMessages              Message[]                           @relation("SentMessages")
+  supportTicketsAsCustomer  SupportTicket[]                     @relation("SupportTicketCustomer")
+  supportTicketsAsAdmin     SupportTicket[]                     @relation("SupportTicketAdmin")
+  taxProviderCredentials    ProfessionalTaxProviderCredential[] @relation("ProfessionalTaxProviderCredentials")
 
   credit Float @default(0)
 }
 
 model Appointment {
-  id              String            @id @default(uuid())
-  date            DateTime
-  status          AppointmentStatus @default(PENDING)
-  customerId      String
-  professionalId  String
-  createdAt       DateTime          @default(now())
-  rescheduleCount Int               @default(0)
-  paidAt          DateTime?
-  bookedEmailSentAt     DateTime?
-  sameDayEmailSentAt    DateTime?
-  sameDayPushSentAt     DateTime?
-  reminder24hSentAt     DateTime?
-  reminder1hSentAt      DateTime?
-  reminder15mSentAt     DateTime?
+  id                 String            @id @default(uuid())
+  date               DateTime
+  status             AppointmentStatus @default(PENDING)
+  customerId         String
+  professionalId     String
+  createdAt          DateTime          @default(now())
+  rescheduleCount    Int               @default(0)
+  paidAt             DateTime?
+  bookedEmailSentAt  DateTime?
+  sameDayEmailSentAt DateTime?
+  sameDayPushSentAt  DateTime?
+  reminder24hSentAt  DateTime?
+  reminder1hSentAt   DateTime?
+  reminder15mSentAt  DateTime?
 
   // 🔥 PENALIZACIÓN
   penalty         Float?
@@ -100,13 +101,13 @@ model Appointment {
   refundBank    String?
 
   // 🔥 OTROS
-  meetLink String?
-  meetingProvider     VideoProvider?
-  meetingUrl          String?
-  meetingId           String?
-  meetingAccessToken  String?
-  meetingCreatedAt    DateTime?
-  calendarEventId     String?
+  meetLink             String?
+  meetingProvider      VideoProvider?
+  meetingUrl           String?
+  meetingId            String?
+  meetingAccessToken   String?
+  meetingCreatedAt     DateTime?
+  calendarEventId      String?
   attentionMode        AttentionModality @default(ONLINE)
   appointmentAddress   String?
   appointmentCity      String?
@@ -187,22 +188,22 @@ model Profession {
 }
 
 model Professional {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
+  id     String  @id @default(uuid())
+  userId String  @unique
+  user   User    @relation(fields: [userId], references: [id])
   slug   String? @unique
 
-  professionId String?
-  profession   Profession? @relation(fields: [professionId], references: [id])
-  customProfession String?
-  specialty   String?
-  description String?
-  rules       String?
-  name        String?
-  price       Int?
-  duration    Int?
-  isOnline    Boolean? @default(true)
-  image       String?
+  professionId        String?
+  profession          Profession?       @relation(fields: [professionId], references: [id])
+  customProfession    String?
+  specialty           String?
+  description         String?
+  rules               String?
+  name                String?
+  price               Int?
+  duration            Int?
+  isOnline            Boolean?          @default(true)
+  image               String?
   attentionMode       AttentionModality @default(ONLINE)
   officeAddress       String?
   officeCity          String?
@@ -211,7 +212,7 @@ model Professional {
   officeLatitude      Float?
   officeLongitude     Float?
   arrivalInstructions String?
-  videoProvider       VideoProvider @default(CONNECTA_AUTO)
+  videoProvider       VideoProvider     @default(CONNECTA_AUTO)
   customVideoUrl      String?
 
   // Datos Bancarios
@@ -231,14 +232,14 @@ model Professional {
   taxCountry                String?
   taxCity                   String?
 
-   // Suscripción Conecta
-  planStatus ProfessionalPlanStatus @default(FREE)
+  // Suscripción Conecta
+  planStatus          ProfessionalPlanStatus @default(FREE)
   firstLeadReceivedAt DateTime?
   subscriptionStartAt DateTime?
-  subscriptionEndAt DateTime?
+  subscriptionEndAt   DateTime?
 
-  profileEvents ProfessionalProfileEvent[]
-  subscription  ProfessionalSubscription?
+  profileEvents        ProfessionalProfileEvent[]
+  subscription         ProfessionalSubscription?
   subscriptionPayments ProfessionalSubscriptionPayment[]
 
   @@index([professionId])
@@ -327,43 +328,43 @@ model ProfessionalProfileEvent {
 }
 
 model GoogleCalendarConnection {
-  id                   String   @id @default(uuid())
-  professionalUserId   String   @unique
-  googleAccountId      String
-  googleEmail          String
-  encryptedAccessToken String
+  id                    String    @id @default(uuid())
+  professionalUserId    String    @unique
+  googleAccountId       String
+  googleEmail           String
+  encryptedAccessToken  String
   encryptedRefreshToken String?
-  tokenExpiresAt       DateTime?
-  connectedAt          DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  tokenExpiresAt        DateTime?
+  connectedAt           DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   @@index([professionalUserId])
 }
 
 model ZoomConnection {
-  id                    String   @id @default(uuid())
-  professionalUserId    String   @unique
+  id                    String    @id @default(uuid())
+  professionalUserId    String    @unique
   zoomUserId            String
   zoomEmail             String
   encryptedAccessToken  String
   encryptedRefreshToken String?
   tokenExpiresAt        DateTime?
-  connectedAt           DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  connectedAt           DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   @@index([professionalUserId])
 }
 
 model MicrosoftTeamsConnection {
-  id                    String   @id @default(uuid())
-  professionalUserId    String   @unique
+  id                    String    @id @default(uuid())
+  professionalUserId    String    @unique
   microsoftAccountId    String
   microsoftEmail        String
   encryptedAccessToken  String
   encryptedRefreshToken String?
   tokenExpiresAt        DateTime?
-  connectedAt           DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  connectedAt           DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   @@index([professionalUserId])
 }
@@ -414,10 +415,10 @@ model Conversation {
   customer     User @relation("CustomerConversations", fields: [customerId], references: [id])
   professional User @relation("ProfessionalConversations", fields: [professionalId], references: [id])
 
-  messages       Message[]
-  appointments   Appointment[]
+  messages            Message[]
+  appointments        Appointment[]
   appointmentRequests AppointmentRequest[]
-  supportTickets SupportTicket[]
+  supportTickets      SupportTicket[]
 
   @@unique([customerId, professionalId])
   @@index([customerId])
@@ -501,18 +502,18 @@ model TaxDocument {
   providerPayload    Json?
   providerResponse   Json?
 
-  pdfUrl        String?
-  pdfPublicId   String?
-  xmlUrl        String?
-  xmlPublicId   String?
-  dteCode       Int?
-  folio         String?
-  siiTrackId    String?
-  siiStatus     String?
-  siiStatusDetail String?
+  pdfUrl             String?
+  pdfPublicId        String?
+  xmlUrl             String?
+  xmlPublicId        String?
+  dteCode            Int?
+  folio              String?
+  siiTrackId         String?
+  siiStatus          String?
+  siiStatusDetail    String?
   lastProviderSyncAt DateTime?
-  fileName      String?
-  localFilePath String?
+  fileName           String?
+  localFilePath      String?
 
   uploadedById String?
   generatedAt  DateTime?
@@ -544,6 +545,50 @@ model TaxDocumentEvent {
   @@index([documentId])
   @@index([actorId])
   @@index([createdAt])
+}
+
+model TaxDocumentJob {
+  id            String               @id @default(uuid())
+  appointmentId String
+  documentId    String?
+  type          String               @default("LIBREDTE_AUTO_ISSUE")
+  status        TaxDocumentJobStatus @default(PENDING)
+  attempts      Int                  @default(0)
+  maxAttempts   Int                  @default(3)
+  nextRunAt     DateTime             @default(now())
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  durationMs    Int?
+  lockedAt      DateTime?
+  lockToken     String?
+  errorCode     String?
+  errorMessage  String?
+  errorPayload  Json?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@unique([appointmentId, type])
+  @@index([status, nextRunAt])
+  @@index([documentId])
+  @@index([lockedAt])
+}
+
+model ProfessionalTaxProviderCredential {
+  id                String                      @id @default(uuid())
+  professionalId    String
+  provider          TaxProvider                 @default(LIBREDTE)
+  rut               String
+  encryptedApiToken String
+  status            TaxProviderCredentialStatus @default(CONFIGURED)
+  lastValidatedAt   DateTime?
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+
+  professional User @relation("ProfessionalTaxProviderCredentials", fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@unique([professionalId, provider])
+  @@index([provider, status])
+  @@index([professionalId])
 }
 
 enum Role {
@@ -603,6 +648,14 @@ enum DocumentStatus {
   DOCUMENT_CANCELLED
 }
 
+enum TaxDocumentJobStatus {
+  PENDING
+  PROCESSING
+  RETRY
+  COMPLETED
+  FAILED
+}
+
 enum SupportTicketStatus {
   OPEN
   IN_PROGRESS
@@ -621,6 +674,12 @@ enum TaxProvider {
   QUIPU
   HOLDED
   NUBOX
+}
+
+enum TaxProviderCredentialStatus {
+  CONFIGURED
+  INVALID
+  DISABLED
 }
 
 enum ProfessionalPlanStatus {
