@@ -126,7 +126,7 @@ export class MessagesService {
         status,
         closedAt:
           status === SupportTicketStatus.CLOSED
-            ? ticket.closedAt ?? new Date()
+            ? (ticket.closedAt ?? new Date())
             : null,
       },
     });
@@ -597,11 +597,7 @@ export class MessagesService {
       );
     }
 
-    this.ensureMessageDoesNotContainContactInfo(
-      content,
-      senderId,
-      sender.role,
-    );
+    this.ensureMessageDoesNotContainContactInfo(content, senderId, sender.role);
 
     await this.prisma.conversation.update({
       where: { id: conversationId },
@@ -771,7 +767,8 @@ export class MessagesService {
   ) {
     if (role === Role.ADMIN) return;
 
-    const validation = this.contactProtection.containsRestrictedContent(content);
+    const validation =
+      this.contactProtection.containsRestrictedContent(content);
 
     if (!validation.blocked) return;
 
@@ -807,7 +804,9 @@ export class MessagesService {
 
     if (appointmentExists) return;
 
-    const pendingRequest = await (this.prisma as any).appointmentRequest.findFirst({
+    const pendingRequest = await (
+      this.prisma as any
+    ).appointmentRequest.findFirst({
       where: {
         customerId,
         professionalId,
@@ -821,7 +820,8 @@ export class MessagesService {
 
     if (!pendingRequest) return;
 
-    const access = await this.professionalAccess.getAccessByUserId(professionalId);
+    const access =
+      await this.professionalAccess.getAccessByUserId(professionalId);
 
     if (!access.canReplyMessages) {
       throw new ForbiddenException(
