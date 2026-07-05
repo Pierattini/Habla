@@ -45,6 +45,7 @@ export interface ProfessionalProfile {
   taxAddress: string;
   taxCountry: string;
   taxCity: string;
+  taxDocumentNote: string;
 }
 
 export interface ProfessionalProfileResponse {

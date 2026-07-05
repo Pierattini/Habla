@@ -24,6 +24,7 @@ import {
   ProfessionalPlanService
 } from '../../services/professional-plan.service';
 import {
+  TaxFolioRange,
   TaxProviderCredentialStatus,
   TaxProviderService,
 } from '../../services/tax-provider.service';
@@ -151,6 +152,10 @@ export class ProfessionalDashboardComponent {
   taxProviderSaving = false;
   taxProviderTesting = false;
   taxProviderMessage = '';
+  taxFolioRanges: TaxFolioRange[] = [];
+  taxFolioCafFile: File | null = null;
+  taxFolioSaving = false;
+  taxFolioMessage = '';
   private professionalUserId = '';
   private dashboardRequestsPending = 0;
   private readonly profileCacheKey = 'conecta.professionalDashboard.profile';
@@ -237,7 +242,8 @@ export class ProfessionalDashboardComponent {
     taxEmail: '',
     taxAddress: '',
     taxCountry: '',
-    taxCity: ''
+    taxCity: '',
+    taxDocumentNote: 'Servicios profesionales prestados a traves de Conecta.'
   };
 
   // 🔥 BLOQUES HORARIOS
@@ -396,17 +402,14 @@ export class ProfessionalDashboardComponent {
   setDocumentEmissionMode(mode: 'MANUAL' | 'AUTOMATED') {
     this.profile.documentAutomationEnabled = mode === 'AUTOMATED';
     this.profile.manualDocumentMode = mode === 'MANUAL';
+
+    if (mode === 'AUTOMATED' && !this.taxProviderRut && this.profile.taxId) {
+      this.taxProviderRut = this.profile.taxId;
+    }
   }
 
   get isProfessionalTaxReady(): boolean {
-    return !!(
-      this.profile.taxName?.trim() &&
-      this.profile.taxId?.trim() &&
-      this.profile.taxAddress?.trim() &&
-      this.profile.taxCity?.trim() &&
-      this.profile.taxCountry?.trim() &&
-      this.profile.taxEmail?.trim()
-    );
+    return !!(this.profile.taxId?.trim() && this.profile.taxEmail?.trim());
   }
 
   saveProfile() {
@@ -461,6 +464,7 @@ export class ProfessionalDashboardComponent {
         taxAddress: this.profile.taxAddress,
         taxCountry: this.profile.taxCountry,
         taxCity: this.profile.taxCity,
+        taxDocumentNote: this.profile.taxDocumentNote,
       }),
       ...availabilityRequests,
     ])
@@ -824,7 +828,8 @@ private prepareProfileImage(file: File): Promise<string> {
         taxEmail: res.professional?.taxEmail || '',
         taxAddress: res.professional?.taxAddress || '',
         taxCountry: res.professional?.taxCountry || res.professional?.officeCountry || '',
-        taxCity: res.professional?.taxCity || ''
+        taxCity: res.professional?.taxCity || '',
+        taxDocumentNote: res.professional?.taxDocumentNote || 'Servicios profesionales prestados a traves de Conecta.'
       };
       this.cacheProfile();
       this.publicProfileUrl = this.buildPublicProfileUrl(this.profile.slug || '');
@@ -1232,7 +1237,8 @@ private prepareProfileImage(file: File): Promise<string> {
       next: (credential) => {
         this.taxProviderCredential = credential;
         this.taxProviderRut = credential.rut || this.profile.taxId || '';
-        this.taxProviderEnvironment = credential.environment || 'PRODUCTION';
+        this.taxProviderEnvironment = 'PRODUCTION';
+        this.loadTaxFolioRanges();
       },
       error: (err) => {
         console.error('Error cargando credenciales SII:', err);
@@ -1292,12 +1298,12 @@ private prepareProfileImage(file: File): Promise<string> {
       rut,
       certificatePassword,
       certificate: this.taxProviderCertificateFile,
-      environment: this.taxProviderEnvironment,
+      environment: 'PRODUCTION',
     }).subscribe({
       next: (credential) => {
         this.taxProviderCredential = credential;
         this.taxProviderRut = credential.rut || rut;
-        this.taxProviderEnvironment = credential.environment || this.taxProviderEnvironment;
+        this.taxProviderEnvironment = 'PRODUCTION';
         this.taxProviderCertificatePassword = '';
         this.taxProviderCertificateFile = null;
         this.taxProviderMessage = 'Certificado SII guardado de forma segura.';
@@ -1367,6 +1373,95 @@ private prepareProfileImage(file: File): Promise<string> {
       },
       complete: () => {
         this.taxProviderTesting = false;
+      }
+    });
+  }
+
+  loadTaxFolioRanges(): void {
+    this.taxProviderService.getMyFolioRanges().subscribe({
+      next: (ranges) => {
+        this.taxFolioRanges = ranges || [];
+      },
+      error: (err) => {
+        console.error('Error cargando folios SII:', err);
+        this.taxFolioRanges = [];
+      }
+    });
+  }
+
+  onTaxFolioCafSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.xml')) {
+      this.taxFolioCafFile = null;
+      this.taxFolioMessage = 'El CAF debe ser un archivo .xml.';
+      input.value = '';
+      return;
+    }
+
+    if (file.size > 1024 * 1024) {
+      this.taxFolioCafFile = null;
+      this.taxFolioMessage = 'El archivo CAF no puede superar 1MB.';
+      input.value = '';
+      return;
+    }
+
+    this.taxFolioCafFile = file;
+    this.taxFolioMessage = '';
+  }
+
+  saveTaxFolioRange(): void {
+    if (this.taxFolioSaving) return;
+
+    if (!this.taxFolioCafFile) {
+      this.taxFolioMessage = 'Selecciona el archivo CAF descargado desde SII.';
+      return;
+    }
+
+    this.taxFolioSaving = true;
+    this.taxFolioMessage = '';
+
+    this.taxProviderService.saveMyFolioRange({
+      caf: this.taxFolioCafFile,
+      status: 'ACTIVE',
+    }).subscribe({
+      next: () => {
+        this.taxFolioCafFile = null;
+        this.taxFolioMessage = 'CAF guardado correctamente.';
+        this.loadTaxFolioRanges();
+      },
+      error: (err) => {
+        console.error('Error guardando CAF SII:', err);
+        this.taxFolioMessage = err?.error?.message || 'No se pudo guardar el CAF.';
+        this.taxFolioSaving = false;
+      },
+      complete: () => {
+        this.taxFolioSaving = false;
+      }
+    });
+  }
+
+  deleteTaxFolioRange(range: TaxFolioRange): void {
+    if (this.taxFolioSaving) return;
+
+    this.taxFolioSaving = true;
+    this.taxFolioMessage = '';
+
+    this.taxProviderService.deleteMyFolioRange(range.id).subscribe({
+      next: () => {
+        this.taxFolioRanges = this.taxFolioRanges.filter((item) => item.id !== range.id);
+        this.taxFolioMessage = 'CAF eliminado.';
+      },
+      error: (err) => {
+        console.error('Error eliminando CAF SII:', err);
+        this.taxFolioMessage = 'No se pudo eliminar el CAF.';
+        this.taxFolioSaving = false;
+      },
+      complete: () => {
+        this.taxFolioSaving = false;
       }
     });
   }

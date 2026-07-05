@@ -6,9 +6,9 @@
       </button>
 
       <div>
-        <span>Modulo tributario</span>
+        <span>Módulo tributario</span>
         <h1>Documentos Tributarios</h1>
-        <p>Gestiona boletas, documentos manuales, reenvios y estados de emision.</p>
+        <p>Gestiona boletas solicitadas por pacientes, archivos y envíos.</p>
       </div>
     </header>
 
@@ -91,7 +91,6 @@
           <span>Monto: {{ document.currency || 'CLP' }} {{ (document.amount || 0) | number:'1.0-0' }}</span>
           <span>Emision: {{ document.view?.issueDate ? (document.view?.issueDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}</span>
           <span>Envio: {{ document.view?.sentDate ? (document.view?.sentDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}</span>
-          <span *ngIf="document.provider">Proveedor: {{ document.provider }}</span>
         </div>
 
         <div *ngIf="$any(document).customerTax" class="tax-request-data">
@@ -140,44 +139,6 @@
             (click)="openDocument(document)"
           >
             Descargar PDF
-          </button>
-
-          <button
-            type="button"
-            class="outline-action"
-            *ngIf="document.xmlUrl"
-            (click)="openDocumentXml(document)"
-          >
-            Descargar XML
-          </button>
-
-          <button
-            type="button"
-            class="primary-action"
-            *ngIf="canFinalizeLibreDte(document)"
-            [disabled]="isDocumentActionRunning(document.id)"
-            (click)="finalizeLibreDteDocument(document.id)"
-          >
-            Completar archivos
-          </button>
-
-          <button
-            type="button"
-            class="outline-action"
-            [disabled]="isDocumentActionRunning(document.id)"
-            (click)="issueLibreDteDocument(document.id)"
-          >
-            Emitir LibreDTE
-          </button>
-
-          <button
-            type="button"
-            class="outline-action"
-            *ngIf="document.provider === 'LIBREDTE'"
-            [disabled]="isDocumentActionRunning(document.id)"
-            (click)="syncProviderStatus(document.id)"
-          >
-            Sincronizar SII
           </button>
 
           <button

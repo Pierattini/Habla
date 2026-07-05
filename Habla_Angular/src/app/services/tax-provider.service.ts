@@ -25,6 +25,22 @@ export interface TaxProviderAuthTestResult {
   message: string;
 }
 
+export interface TaxFolioRange {
+  id: string;
+  provider: 'SII';
+  dteCode: number;
+  startFolio: number;
+  endFolio: number;
+  nextFolio: number;
+  availableFolios: number;
+  cafFileName: string | null;
+  cafFingerprint: string | null;
+  status: 'ACTIVE' | 'DISABLED' | string;
+  uploadedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -67,6 +83,31 @@ export class TaxProviderService {
     return this.http.post<TaxProviderAuthTestResult>(
       `${this.api}/tax-provider/me/test-auth`,
       {}
+    );
+  }
+
+  getMyFolioRanges() {
+    return this.http.get<TaxFolioRange[]>(
+      `${this.api}/tax-provider/me/folios`
+    );
+  }
+
+  saveMyFolioRange(data: { caf: File; status?: 'ACTIVE' | 'DISABLED' }) {
+    const formData = new FormData();
+    formData.append('caf', data.caf);
+    if (data.status) {
+      formData.append('status', data.status);
+    }
+
+    return this.http.post<TaxFolioRange>(
+      `${this.api}/tax-provider/me/folios`,
+      formData
+    );
+  }
+
+  deleteMyFolioRange(id: string) {
+    return this.http.delete<{ deleted: boolean; id: string }>(
+      `${this.api}/tax-provider/me/folios/${id}`
     );
   }
 }

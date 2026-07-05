@@ -39,11 +39,10 @@ export class TaxDocumentsComponent {
 
   readonly documentFilters = [
     { label: 'Todos', value: 'ALL' },
-    { label: 'Pendientes', value: 'DOCUMENT_PENDING' },
-    { label: 'Subidos', value: 'DOCUMENT_UPLOADED' },
-    { label: 'Generados', value: 'DOCUMENT_GENERATED' },
-    { label: 'Enviados', value: 'DOCUMENT_SENT' },
-    { label: 'Con error', value: 'DOCUMENT_FAILED' },
+    { label: 'Pendiente', value: 'DOCUMENT_PENDING' },
+    { label: 'Emitido', value: 'DOCUMENT_GENERATED' },
+    { label: 'Enviado', value: 'DOCUMENT_SENT' },
+    { label: 'Error', value: 'DOCUMENT_FAILED' },
   ];
 
   private readonly allowedTaxDocumentTypes = [
@@ -328,10 +327,10 @@ export class TaxDocumentsComponent {
   getDocumentStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       DOCUMENT_PENDING: 'Pendiente',
-      DOCUMENT_UPLOADED: 'Documento cargado',
-      DOCUMENT_GENERATED: 'Generado',
+      DOCUMENT_UPLOADED: 'Emitido',
+      DOCUMENT_GENERATED: 'Emitido',
       DOCUMENT_SENT: 'Enviado',
-      DOCUMENT_FAILED: 'Con error',
+      DOCUMENT_FAILED: 'Error',
       DOCUMENT_NOT_REQUIRED: 'No requerido',
       DOCUMENT_CANCELLED: 'Cancelado',
     };
@@ -342,7 +341,7 @@ export class TaxDocumentsComponent {
   getDocumentTypeLabel(type?: string): string {
     const labels: Record<string, string> = {
       BOLETA: 'Boleta',
-      FACTURA: 'Factura',
+      FACTURA: 'Boleta',
       INVOICE: 'Invoice',
       RECEIPT: 'Recibo',
     };

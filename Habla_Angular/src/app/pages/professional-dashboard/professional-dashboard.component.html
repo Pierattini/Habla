@@ -596,22 +596,23 @@
           </a>
 
           <ion-button
+            *ngIf="$any(profile).documentAutomationEnabled"
             fill="outline"
             size="small"
             [disabled]="$any(this).isDocumentActionRunning(document.id)"
             (click)="$any(this).issueLibreDteDocument(document.id)"
           >
-            Emitir LibreDTE
+            Preparar emisión automática
           </ion-button>
 
           <ion-button
-            *ngIf="$any(document).provider === 'LIBREDTE'"
+            *ngIf="$any(profile).documentAutomationEnabled && $any(document).provider === 'LIBREDTE'"
             fill="outline"
             size="small"
             [disabled]="$any(this).isDocumentActionRunning(document.id)"
             (click)="$any(this).syncProviderStatus(document.id)"
           >
-            Sincronizar SII
+            Sincronizar estado
           </ion-button>
 
           <ion-button
@@ -797,13 +798,13 @@
   </ion-card>
 
   <!-- CONFIGURACION SII DIRECTO -->
-  <ion-card>
+  <ion-card *ngIf="$any(profile).documentAutomationEnabled">
 
     <ion-card-content>
 
       <div class="documents-title-row">
         <h2 class="section-title">
-          Configuración tributaria
+          Configuración avanzada SII
         </h2>
 
         <span
@@ -815,14 +816,61 @@
       </div>
 
       <p class="schedule-help">
-        Configura la emision directa con SII. El unico costo externo esperado para el profesional es su certificado digital.
-        El archivo y su clave se guardan cifrados y no se vuelven a mostrar.
+        Esta sección es solo para profesionales con empresa que quieran preparar Boleta Electrónica automática con SII.
+        El certificado digital y su clave se guardan cifrados y no se vuelven a mostrar.
       </p>
+
+      <div>
+        <a
+          class="document-card"
+          href="https://www.certchile.cl/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <div class="document-main">
+            <div>
+              <h3>Comprar certificado digital</h3>
+              <p>CertChile suele tener opciones económicas. Revisa el valor vigente antes de comprar.</p>
+            </div>
+            <span class="document-badge">i</span>
+          </div>
+        </a>
+
+        <details class="document-card">
+          <summary style="cursor:pointer; list-style:none;">
+            <div class="document-main">
+              <div>
+                <h3>Cómo obtener el archivo de folios SII</h3>
+                <p>Paso a paso para descargar el XML de folios autorizados.</p>
+              </div>
+              <span class="document-badge">i</span>
+            </div>
+          </summary>
+
+          <ol class="field-rule">
+            <li>Ingresa a sii.cl con el RUT empresa.</li>
+            <li>Ve a Servicios online y luego a Factura electrónica.</li>
+            <li>Busca Solicitud de folios o Timbraje electrónico.</li>
+            <li>Selecciona Boleta Electrónica, normalmente tipo DTE 39.</li>
+            <li>Solicita los folios y descarga el archivo XML autorizado.</li>
+            <li>Sube ese XML en Conecta como archivo de folios SII.</li>
+          </ol>
+
+          <a
+            class="document-link"
+            href="https://www.sii.cl/factura_electronica/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Ir al portal de Factura Electrónica SII
+          </a>
+        </details>
+      </div>
 
       <div class="tax-profile-grid">
         <ion-item class="profile-field" lines="none">
           <ion-label position="stacked">
-            RUT emisor
+            RUT empresa
           </ion-label>
 
           <ion-input
@@ -833,7 +881,7 @@
           </ion-input>
         </ion-item>
 
-        <div class="choice-field">
+        <div *ngIf="false" class="choice-field">
           <p class="subsection-title">Ambiente SII</p>
           <div class="mode-selector">
             <label>
@@ -844,7 +892,7 @@
                 [ngModel]="$any(this).taxProviderEnvironment"
                 (ngModelChange)="$any(this).taxProviderEnvironment = $event"
               />
-              Produccion
+              Producción
             </label>
 
             <label>
@@ -855,7 +903,7 @@
                 [ngModel]="$any(this).taxProviderEnvironment"
                 (ngModelChange)="$any(this).taxProviderEnvironment = $event"
               />
-              Certificacion
+              Certificación
             </label>
           </div>
         </div>
@@ -921,7 +969,7 @@
           [disabled]="$any(this).taxProviderSaving || $any(this).taxProviderTesting"
           (click)="$any(this).saveTaxProviderCredential()"
         >
-          {{ $any(this).taxProviderSaving ? 'Guardando...' : 'Guardar credenciales' }}
+          {{ $any(this).taxProviderSaving ? 'Guardando...' : 'Guardar configuración SII' }}
         </ion-button>
 
         <ion-button
@@ -940,8 +988,102 @@
           [disabled]="!$any(this).taxProviderCredential?.configured || $any(this).taxProviderSaving || $any(this).taxProviderTesting"
           (click)="$any(this).deleteTaxProviderCredential()"
         >
-          Eliminar credenciales
+          Eliminar configuración
         </ion-button>
+      </div>
+
+      <div class="documents-title-row">
+        <h3 class="subsection-title">
+          Folios autorizados
+        </h3>
+
+        <span class="document-badge">
+          {{ $any(this).taxFolioRanges.length }} rangos
+        </span>
+      </div>
+
+      <p class="field-rule">
+        Carga el archivo de folios autorizado por SII para que Conecta pueda reservar folios al preparar boletas electrónicas.
+      </p>
+
+      <div class="document-upload">
+        <input
+          type="file"
+          #siiCafInput
+          accept=".xml"
+          (change)="$any(this).onTaxFolioCafSelected($event)"
+          hidden
+        />
+
+        <ion-button
+          fill="outline"
+          size="small"
+          (click)="siiCafInput.click()"
+        >
+          Seleccionar archivo de folios
+        </ion-button>
+
+        <span class="selected-file-name">
+          {{ $any(this).taxFolioCafFile?.name || 'Archivo .xml' }}
+        </span>
+
+        <ion-button
+          size="small"
+          [disabled]="!$any(this).taxFolioCafFile || $any(this).taxFolioSaving"
+          (click)="$any(this).saveTaxFolioRange()"
+        >
+          {{ $any(this).taxFolioSaving ? 'Guardando...' : 'Guardar folios' }}
+        </ion-button>
+      </div>
+
+      <p
+        *ngIf="$any(this).taxFolioMessage"
+        class="public-profile-message"
+      >
+        {{ $any(this).taxFolioMessage }}
+      </p>
+
+      <div
+        *ngIf="$any(this).taxFolioRanges.length === 0"
+        class="documents-empty"
+      >
+        Aún no tienes folios autorizados cargados.
+      </div>
+
+      <div
+        *ngFor="let range of $any(this).taxFolioRanges"
+        class="document-card"
+      >
+        <div class="document-main">
+          <div>
+            <h3>Boleta electrónica</h3>
+            <p>
+              Folios {{ range.startFolio }} al {{ range.endFolio }}
+            </p>
+          </div>
+
+          <span class="document-badge">
+            {{ range.status === 'ACTIVE' ? 'Activo' : 'Inactivo' }}
+          </span>
+        </div>
+
+        <div class="document-meta">
+          <span>Disponibles: {{ range.availableFolios }}</span>
+          <span>Siguiente: {{ range.nextFolio }}</span>
+          <span>Archivo: {{ range.cafFileName || 'Sin nombre' }}</span>
+        </div>
+
+        <div class="document-actions">
+          <ion-button
+            fill="outline"
+            size="small"
+            color="medium"
+            [disabled]="$any(this).taxFolioSaving"
+            (click)="$any(this).deleteTaxFolioRange(range)"
+          >
+            Eliminar folios
+          </ion-button>
+        </div>
       </div>
 
     </ion-card-content>
@@ -954,11 +1096,15 @@
     <ion-card-content>
 
       <h2 class="section-title">
-        Emisión de documentos tributarios
+        Documentos tributarios
       </h2>
 
       <p class="schedule-help">
-        Esta configuración define cómo se gestionan las boletas o facturas cuando un paciente las solicita.
+        Configura cómo emites tus documentos. Conecta guardará los datos del paciente y el historial cuando alguien solicite boleta.
+      </p>
+
+      <p class="subsection-title">
+        ¿Cómo emites tus documentos?
       </p>
 
       <div class="document-emission-options">
@@ -973,8 +1119,8 @@
           />
 
           <span>
-            <strong>Lo emito yo</strong>
-            <small>Recibirás los datos del paciente y podrás emitir o subir el documento manualmente.</small>
+            <strong>Soy profesional independiente</strong>
+            <small>Emito Boletas de Honorarios en SII.</small>
           </span>
         </label>
 
@@ -989,8 +1135,8 @@
           />
 
           <span>
-            <strong>Gestionar automáticamente con Conecta</strong>
-            <small>Conecta preparará la emisión usando tus datos tributarios cuando el flujo automático esté disponible.</small>
+            <strong>Tengo empresa</strong>
+            <small>Emito Boleta Electrónica con RUT empresa.</small>
           </span>
         </label>
       </div>
@@ -999,91 +1145,109 @@
         *ngIf="$any(profile).documentAutomationEnabled && !$any(this).isProfessionalTaxReady"
         class="documents-empty tax-warning"
       >
-        Completa tus datos tributarios para activar la emisión automática.
+        Completa tus datos tributarios para preparar la emisión automática con SII.
       </div>
 
-      <div class="tax-profile-grid">
-        <ion-item class="profile-field" lines="none">
+      <ng-container *ngIf="!$any(profile).documentAutomationEnabled; else companyTaxFields">
+        <div class="tax-profile-grid">
+          <ion-item class="profile-field" lines="none">
+            <ion-label position="stacked">
+              Nombre o razón social
+            </ion-label>
+
+            <ion-input
+              maxlength="120"
+              placeholder="Ej: Carolina Rodríguez"
+              [ngModel]="$any(profile).taxName"
+              (ngModelChange)="$any(profile).taxName = $event">
+            </ion-input>
+          </ion-item>
+
+          <ion-item class="profile-field" lines="none">
+            <ion-label position="stacked">
+              RUT
+            </ion-label>
+
+            <ion-input
+              maxlength="20"
+              placeholder="Ej: 12.345.678-9"
+              [ngModel]="$any(profile).taxId"
+              (ngModelChange)="$any(profile).taxId = $event">
+            </ion-input>
+          </ion-item>
+
+          <ion-item class="profile-field" lines="none">
+            <ion-label position="stacked">
+              Correo tributario
+            </ion-label>
+
+            <ion-input
+              type="email"
+              maxlength="120"
+              placeholder="facturacion@correo.com"
+              [ngModel]="$any(profile).taxEmail"
+              (ngModelChange)="$any(profile).taxEmail = $event">
+            </ion-input>
+          </ion-item>
+        </div>
+      </ng-container>
+
+      <ng-template #companyTaxFields>
+        <div class="tax-profile-grid">
+          <ion-item class="profile-field" lines="none">
+            <ion-label position="stacked">
+              RUT empresa
+            </ion-label>
+
+            <ion-input
+              maxlength="20"
+              placeholder="Ej: 77.527.647-9"
+              [ngModel]="$any(profile).taxId"
+              (ngModelChange)="$any(profile).taxId = $event; $any(this).taxProviderRut = $event">
+            </ion-input>
+          </ion-item>
+
+          <ion-item class="profile-field" lines="none">
+            <ion-label position="stacked">
+              Correo afiliado al SII
+            </ion-label>
+
+            <ion-input
+              type="email"
+              maxlength="120"
+              placeholder="facturacion@empresa.cl"
+              [ngModel]="$any(profile).taxEmail"
+              (ngModelChange)="$any(profile).taxEmail = $event">
+            </ion-input>
+          </ion-item>
+        </div>
+
+        <ion-item class="profile-field profile-field-textarea" lines="none">
           <ion-label position="stacked">
-            Nombre o razón social
+            Mensaje estándar para la boleta
           </ion-label>
 
-          <ion-input
-            maxlength="120"
-            placeholder="Ej: Centro Conecta SpA"
-            [ngModel]="$any(profile).taxName"
-            (ngModelChange)="$any(profile).taxName = $event">
-          </ion-input>
+          <ion-textarea
+            rows="3"
+            maxlength="180"
+            [counter]="true"
+            placeholder="Ej: Servicios profesionales prestados a través de Conecta."
+            [ngModel]="$any(profile).taxDocumentNote"
+            (ngModelChange)="$any(profile).taxDocumentNote = $event">
+          </ion-textarea>
         </ion-item>
 
-        <ion-item class="profile-field" lines="none">
-          <ion-label position="stacked">
-            RUT / NIF
-          </ion-label>
+        <p class="field-rule">
+          El certificado digital, su clave y los folios SII se configuran en la sección avanzada superior.
+        </p>
+      </ng-template>
 
-          <ion-input
-            maxlength="20"
-            placeholder="Ej: 12.345.678-9"
-            [ngModel]="$any(profile).taxId"
-            (ngModelChange)="$any(profile).taxId = $event">
-          </ion-input>
-        </ion-item>
-
-        <ion-item class="profile-field" lines="none">
-          <ion-label position="stacked">
-            Email tributario
-          </ion-label>
-
-          <ion-input
-            type="email"
-            maxlength="120"
-            placeholder="facturacion@correo.com"
-            [ngModel]="$any(profile).taxEmail"
-            (ngModelChange)="$any(profile).taxEmail = $event">
-          </ion-input>
-        </ion-item>
-
-        <ion-item class="profile-field" lines="none">
-          <ion-label position="stacked">
-            Ciudad
-          </ion-label>
-
-          <ion-input
-            maxlength="80"
-            placeholder="Ej: Santiago"
-            [ngModel]="$any(profile).taxCity"
-            (ngModelChange)="$any(profile).taxCity = $event">
-          </ion-input>
-        </ion-item>
-
-        <ion-item class="profile-field" lines="none">
-          <ion-label position="stacked">
-            País
-          </ion-label>
-
-          <ion-input
-            maxlength="40"
-            placeholder="Chile o España"
-            [ngModel]="$any(profile).taxCountry"
-            (ngModelChange)="$any(profile).taxCountry = $event">
-          </ion-input>
-        </ion-item>
+      <div
+        *ngIf="!$any(profile).documentAutomationEnabled"
+        class="documents-empty tax-simple-note"
+      >
+        Cuando un paciente solicite documento, aparecerá como pendiente. Emite la Boleta de Honorarios en SII y luego sube el PDF o márcala como enviada.
       </div>
-
-      <ion-item class="profile-field profile-field-textarea" lines="none">
-        <ion-label position="stacked">
-          Dirección tributaria
-        </ion-label>
-
-        <ion-textarea
-          rows="3"
-          maxlength="160"
-          [counter]="true"
-          placeholder="Dirección que debe figurar en el documento tributario."
-          [ngModel]="$any(profile).taxAddress"
-          (ngModelChange)="$any(profile).taxAddress = $event">
-        </ion-textarea>
-      </ion-item>
 
     </ion-card-content>
 
