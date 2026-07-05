@@ -206,6 +206,10 @@ export class UsersService {
         taxCity: dto.taxCity,
       }),
 
+      ...(dto.taxDocumentNote !== undefined && {
+        taxDocumentNote: dto.taxDocumentNote,
+      }),
+
       ...(dto.documentAutomationEnabled !== undefined && {
         documentAutomationEnabled: dto.documentAutomationEnabled,
       }),
@@ -1108,6 +1112,7 @@ export class UsersService {
             taxAddress: true,
             taxCountry: true,
             taxCity: true,
+            taxDocumentNote: true,
             attentionMode: true,
             officeAddress: true,
             officeCity: true,

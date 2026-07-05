@@ -57,6 +57,10 @@ export class UpdateProfileDto {
   taxCity?: string;
 
   @IsOptional()
+  @IsString()
+  taxDocumentNote?: string;
+
+  @IsOptional()
   @IsBoolean()
   wantsTaxDocumentByDefault?: boolean;
 

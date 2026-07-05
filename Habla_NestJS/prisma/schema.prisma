@@ -45,6 +45,7 @@ model User {
   taxAddress                String?
   taxCountry                String?
   taxCity                   String?
+  taxDocumentNote           String?
   wantsTaxDocumentByDefault Boolean            @default(false)
   customerInterests         String[]           @default([])
   preferredAttentionMode    AttentionModality?
@@ -67,6 +68,7 @@ model User {
   supportTicketsAsCustomer  SupportTicket[]                     @relation("SupportTicketCustomer")
   supportTicketsAsAdmin     SupportTicket[]                     @relation("SupportTicketAdmin")
   taxProviderCredentials    ProfessionalTaxProviderCredential[] @relation("ProfessionalTaxProviderCredentials")
+  taxFolioRanges            ProfessionalTaxFolioRange[]         @relation("ProfessionalTaxFolioRanges")
 
   credit Float @default(0)
 }
@@ -231,6 +233,7 @@ model Professional {
   taxAddress                String?
   taxCountry                String?
   taxCity                   String?
+  taxDocumentNote           String?
 
   // Suscripción Conecta
   planStatus          ProfessionalPlanStatus @default(FREE)
@@ -496,6 +499,7 @@ model TaxDocument {
   professionalTaxAddress String?
   professionalTaxCountry String?
   professionalTaxCity    String?
+  professionalTaxNote    String?
 
   provider           TaxProvider?
   providerDocumentId String?
@@ -595,6 +599,29 @@ model ProfessionalTaxProviderCredential {
 
   @@unique([professionalId, provider])
   @@index([provider, status])
+  @@index([professionalId])
+}
+
+model ProfessionalTaxFolioRange {
+  id              String   @id @default(uuid())
+  professionalId  String
+  provider        TaxProvider @default(SII)
+  dteCode         Int
+  startFolio      Int
+  endFolio        Int
+  nextFolio       Int
+  encryptedCafXml String
+  cafFileName     String?
+  cafFingerprint  String?
+  status          String   @default("ACTIVE")
+  uploadedAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  professional User @relation("ProfessionalTaxFolioRanges", fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@unique([professionalId, provider, dteCode, startFolio, endFolio])
+  @@index([professionalId, provider, dteCode, status])
   @@index([professionalId])
 }
 

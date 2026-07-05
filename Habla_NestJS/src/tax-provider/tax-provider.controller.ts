@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Param,
   Post,
   Request,
   UploadedFile,
@@ -15,6 +16,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { Role } from '@prisma/client';
+import { SaveTaxFolioRangeDto } from './dto/save-tax-folio-range.dto';
 import { SaveTaxProviderCredentialDto } from './dto/save-tax-provider-credential.dto';
 import { TaxProviderService } from './tax-provider.service';
 
@@ -24,6 +26,8 @@ type UploadedCertificateFile = {
   mimetype: string;
   size: number;
 };
+
+type UploadedTaxFile = UploadedCertificateFile;
 
 @Controller('tax-provider')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -49,6 +53,26 @@ export class TaxProviderController {
   @Post('me/test-auth')
   testAuth(@Request() req: AuthRequest) {
     return this.taxProviderService.testMySiiAuthentication(req.user);
+  }
+
+  @Get('me/folios')
+  getFolios(@Request() req: AuthRequest) {
+    return this.taxProviderService.getMyFolioRanges(req.user);
+  }
+
+  @Post('me/folios')
+  @UseInterceptors(FileInterceptor('caf'))
+  saveFolioRange(
+    @Request() req: AuthRequest,
+    @Body() body: SaveTaxFolioRangeDto,
+    @UploadedFile() caf?: UploadedTaxFile,
+  ) {
+    return this.taxProviderService.saveMyFolioRange(req.user, body, caf);
+  }
+
+  @Delete('me/folios/:id')
+  deleteFolioRange(@Request() req: AuthRequest, @Param('id') id: string) {
+    return this.taxProviderService.deleteMyFolioRange(req.user, id);
   }
 
   @Delete('me')

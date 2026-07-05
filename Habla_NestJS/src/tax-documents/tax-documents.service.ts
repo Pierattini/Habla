@@ -38,6 +38,16 @@ type AutomaticIssueOptions = {
   jobId?: string;
 };
 
+type SiiFolioReservation = {
+  id: string;
+  dteCode: number;
+  startFolio: number;
+  endFolio: number;
+  assignedFolio: number;
+  cafFileName: string | null;
+  cafFingerprint: string | null;
+};
+
 @Injectable()
 export class TaxDocumentsService {
   private readonly allowedMimeTypes = [
@@ -96,10 +106,17 @@ export class TaxDocumentsService {
         professionalTaxName: appointment.professional.professional?.taxName,
         professionalTaxEmail: appointment.professional.professional?.taxEmail,
         professionalTaxAddress:
-          appointment.professional.professional?.taxAddress,
+          appointment.professional.professional?.taxAddress ||
+          appointment.professional.professional?.officeAddress,
         professionalTaxCountry:
-          appointment.professional.professional?.taxCountry,
-        professionalTaxCity: appointment.professional.professional?.taxCity,
+          appointment.professional.professional?.taxCountry ||
+          appointment.professional.professional?.officeCountry,
+        professionalTaxCity:
+          appointment.professional.professional?.taxCity ||
+          appointment.professional.professional?.officeCity,
+        professionalTaxNote:
+          appointment.professional.professional?.taxDocumentNote ||
+          'Servicios profesionales prestados a traves de Conecta.',
         events: {
           create: {
             actorId: user.id,
@@ -544,10 +561,29 @@ export class TaxDocumentsService {
 
     this.ensureProfessionalAccess(document.appointment, user);
 
-    if (document.providerDocumentId || document.folio || document.siiTrackId) {
+    if (document.providerDocumentId || document.siiTrackId) {
       throw new BadRequestException(
         'Este documento ya tiene datos de emision tributaria',
       );
+    }
+
+    const existingSiiDraft = this.getSiiDirectPayload(document.providerPayload);
+
+    if (
+      document.provider === TaxProvider.SII &&
+      document.folio &&
+      existingSiiDraft?.status === 'DRAFT_READY'
+    ) {
+      return {
+        ...document,
+        siiDraft: {
+          dteCode: existingSiiDraft.dteCode,
+          environment: existingSiiDraft.environment,
+          folio: Number(document.folio),
+          generatedAt: existingSiiDraft.generatedAt,
+          warnings: existingSiiDraft.warnings || [],
+        },
+      };
     }
 
     const credential = await this.prisma.professionalTaxProviderCredential.findUnique({
@@ -565,12 +601,31 @@ export class TaxDocumentsService {
       );
     }
 
-    const draft = this.siiDteDraftService.buildDraft(document);
+    const dteCode = this.siiDteDraftService.resolveDteCode(document.type);
+    const folioReservation = document.folio
+      ? null
+      : await this.reserveSiiFolio(
+          document.appointment.professionalId,
+          dteCode,
+        );
+    const folio = document.folio
+      ? Number(document.folio)
+      : folioReservation?.assignedFolio;
+
+    if (!folio) {
+      throw new BadRequestException('No se pudo reservar un folio SII');
+    }
+
+    const draft = this.siiDteDraftService.buildDraft(document, folio);
     const providerPayload = this.mergeProviderPayload(document.providerPayload, {
       siiDirect: {
         status: 'DRAFT_READY',
         environment: credential.environment,
         dteCode: draft.dteCode,
+        folio: draft.folio,
+        folioRangeId: folioReservation?.id,
+        cafFileName: folioReservation?.cafFileName,
+        cafFingerprint: folioReservation?.cafFingerprint,
         generatedAt: draft.generatedAt.toISOString(),
         xml: draft.xml,
         warnings: draft.warnings,
@@ -582,6 +637,7 @@ export class TaxDocumentsService {
       data: {
         provider: TaxProvider.SII,
         providerPayload,
+        folio: String(draft.folio),
         dteCode: draft.dteCode,
         events: {
           create: {
@@ -591,6 +647,8 @@ export class TaxDocumentsService {
             metadata: {
               environment: credential.environment,
               dteCode: draft.dteCode,
+              folio: draft.folio,
+              folioRangeId: folioReservation?.id,
               warnings: draft.warnings,
             },
           },
@@ -609,6 +667,7 @@ export class TaxDocumentsService {
       siiDraft: {
         dteCode: draft.dteCode,
         environment: credential.environment,
+        folio: draft.folio,
         generatedAt: draft.generatedAt,
         warnings: draft.warnings,
       },
@@ -1682,6 +1741,64 @@ export class TaxDocumentsService {
       ...currentObject,
       ...next,
     } as Prisma.InputJsonValue;
+  }
+
+  private getProviderPayloadObject(
+    current: Prisma.JsonValue | null,
+  ): Record<string, any> {
+    return current && typeof current === 'object' && !Array.isArray(current)
+      ? (current as Record<string, any>)
+      : {};
+  }
+
+  private getSiiDirectPayload(current: Prisma.JsonValue | null) {
+    const payload = this.getProviderPayloadObject(current);
+    const siiDirect = payload['siiDirect'];
+
+    return siiDirect && typeof siiDirect === 'object' && !Array.isArray(siiDirect)
+      ? (siiDirect as Record<string, any>)
+      : null;
+  }
+
+  private async reserveSiiFolio(
+    professionalId: string,
+    dteCode: number,
+  ): Promise<SiiFolioReservation> {
+    const [reservation] = await this.prisma.$transaction((tx) =>
+      tx.$queryRaw<SiiFolioReservation[]>`
+        UPDATE "ProfessionalTaxFolioRange"
+        SET "nextFolio" = "nextFolio" + 1,
+            "updatedAt" = NOW()
+        WHERE "id" = (
+          SELECT "id"
+          FROM "ProfessionalTaxFolioRange"
+          WHERE "professionalId" = ${professionalId}
+            AND "provider" = ${TaxProvider.SII}::"TaxProvider"
+            AND "dteCode" = ${dteCode}
+            AND "status" = 'ACTIVE'
+            AND "nextFolio" <= "endFolio"
+          ORDER BY "nextFolio" ASC, "createdAt" ASC
+          LIMIT 1
+          FOR UPDATE SKIP LOCKED
+        )
+        RETURNING
+          "id",
+          "dteCode",
+          "startFolio",
+          "endFolio",
+          "nextFolio" - 1 AS "assignedFolio",
+          "cafFileName",
+          "cafFingerprint"
+      `,
+    );
+
+    if (!reservation) {
+      throw new BadRequestException(
+        `No hay folios CAF disponibles para el tipo DTE ${dteCode}`,
+      );
+    }
+
+    return reservation;
   }
 
   private async syncAppointmentDocumentStatus(

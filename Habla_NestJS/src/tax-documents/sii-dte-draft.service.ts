@@ -14,6 +14,7 @@ type SiiDraftDocument = {
   professionalTaxName?: string | null;
   professionalTaxAddress?: string | null;
   professionalTaxCity?: string | null;
+  professionalTaxNote?: string | null;
   appointment: {
     id: string;
     date: Date;
@@ -22,6 +23,7 @@ type SiiDraftDocument = {
 
 type SiiDraftResult = {
   dteCode: number;
+  folio: number;
   generatedAt: Date;
   xml: string;
   warnings: string[];
@@ -29,10 +31,11 @@ type SiiDraftResult = {
 
 @Injectable()
 export class SiiDteDraftService {
-  buildDraft(document: SiiDraftDocument): SiiDraftResult {
+  buildDraft(document: SiiDraftDocument, folio: number): SiiDraftResult {
     const generatedAt = new Date();
     const warnings: string[] = [];
     const dteCode = this.resolveDteCode(document.type);
+    const normalizedFolio = this.requirePositiveFolio(folio);
     const amount = this.requirePositiveAmount(document.amount);
     const emitter = this.resolveEmitter(document);
     const receiver = this.resolveReceiver(document);
@@ -51,7 +54,7 @@ export class SiiDteDraftService {
       '<Encabezado>',
       '<IdDoc>',
       `<TipoDTE>${dteCode}</TipoDTE>`,
-      '<Folio>0</Folio>',
+      `<Folio>${normalizedFolio}</Folio>`,
       `<FchEmis>${issueDate}</FchEmis>`,
       '</IdDoc>',
       '<Emisor>',
@@ -74,7 +77,7 @@ export class SiiDteDraftService {
       '<Detalle>',
       '<NroLinDet>1</NroLinDet>',
       '<NmbItem>Atencion profesional Conecta</NmbItem>',
-      `<DscItem>Cita ${this.escapeXml(document.appointment.id)} - ${serviceDate}</DscItem>`,
+      `<DscItem>${this.escapeXml(document.professionalTaxNote || `Cita ${document.appointment.id} - ${serviceDate}`)}</DscItem>`,
       '<QtyItem>1</QtyItem>',
       `<PrcItem>${amount}</PrcItem>`,
       `<MontoItem>${amount}</MontoItem>`,
@@ -85,15 +88,26 @@ export class SiiDteDraftService {
 
     return {
       dteCode,
+      folio: normalizedFolio,
       generatedAt,
       xml,
       warnings,
     };
   }
 
-  private resolveDteCode(type?: TaxDocumentType | null): number {
+  resolveDteCode(type?: TaxDocumentType | null): number {
     if (type === TaxDocumentType.FACTURA) return 33;
     return 39;
+  }
+
+  private requirePositiveFolio(value: number): number {
+    const folio = Math.floor(Number(value));
+
+    if (!Number.isFinite(folio) || folio <= 0) {
+      throw new BadRequestException('Falta un folio SII valido para preparar el XML');
+    }
+
+    return folio;
   }
 
   private requirePositiveAmount(value?: number | null): number {

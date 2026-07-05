@@ -5,9 +5,10 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Role, TaxProvider, TaxProviderCredentialStatus } from '@prisma/client';
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto';
+import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'crypto';
 import { createSecureContext } from 'tls';
 import { PrismaService } from '../prisma/prisma.service';
+import { SaveTaxFolioRangeDto } from './dto/save-tax-folio-range.dto';
 import { SaveTaxProviderCredentialDto } from './dto/save-tax-provider-credential.dto';
 import { SiiDirectAuthService } from './sii-direct-auth.service';
 
@@ -21,6 +22,21 @@ type UploadedCertificateFile = {
   originalname: string;
   mimetype: string;
   size: number;
+};
+
+type TaxFolioRangeRecord = {
+  id: string;
+  provider: TaxProvider;
+  dteCode: number;
+  startFolio: number;
+  endFolio: number;
+  nextFolio: number;
+  cafFileName: string | null;
+  cafFingerprint: string | null;
+  status: string;
+  uploadedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 @Injectable()
@@ -215,6 +231,126 @@ export class TaxProviderService {
     };
   }
 
+  async getMyFolioRanges(user: TaxProviderUser) {
+    this.ensureProfessional(user);
+
+    const ranges = await this.prisma.$queryRaw<Array<TaxFolioRangeRecord>>`
+      SELECT
+        "id",
+        "provider",
+        "dteCode",
+        "startFolio",
+        "endFolio",
+        "nextFolio",
+        "cafFileName",
+        "cafFingerprint",
+        "status",
+        "uploadedAt",
+        "createdAt",
+        "updatedAt"
+      FROM "ProfessionalTaxFolioRange"
+      WHERE "professionalId" = ${user.id}
+        AND "provider" = ${TaxProvider.SII}::"TaxProvider"
+      ORDER BY "status" ASC, "dteCode" ASC, "startFolio" ASC
+    `;
+
+    return ranges.map((range) => this.toFolioRangeResponse(range));
+  }
+
+  async saveMyFolioRange(
+    user: TaxProviderUser,
+    dto: SaveTaxFolioRangeDto,
+    caf?: UploadedCertificateFile,
+  ) {
+    this.ensureProfessional(user);
+    this.ensureCafFile(caf);
+
+    const cafXml = caf!.buffer.toString('utf8');
+    const parsed = this.parseCafXml(cafXml);
+    const fingerprint = this.fingerprint(caf!.buffer);
+    const status = dto.status || 'ACTIVE';
+
+    const encryptedCafXml = this.encrypt(cafXml);
+    const id = randomUUID();
+    const range = await this.prisma.$queryRaw<Array<TaxFolioRangeRecord>>`
+      INSERT INTO "ProfessionalTaxFolioRange" (
+        "id",
+        "professionalId",
+        "provider",
+        "dteCode",
+        "startFolio",
+        "endFolio",
+        "nextFolio",
+        "encryptedCafXml",
+        "cafFileName",
+        "cafFingerprint",
+        "status",
+        "uploadedAt",
+        "createdAt",
+        "updatedAt"
+      )
+      VALUES (
+        ${id},
+        ${user.id},
+        ${TaxProvider.SII}::"TaxProvider",
+        ${parsed.dteCode},
+        ${parsed.startFolio},
+        ${parsed.endFolio},
+        ${parsed.startFolio},
+        ${encryptedCafXml},
+        ${caf!.originalname},
+        ${fingerprint},
+        ${status},
+        NOW(),
+        NOW(),
+        NOW()
+      )
+      ON CONFLICT (
+        "professionalId",
+        "provider",
+        "dteCode",
+        "startFolio",
+        "endFolio"
+      )
+      DO UPDATE SET
+        "encryptedCafXml" = EXCLUDED."encryptedCafXml",
+        "cafFileName" = EXCLUDED."cafFileName",
+        "cafFingerprint" = EXCLUDED."cafFingerprint",
+        "status" = EXCLUDED."status",
+        "uploadedAt" = NOW(),
+        "nextFolio" = EXCLUDED."nextFolio",
+        "updatedAt" = NOW()
+      RETURNING
+        "id",
+        "provider",
+        "dteCode",
+        "startFolio",
+        "endFolio",
+        "nextFolio",
+        "cafFileName",
+        "cafFingerprint",
+        "status",
+        "uploadedAt",
+        "createdAt",
+        "updatedAt"
+    `;
+
+    return this.toFolioRangeResponse(range[0]);
+  }
+
+  async deleteMyFolioRange(user: TaxProviderUser, id: string) {
+    this.ensureProfessional(user);
+
+    await this.prisma.$executeRaw`
+      DELETE FROM "ProfessionalTaxFolioRange"
+      WHERE "id" = ${id}
+        AND "professionalId" = ${user.id}
+        AND "provider" = ${TaxProvider.SII}::"TaxProvider"
+    `;
+
+    return { deleted: true, id };
+  }
+
   async getLibreDteTokenForProfessional(professionalId: string) {
     const credential =
       await this.prisma.professionalTaxProviderCredential.findUnique({
@@ -261,6 +397,87 @@ export class TaxProviderService {
     if (certificate.size > 2 * 1024 * 1024) {
       throw new BadRequestException('El certificado no puede superar 2MB');
     }
+  }
+
+  private ensureCafFile(caf?: UploadedCertificateFile): void {
+    if (!caf?.buffer?.length) {
+      throw new BadRequestException('Archivo CAF requerido');
+    }
+
+    const fileName = caf.originalname?.toLowerCase() || '';
+
+    if (!fileName.endsWith('.xml')) {
+      throw new BadRequestException('El CAF debe ser un archivo .xml');
+    }
+
+    if (caf.size > 1024 * 1024) {
+      throw new BadRequestException('El archivo CAF no puede superar 1MB');
+    }
+  }
+
+  private parseCafXml(xml: string) {
+    const dteCode = Number(this.extractXmlValue(xml, 'TD'));
+    const startFolio = Number(this.extractXmlValue(xml, 'D'));
+    const endFolio = Number(this.extractXmlValue(xml, 'H'));
+
+    if (!Number.isInteger(dteCode) || dteCode <= 0) {
+      throw new BadRequestException('El CAF no contiene tipo de DTE valido');
+    }
+
+    if (
+      !Number.isInteger(startFolio) ||
+      !Number.isInteger(endFolio) ||
+      startFolio <= 0 ||
+      endFolio < startFolio
+    ) {
+      throw new BadRequestException('El CAF no contiene un rango de folios valido');
+    }
+
+    return {
+      dteCode,
+      startFolio,
+      endFolio,
+    };
+  }
+
+  private extractXmlValue(xml: string, tagName: string): string | null {
+    const pattern = new RegExp(
+      `<(?:\\w+:)?${tagName}[^>]*>([\\s\\S]*?)<\\/(?:\\w+:)?${tagName}>`,
+      'i',
+    );
+    const match = xml.match(pattern);
+    return match?.[1]?.trim() || null;
+  }
+
+  private toFolioRangeResponse(range: {
+    id: string;
+    provider: TaxProvider;
+    dteCode: number;
+    startFolio: number;
+    endFolio: number;
+    nextFolio: number;
+    cafFileName: string | null;
+    cafFingerprint: string | null;
+    status: string;
+    uploadedAt: Date;
+    createdAt: Date;
+    updatedAt: Date;
+  }) {
+    return {
+      id: range.id,
+      provider: range.provider,
+      dteCode: range.dteCode,
+      startFolio: range.startFolio,
+      endFolio: range.endFolio,
+      nextFolio: range.nextFolio,
+      availableFolios: Math.max(0, range.endFolio - range.nextFolio + 1),
+      cafFileName: range.cafFileName,
+      cafFingerprint: range.cafFingerprint,
+      status: range.status,
+      uploadedAt: range.uploadedAt,
+      createdAt: range.createdAt,
+      updatedAt: range.updatedAt,
+    };
   }
 
   private validateCertificate(buffer: Buffer, passphrase: string): void {

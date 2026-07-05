@@ -378,10 +378,16 @@ export class AppointmentsService {
             professional.user.email,
           professionalTaxEmail:
             professional.taxEmail || professional.user.email,
-          professionalTaxAddress: professional.taxAddress,
+          professionalTaxAddress:
+            professional.taxAddress || professional.officeAddress,
           professionalTaxCountry:
-            professional.taxCountry || professional.user.country,
-          professionalTaxCity: professional.taxCity,
+            professional.taxCountry ||
+            professional.officeCountry ||
+            professional.user.country,
+          professionalTaxCity: professional.taxCity || professional.officeCity,
+          professionalTaxNote:
+            professional.taxDocumentNote ||
+            'Servicios profesionales prestados a traves de Conecta.',
           events: {
             create: {
               actorId: customerId,
@@ -2003,12 +2009,9 @@ export class AppointmentsService {
   private ensureProfessionalTaxDataReady(professional: any): void {
     const professionalMissing = [
       !professional.taxId ? 'RUT profesional' : null,
-      !professional.taxName ? 'razon social profesional' : null,
       !(professional.taxEmail || professional.user?.email)
         ? 'email tributario profesional'
         : null,
-      !professional.taxAddress ? 'direccion tributaria profesional' : null,
-      !professional.taxCity ? 'ciudad/comuna profesional' : null,
     ].filter(Boolean);
 
     if (professionalMissing.length > 0) {
