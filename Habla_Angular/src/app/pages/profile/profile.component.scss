@@ -239,6 +239,49 @@ ion-content {
   overflow: hidden;
 }
 
+.account-card {
+  padding: 0;
+}
+
+.account-section {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px;
+}
+
+.account-section span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.account-section h2 {
+  margin: 0 0 5px;
+  color: var(--app-text);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.account-section p {
+  max-width: 260px;
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.account-section ion-button {
+  flex: 0 0 auto;
+  --border-color: rgba(220, 38, 38, 0.35);
+  --color: #dc2626;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .customer-preferences-card {
   margin-top: 18px;
   padding: 22px 18px;

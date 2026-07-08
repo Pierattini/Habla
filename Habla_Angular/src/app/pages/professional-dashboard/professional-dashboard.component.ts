@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AlertController } from '@ionic/angular';
 import { finalize, forkJoin, Observable } from 'rxjs';
 import {
   DashboardTaxDocument,
@@ -186,7 +187,8 @@ export class ProfessionalDashboardComponent {
     private professionalPlanService: ProfessionalPlanService,
     private http: HttpClient,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private alertCtrl: AlertController
   ) {
     this.restoreCachedProfile();
   }
@@ -210,6 +212,7 @@ export class ProfessionalDashboardComponent {
     name: '',
     specialty: '',
     description: '',
+    timezone: 'America/Santiago',
     price: 0,
 
     // duración real sesión
@@ -308,6 +311,15 @@ export class ProfessionalDashboardComponent {
 
   pendingTaxDocuments: DashboardTaxDocument[] = [];
   taxDocuments: DashboardTaxDocument[] = [];
+
+  getProfileTimezone(): string {
+    return this.profile.timezone || 'America/Santiago';
+  }
+
+  setProfileTimezone(timezone: string): void {
+    this.profile.timezone = timezone || 'America/Santiago';
+  }
+
   professionalAccess: ProfessionalAccess = {
     subscriptionStatus: 'TRIAL',
     canReceiveUnlimitedRequests: false,
@@ -438,6 +450,7 @@ export class ProfessionalDashboardComponent {
         image: this.profile.image,
         specialty: this.profile.specialty,
         description: this.profile.description,
+        timezone: this.profile.timezone,
         rules: this.profile.rules,
         price: Number(this.profile.price),
         duration: Number(this.profile.duration),
@@ -588,7 +601,7 @@ export class ProfessionalDashboardComponent {
           window.location.href = response.url;
         },
         error: (err) => {
-          alert(err?.error?.message || 'No se pudo iniciar conexion con Google');
+          void this.showDashboardAlert('Conexion Google', err?.error?.message || 'No se pudo iniciar conexion con Google');
         },
       });
   }
@@ -605,7 +618,7 @@ export class ProfessionalDashboardComponent {
           };
         },
         error: (err) => {
-          alert(err?.error?.message || 'No se pudo desconectar Google');
+          void this.showDashboardAlert('Conexion Google', err?.error?.message || 'No se pudo desconectar Google');
         },
       });
   }
@@ -618,7 +631,7 @@ export class ProfessionalDashboardComponent {
           window.location.href = response.url;
         },
         error: (err) => {
-          alert(err?.error?.message || 'No se pudo iniciar conexion con Zoom');
+          void this.showDashboardAlert('Conexion Zoom', err?.error?.message || 'No se pudo iniciar conexion con Zoom');
         },
       });
   }
@@ -635,7 +648,7 @@ export class ProfessionalDashboardComponent {
           };
         },
         error: (err) => {
-          alert(err?.error?.message || 'No se pudo desconectar Zoom');
+          void this.showDashboardAlert('Conexion Zoom', err?.error?.message || 'No se pudo desconectar Zoom');
         },
       });
   }
@@ -648,7 +661,7 @@ export class ProfessionalDashboardComponent {
           window.location.href = response.url;
         },
         error: (err) => {
-          alert(err?.error?.message || 'No se pudo iniciar conexion con Microsoft');
+          void this.showDashboardAlert('Conexion Microsoft', err?.error?.message || 'No se pudo iniciar conexion con Microsoft');
         },
       });
   }
@@ -665,9 +678,20 @@ export class ProfessionalDashboardComponent {
           };
         },
         error: (err) => {
-          alert(err?.error?.message || 'No se pudo desconectar Microsoft');
+          void this.showDashboardAlert('Conexion Microsoft', err?.error?.message || 'No se pudo desconectar Microsoft');
         },
       });
+  }
+
+  private async showDashboardAlert(header: string, message: string): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header,
+      message,
+      buttons: ['Aceptar'],
+      cssClass: 'conecta-alert',
+    });
+
+    await alert.present();
   }
 
 async onFileSelected(event: Event) {
@@ -677,7 +701,7 @@ async onFileSelected(event: Event) {
   if (!file) return;
 
   if (!file.type.startsWith('image/')) {
-    alert('Selecciona una imagen valida.');
+    await this.showDashboardAlert('Imagen no valida', 'Selecciona una imagen valida.');
     input.value = '';
     return;
   }
@@ -693,7 +717,7 @@ async onFileSelected(event: Event) {
     this.cdr.detectChanges();
   } catch (error) {
     console.error(error);
-    alert('No se pudo cargar la imagen. Intenta con otra foto.');
+    await this.showDashboardAlert('No se pudo cargar', 'No se pudo cargar la imagen. Intenta con otra foto.');
   } finally {
     input.value = '';
   }
@@ -792,7 +816,6 @@ private prepareProfileImage(file: File): Promise<string> {
     this.professionalProfileService.getProfile().subscribe({
       next: (res) => {
 
-      console.log('PROFILE:', res);
       this.professionalUserId = res.id;
       this.ensureAgendaDefaults();
 
@@ -801,6 +824,7 @@ private prepareProfileImage(file: File): Promise<string> {
         slug: res.professional?.slug || '',
         specialty: res.professional?.specialty || '',
         description: res.professional?.description || '',
+        timezone: res.timezone || res.professional?.timezone || 'America/Santiago',
         price: res.professional?.price || 0,
         duration: res.professional?.duration || 90,
         interval: res.professional?.interval || 15,
@@ -1273,7 +1297,7 @@ private prepareProfileImage(file: File): Promise<string> {
   }
 
   saveTaxProviderCredential(): void {
-    const rut = this.taxProviderRut.trim();
+    const rut = (this.profile.taxId || this.taxProviderRut || '').trim();
     const certificatePassword = this.taxProviderCertificatePassword.trim();
 
     if (!rut || rut.length < 6) {
@@ -1303,6 +1327,7 @@ private prepareProfileImage(file: File): Promise<string> {
       next: (credential) => {
         this.taxProviderCredential = credential;
         this.taxProviderRut = credential.rut || rut;
+        this.profile.taxId = this.profile.taxId || credential.rut || rut;
         this.taxProviderEnvironment = 'PRODUCTION';
         this.taxProviderCertificatePassword = '';
         this.taxProviderCertificateFile = null;
@@ -1505,7 +1530,7 @@ private prepareProfileImage(file: File): Promise<string> {
 
   showPlanComingSoon(): void {
     this.planActionMessage = 'Proximamente podras activar tu plan desde la app. Por ahora esta funcion esta en preparacion.';
-    alert(this.planActionMessage);
+    void this.showDashboardAlert('Plan Conecta', this.planActionMessage);
   }
 
   loadPlanPricing(country?: string | null): void {
@@ -1519,18 +1544,18 @@ private prepareProfileImage(file: File): Promise<string> {
     });
   }
 
-  activatePlanManualDemo(): void {
+  activatePlanManualDevelopment(): void {
     if (!this.isDevelopmentMode || this.subscriptionActionRunning) return;
 
     this.subscriptionActionRunning = true;
     this.professionalPlanService.activateManual().subscribe({
       next: () => {
-        this.planActionMessage = 'Plan activado manualmente para demo.';
+        this.planActionMessage = 'Plan activado manualmente para desarrollo.';
         this.refreshPlanAndRequests();
       },
       error: (err) => {
         console.error('Error activando plan manual:', err);
-        alert(err?.error?.message || 'No se pudo activar el plan manualmente');
+        void this.showDashboardAlert('Plan Conecta', err?.error?.message || 'No se pudo activar el plan manualmente');
       },
       complete: () => {
         this.subscriptionActionRunning = false;
@@ -1538,18 +1563,18 @@ private prepareProfileImage(file: File): Promise<string> {
     });
   }
 
-  deactivatePlanManualDemo(): void {
+  deactivatePlanManualDevelopment(): void {
     if (!this.isDevelopmentMode || this.subscriptionActionRunning) return;
 
     this.subscriptionActionRunning = true;
     this.professionalPlanService.deactivateManual().subscribe({
       next: () => {
-        this.planActionMessage = 'Plan cancelado manualmente para demo.';
+        this.planActionMessage = 'Plan cancelado manualmente para desarrollo.';
         this.refreshPlanAndRequests();
       },
       error: (err) => {
         console.error('Error cancelando plan manual:', err);
-        alert(err?.error?.message || 'No se pudo cancelar el plan manualmente');
+        void this.showDashboardAlert('Plan Conecta', err?.error?.message || 'No se pudo cancelar el plan manualmente');
       },
       complete: () => {
         this.subscriptionActionRunning = false;
@@ -1618,7 +1643,7 @@ private prepareProfileImage(file: File): Promise<string> {
       },
       error: (err) => {
         console.error('Error aceptando solicitud:', err);
-        alert(err?.error?.message || 'No se pudo aceptar la solicitud');
+        void this.showDashboardAlert('Solicitud de paciente', err?.error?.message || 'No se pudo aceptar la solicitud');
       },
       complete: () => {
         this.requestActionIds[request.id] = false;
@@ -1637,7 +1662,7 @@ private prepareProfileImage(file: File): Promise<string> {
       },
       error: (err) => {
         console.error('Error rechazando solicitud:', err);
-        alert(err?.error?.message || 'No se pudo rechazar la solicitud');
+        void this.showDashboardAlert('Solicitud de paciente', err?.error?.message || 'No se pudo rechazar la solicitud');
       },
       complete: () => {
         this.requestActionIds[request.id] = false;
@@ -1798,7 +1823,7 @@ private prepareProfileImage(file: File): Promise<string> {
     if (!this.allowedTaxDocumentTypes.includes(file.type)) {
       input.value = '';
       delete this.selectedDocumentFiles[documentId];
-      alert('Solo puedes subir PDF, JPG, JPEG o PNG');
+      void this.showDashboardAlert('Archivo no valido', 'Solo puedes subir PDF, JPG, JPEG o PNG');
       return;
     }
 
@@ -1825,7 +1850,7 @@ private prepareProfileImage(file: File): Promise<string> {
       error: (err) => {
         console.error('Error subiendo documento tributario:', err);
         this.uploadingDocumentIds[documentId] = false;
-        alert('No se pudo subir el documento');
+        void this.showDashboardAlert('Documento tributario', 'No se pudo subir el documento');
       },
       complete: () => {
         this.uploadingDocumentIds[documentId] = false;
@@ -1890,7 +1915,7 @@ private prepareProfileImage(file: File): Promise<string> {
       error: (err: unknown) => {
         console.error(errorMessage, err);
         this.documentActionIds[documentId] = false;
-        alert(errorMessage);
+        void this.showDashboardAlert('Documento tributario', errorMessage);
       },
       complete: () => {
         this.documentActionIds[documentId] = false;

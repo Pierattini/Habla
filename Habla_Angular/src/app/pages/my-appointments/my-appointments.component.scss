@@ -384,7 +384,9 @@ ion-card {
 }
 
 .payment-modal {
-  width: min(390px, 100%);
+  box-sizing: border-box;
+  width: min(340px, 100%);
+  padding: 20px 18px 18px;
 }
 
 .calendar-modal-icon {
@@ -481,17 +483,17 @@ ion-card {
 
 .payment-data-list {
   display: grid;
-  gap: 9px;
-  margin: 18px 0;
+  gap: 8px;
+  margin: 16px 0;
 }
 
 .payment-data-row {
   display: grid;
-  grid-template-columns: minmax(104px, auto) 1fr;
-  gap: 12px;
+  grid-template-columns: minmax(70px, auto) minmax(0, 1fr) 30px;
+  gap: 8px;
   align-items: center;
-  min-height: 44px;
-  padding: 10px 12px;
+  min-height: 42px;
+  padding: 8px 8px 8px 12px;
   border: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
   border-radius: 16px;
   background: color-mix(in srgb, var(--app-primary-light) 6%, #fff);
@@ -507,10 +509,26 @@ ion-card {
 .payment-data-row strong {
   min-width: 0;
   color: var(--app-text);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
   text-align: right;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.payment-copy {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--app-primary-light) 16%, #fff);
+  color: var(--app-primary);
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .payment-confirm {
@@ -1028,13 +1046,20 @@ ion-card {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.action-row-message {
+.action-row-message,
+.action-row-communication {
   display: flex;
   justify-content: center;
 }
 
-.action-row-message ion-button {
+.action-row-message ion-button,
+.action-row-communication.single ion-button {
   min-width: 132px;
+}
+
+.action-row-communication:not(.single) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .action-row-extra {
@@ -1764,15 +1789,21 @@ ion-button[size="small"] {
 
 :host .card-cita .action-row-payment,
 :host .card-cita .action-row-secondary,
+:host .card-cita .action-row-communication,
 :host .card-cita .action-row-extra {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  max-width: 300px;
+  margin-inline: auto;
 }
 
-:host .card-cita .action-row-message {
+:host .card-cita .action-row-message,
+:host .card-cita .action-row-communication.single {
   display: flex;
   justify-content: center;
+  max-width: 300px;
+  margin-inline: auto;
 }
 
 :host .card-cita .btn-main::part(native),
@@ -1816,4 +1847,96 @@ ion-button[size="small"] {
     justify-self: start;
     text-align: left;
   }
+}
+
+:host .calendar-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 20000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 18px !important;
+  background: rgba(17, 24, 39, 0.48) !important;
+  backdrop-filter: blur(3px);
+}
+
+:host .calendar-modal {
+  position: relative !important;
+  width: min(360px, calc(100vw - 36px)) !important;
+  max-height: calc(100vh - 44px);
+  overflow-y: auto;
+  padding: 22px 18px 18px !important;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: 24px !important;
+  background: var(--app-surface) !important;
+  box-shadow: 0 28px 80px rgba(31, 22, 45, 0.28) !important;
+}
+
+:host .calendar-close {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  width: 34px !important;
+  height: 34px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--app-primary-light) 18%, #fff) !important;
+  color: var(--app-primary) !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+}
+
+:host .calendar-modal h2 {
+  margin: 0 42px 10px 0 !important;
+  color: var(--app-text);
+  font-size: 22px !important;
+  font-weight: 900 !important;
+  line-height: 1.12;
+}
+
+:host .calendar-intro {
+  margin: 0 !important;
+  color: var(--app-muted);
+  font-size: 13px !important;
+  font-weight: 700;
+  line-height: 1.45 !important;
+}
+
+:host .calendar-options {
+  display: grid !important;
+  gap: 10px !important;
+  margin-top: 18px !important;
+}
+
+:host .calendar-option {
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  align-items: center !important;
+  min-height: 70px !important;
+  padding: 12px !important;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent) !important;
+  border-radius: 18px !important;
+  background: color-mix(in srgb, var(--app-primary-light) 7%, #fff) !important;
+  color: var(--app-text) !important;
+  text-align: left !important;
+}
+
+:host .calendar-option strong,
+:host .calendar-option small {
+  display: block !important;
+}
+
+:host .calendar-option strong {
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}
+
+:host .calendar-option small {
+  margin-top: 3px !important;
+  color: var(--app-muted) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
 }

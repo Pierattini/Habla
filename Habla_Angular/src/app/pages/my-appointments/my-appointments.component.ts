@@ -32,6 +32,7 @@ type ReviewSubmitEvent = {
   selector: 'app-my-appointments',
   standalone: true,
   templateUrl: './my-appointments.component.html',
+  styleUrls: ['./my-appointments.compact.scss'],
   imports: [
     CommonModule,
     IonicModule,
@@ -109,6 +110,18 @@ hasVisibleAppointments(): boolean {
 getCurrentSectionTitle(): string {
   if (this.selectedFilter === 'today') return 'Citas de hoy';
   return 'Próximas citas';
+}
+
+formatClpAmount(value: any): string {
+  const amount = Number(value || 0);
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return '0';
+  }
+
+  return new Intl.NumberFormat('es-CL', {
+    maximumFractionDigits: 0
+  }).format(amount);
 }
 
 toggleTaxDocument(appointmentId: string) {
@@ -283,6 +296,7 @@ private performCancelAppointment(id: string) {
 }
 
 private shouldConfirmPenaltyBeforeCancel(appt: any): boolean {
+  if (this.role === 'PROFESSIONAL') return false;
   if (!appt || this.isTerminalAppointment(appt)) return false;
   if (appt.status !== 'CONFIRMED' && appt.status !== 'RESCHEDULED') return false;
 
@@ -941,17 +955,93 @@ getAppointmentModeDetail(appt: any): string {
 getAppointmentArrivalInstructions(appt: any): string {
   return appt?.arrivalInstructions || '';
 }
+
+getMeetingLink(appt: any): string {
+  return String(appt?.meetingUrl || appt?.meetLink || '').trim();
+}
+
+canShowVideoCallButton(appt: any): boolean {
+  return appt?.status === 'CONFIRMED' && !!this.getMeetingLink(appt);
+}
+
+canCopyMeetingLink(appt: any): boolean {
+  return this.role === 'PROFESSIONAL' && this.canShowVideoCallButton(appt);
+}
+
 canJoinVideoCall(appt: any): boolean {
-  return appt?.status === 'CONFIRMED' && !!appt?.meetLink;
+  if (!this.canShowVideoCallButton(appt) || !appt?.date) return false;
+
+  const start = new Date(appt.date).getTime();
+  if (Number.isNaN(start)) return false;
+
+  const durationMinutes = Number(
+    appt?.duration ||
+      appt?.professional?.professional?.duration ||
+      appt?.professional?.professional?.sessionDuration ||
+      60,
+  );
+  const durationMs = Math.max(durationMinutes, 15) * 60 * 1000;
+  const joinWindowBeforeMs = 10 * 60 * 1000;
+  const continuationWindowMs = 2 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  return now >= start - joinWindowBeforeMs && now <= start + durationMs + continuationWindowMs;
+}
+
+canContinueVideoCall(appt: any): boolean {
+  if (!this.canShowVideoCallButton(appt) || !appt?.date) return false;
+
+  const start = new Date(appt.date).getTime();
+  if (Number.isNaN(start)) return false;
+
+  const durationMinutes = Number(
+    appt?.duration ||
+      appt?.professional?.professional?.duration ||
+      appt?.professional?.professional?.sessionDuration ||
+      60,
+  );
+  const durationMs = Math.max(durationMinutes, 15) * 60 * 1000;
+  const continuationWindowMs = 2 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  return now >= start && now <= start + durationMs + continuationWindowMs;
 }
 
 openVideoCall(appt: any): void {
   if (!this.canJoinVideoCall(appt)) {
-    this.presentToast('La videollamada estara disponible cuando la cita este confirmada', 'warning');
+    this.presentToast('La videollamada estara disponible 10 minutos antes de la cita', 'warning');
     return;
   }
 
-  window.open(appt.meetLink, '_blank', 'noopener');
+  window.open(this.getMeetingLink(appt), '_blank', 'noopener');
+}
+
+async copyMeetingLink(appt: any): Promise<void> {
+  const link = this.getMeetingLink(appt);
+
+  if (!link) {
+    await this.presentToast('La cita aun no tiene enlace de videollamada', 'warning');
+    return;
+  }
+
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(link);
+    } else {
+      const input = document.createElement('textarea');
+      input.value = link;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+    }
+
+    await this.presentToast('Link de videollamada copiado', 'success');
+  } catch {
+    await this.presentToast('No se pudo copiar el link', 'danger');
+  }
 }
 
 async askContinueVideoCall(appt: any): Promise<void> {
@@ -1053,6 +1143,34 @@ closePaymentModal(): void {
   this.paymentModalData = null;
 }
 
+async copyPaymentData(value: string | null | undefined, label: string): Promise<void> {
+  const text = String(value || '').trim();
+
+  if (!text) {
+    await this.presentToast(`${label} no informado`, 'warning');
+    return;
+  }
+
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const input = document.createElement('textarea');
+      input.value = text;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+    }
+
+    await this.presentToast(`${label} copiado`, 'success');
+  } catch {
+    await this.presentToast('No se pudo copiar el dato', 'danger');
+  }
+}
+
 confirmPaymentFromModal(): void {
   if (!this.paymentModalAppointment?.id) return;
 
@@ -1066,7 +1184,8 @@ async reschedule(appt: any) {
   const modal = await this.modalCtrl.create({
     component: RescheduleModalComponent,
     componentProps: {
-      appointment: appt
+      appointment: appt,
+      userRole: this.role
     },
     cssClass: 'reschedule-modal'
   });
@@ -1074,7 +1193,6 @@ async reschedule(appt: any) {
   await modal.present();
 
   const { data } = await modal.onDidDismiss();
-  console.log('?? data del modal:', data);
 
   if (!data) return;
 
@@ -1138,8 +1256,7 @@ private handleCreditOnly(appt: any) {
 }
 
 private handleNormalReschedule(appt: any, data: any) {
-  const fechaBase = data.date.split('T')[0];
-  const nuevaFecha = `${fechaBase}T${data.hour}:00`;
+  const nuevaFecha = data.date;
 
   this.appointmentsService.rescheduleAppointment(appt.id, nuevaFecha).subscribe({
     next: async () => {

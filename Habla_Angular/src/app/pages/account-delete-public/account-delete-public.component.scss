@@ -1,0 +1,90 @@
+.delete-public-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 28px 18px;
+  background: linear-gradient(180deg, #fff7ff 0%, #f4e9fb 100%);
+  color: #20172f;
+}
+
+.delete-public-card {
+  width: min(100%, 520px);
+  padding: 30px;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 22px 60px rgba(139, 44, 245, 0.16);
+}
+
+.eyebrow {
+  display: inline-flex;
+  margin-bottom: 12px;
+  color: #b000f0;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0 0 14px;
+  font-size: 32px;
+  line-height: 1.05;
+  font-weight: 900;
+}
+
+p {
+  margin: 0 0 18px;
+  color: #675f75;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.notice {
+  display: grid;
+  gap: 8px;
+  margin: 20px 0;
+  padding: 18px;
+  border: 1px solid #efd7ff;
+  border-radius: 18px;
+  background: #fbf5ff;
+  color: #20172f;
+}
+
+.notice strong {
+  font-size: 14px;
+}
+
+.notice span {
+  color: #675f75;
+  font-size: 14px;
+}
+
+.primary-action {
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+  padding: 15px 18px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #c400f5 0%, #8b2cf5 100%);
+  color: #ffffff;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 14px 28px rgba(196, 0, 245, 0.22);
+}
+
+.contact {
+  margin-top: 18px;
+  font-size: 14px;
+}
+
+.contact a,
+.secondary-link {
+  color: #8b2cf5;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.secondary-link {
+  display: inline-flex;
+  margin-top: 2px;
+}

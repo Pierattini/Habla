@@ -35,7 +35,7 @@
     color="primary"
     size="small"
     class="btn-sec btn-video"
-    *ngIf="$any(this).canJoinVideoCall(appt)"
+    *ngIf="$any(this).canContinueVideoCall(appt)"
     (click)="$any(this).openVideoCall(appt)">
     Videollamada
   </ion-button>
@@ -93,7 +93,7 @@
   </ion-button>
 
   <ion-button
-    fill="clear"
+    fill="outline"
     color="danger"
     size="small"
     class="btn-sec"
@@ -121,7 +121,7 @@
       </ion-button>
 
       <ion-button
-        fill="clear"
+        fill="outline"
         color="danger"
         size="small"
         class="btn-sec"
@@ -129,14 +129,13 @@
         (click)="cancelAppointment(appt.id)">
         Cancelar
       </ion-button>
-    </div>
 
-    <div class="action-row action-row-message">
       <ion-button
         fill="outline"
         color="primary"
         size="small"
         class="btn-sec"
+        *ngIf="role === 'PROFESSIONAL' && canProfessionalConfirm(appt)"
         (click)="openChat(appt)">
         Mensaje
       </ion-button>
@@ -144,14 +143,16 @@
 
     <div
       class="action-row action-row-extra"
-      *ngIf="!$any(this).isTerminalAppointment(appt) && ($any(this).canJoinVideoCall(appt) || $any(this).canAddToCalendar(appt) || $any(this).canReviewAppointment(appt) || $any(this).canCompleteAppointment(appt))"
+      *ngIf="!$any(this).isTerminalAppointment(appt) && ($any(this).canShowVideoCallButton(appt) || $any(this).canAddToCalendar(appt) || $any(this).canReviewAppointment(appt) || $any(this).canCompleteAppointment(appt))"
     >
+
       <ion-button
         fill="solid"
         color="primary"
         size="small"
         class="btn-sec btn-video"
-        *ngIf="$any(this).canJoinVideoCall(appt)"
+        *ngIf="$any(this).canShowVideoCallButton(appt)"
+        [disabled]="!$any(this).canJoinVideoCall(appt)"
         (click)="$any(this).openVideoCall(appt)">
         Videollamada
       </ion-button>
@@ -160,11 +161,10 @@
         fill="outline"
         color="primary"
         size="small"
-        class="btn-sec"
-        *ngIf="$any(this).canJoinVideoCall(appt)"
-        [disabled]="$any(this).videoContinuationLoadingId === appt.id"
-        (click)="$any(this).askContinueVideoCall(appt)">
-        Continuar sesion
+        class="btn-sec btn-copy-link"
+        *ngIf="$any(this).canCopyMeetingLink(appt)"
+        (click)="$any(this).copyMeetingLink(appt)">
+        Copiar link
       </ion-button>
 
       <ion-button
@@ -196,6 +196,20 @@
         [disabled]="$any(this).loadingId === appt.id"
         (click)="$any(this).completeAppointment(appt)">
         Finalizar cita
+      </ion-button>
+    </div>
+
+    <div
+      class="action-row action-row-message"
+      *ngIf="!(role === 'PROFESSIONAL' && canProfessionalConfirm(appt))"
+    >
+      <ion-button
+        fill="outline"
+        color="primary"
+        size="small"
+        class="btn-sec"
+        (click)="openChat(appt)">
+        Mensaje
       </ion-button>
     </div>
   </div>
@@ -324,7 +338,7 @@
                 class="appointment-chip"
                 *ngIf="role !== 'PROFESSIONAL'"
               >
-                Precio {{ appt.professional?.professional?.price }} CLP
+                Precio {{ $any(this).formatClpAmount(appt.professional?.professional?.price) }} CLP
               </span>
 
               <span
@@ -343,8 +357,10 @@
 <div class="appointment-summary">
   <div class="appointment-date-row">
     <span class="appointment-summary-icon" aria-hidden="true"></span>
-    <span>Fecha y hora:&nbsp;</span>
-    <strong>{{ appt.date | date:'dd/MM/yyyy HH:mm' }}</strong>
+    <span>Fecha:</span>
+    <strong>{{ appt.date | date:'dd/MM/yyyy' }}</strong>
+    <span>Hora:</span>
+    <strong>{{ appt.date | date:'HH:mm' }}</strong>
   </div>
 </div>
 
@@ -528,7 +544,7 @@
           class="appointment-chip"
           *ngIf="role !== 'PROFESSIONAL'"
         >
-          Precio {{ appt.professional?.professional?.price }} CLP
+          Precio {{ $any(this).formatClpAmount(appt.professional?.professional?.price) }} CLP
         </span>
 
         <span
@@ -546,8 +562,10 @@
 <div class="appointment-summary">
   <div class="appointment-date-row">
     <span class="appointment-summary-icon" aria-hidden="true"></span>
-    <span>Fecha y hora:&nbsp;</span>
-    <strong>{{ appt.date | date:'dd/MM/yyyy HH:mm' }}</strong>
+    <span>Fecha:</span>
+    <strong>{{ appt.date | date:'dd/MM/yyyy' }}</strong>
+    <span>Hora:</span>
+    <strong>{{ appt.date | date:'HH:mm' }}</strong>
   </div>
 </div>
 
@@ -678,6 +696,7 @@
   class="calendar-modal-backdrop"
   *ngIf="$any(this).calendarModalAppointment"
   (click)="$any(this).closeCalendarModal()"
+  style="position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(17,24,39,.48);backdrop-filter:blur(3px);"
 >
   <div
     class="calendar-modal"
@@ -685,38 +704,41 @@
     aria-modal="true"
     aria-labelledby="calendar-modal-title"
     (click)="$event.stopPropagation()"
+    style="position:relative;width:min(360px,calc(100vw - 36px));max-height:calc(100vh - 44px);overflow-y:auto;box-sizing:border-box;padding:22px 18px 18px;border:1px solid rgba(184,83,255,.18);border-radius:24px;background:#fff;box-shadow:0 28px 80px rgba(31,22,45,.28);"
   >
     <button
       type="button"
       class="calendar-close"
       aria-label="Cerrar"
       (click)="$any(this).closeCalendarModal()"
+      style="position:absolute;top:10px;right:10px;width:34px;height:34px;border:0;border-radius:999px;background:#f4e3ff;color:#b142ff;font-size:18px;font-weight:900;line-height:1;"
     >
       x
     </button>
 
-    <div class="calendar-modal-icon" aria-hidden="true">
-      <span></span>
+    <div class="calendar-modal-icon" aria-hidden="true" style="width:52px;height:52px;display:grid;place-items:center;margin-bottom:14px;border-radius:18px;background:linear-gradient(135deg,#c000ff,#b46bff);box-shadow:0 16px 30px rgba(192,0,255,.25);">
+      <span style="width:28px;height:28px;display:grid;place-items:center;border:2px solid #fff;border-radius:8px;color:#fff;font-size:17px;font-weight:900;line-height:1;">▦</span>
     </div>
 
-    <h2 id="calendar-modal-title">Agregar al calendario</h2>
+    <h2 id="calendar-modal-title" style="margin:0 42px 10px 0;color:#1f2937;font-size:22px;font-weight:900;line-height:1.12;">Agregar al calendario</h2>
 
-    <p class="calendar-intro">
+    <p class="calendar-intro" style="margin:0;color:#6b7280;font-size:13px;font-weight:700;line-height:1.45;">
       Tu cita ya quedo registrada en Conecta.
       Conecta enviara automaticamente recordatorios de tu cita.
       Si lo deseas, tambien puedes agregarla a tu calendario personal.
     </p>
 
-    <div class="calendar-options">
+    <div class="calendar-options" style="display:grid;gap:10px;margin-top:18px;">
       <button
         type="button"
         class="calendar-option primary"
         (click)="$any(this).addSelectedAppointmentToGoogleCalendar()"
+        style="display:grid;grid-template-columns:42px minmax(0,1fr);gap:12px;align-items:center;min-height:70px;padding:12px;border:1px solid rgba(184,83,255,.24);border-radius:18px;background:#fbf3ff;color:#1f2937;text-align:left;font:inherit;"
       >
-        <span class="option-icon">G</span>
+        <span class="option-icon" style="width:42px;height:42px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(135deg,#c000ff,#b46bff);color:#fff;font-size:17px;font-weight:900;">G</span>
         <span>
-          <strong>Agregar a Google Calendar</strong>
-          <small>Abre Google Calendar con todos los datos listos para guardar.</small>
+          <strong style="display:block;font-size:13px;font-weight:900;">Agregar a Google Calendar</strong>
+          <small style="display:block;margin-top:3px;color:#6b7280;font-size:11px;font-weight:700;line-height:1.3;">Abre Google Calendar con todos los datos listos para guardar.</small>
         </span>
       </button>
 
@@ -724,11 +746,12 @@
         type="button"
         class="calendar-option"
         (click)="$any(this).addSelectedAppointmentToSystemCalendar()"
+        style="display:grid;grid-template-columns:42px minmax(0,1fr);gap:12px;align-items:center;min-height:70px;padding:12px;border:1px solid rgba(184,83,255,.14);border-radius:18px;background:#fff;color:#1f2937;text-align:left;font:inherit;"
       >
-        <span class="option-icon calendar"></span>
+        <span class="option-icon calendar" style="width:42px;height:42px;display:grid;place-items:center;border-radius:15px;background:#f4e3ff;color:#b142ff;font-size:18px;font-weight:900;">▦</span>
         <span>
-          <strong>Agregar a otro calendario</strong>
-          <small>Compatible con Apple Calendar, Outlook, Samsung Calendar y otros.</small>
+          <strong style="display:block;font-size:13px;font-weight:900;">Agregar a otro calendario</strong>
+          <small style="display:block;margin-top:3px;color:#6b7280;font-size:11px;font-weight:700;line-height:1.3;">Compatible con Apple Calendar, Outlook, Samsung Calendar y otros.</small>
         </span>
       </button>
 
@@ -736,11 +759,12 @@
         type="button"
         class="calendar-option quiet"
         (click)="$any(this).closeCalendarModal()"
+        style="display:grid;grid-template-columns:42px minmax(0,1fr);gap:12px;align-items:center;min-height:70px;padding:12px;border:1px solid rgba(184,83,255,.14);border-radius:18px;background:#fff;color:#1f2937;text-align:left;font:inherit;"
       >
-        <span class="option-icon check">✓</span>
+        <span class="option-icon conecta" style="width:42px;height:42px;display:grid;place-items:center;border-radius:15px;background:#f4e3ff;color:#b142ff;font-size:17px;font-weight:900;">C</span>
         <span>
-          <strong>Mantener solo en Conecta</strong>
-          <small>La cita seguira guardada y recibiras recordatorios automaticos.</small>
+          <strong style="display:block;font-size:13px;font-weight:900;">Mantener solo en Conecta</strong>
+          <small style="display:block;margin-top:3px;color:#6b7280;font-size:11px;font-weight:700;line-height:1.3;">La cita seguira guardada y recibiras recordatorios automaticos.</small>
         </span>
       </button>
     </div>
@@ -782,26 +806,66 @@
       <div class="payment-data-row">
         <span>Titular</span>
         <strong>{{ $any(this).paymentModalData?.accountHolder || $any(this).paymentModalData?.name || 'No informado' }}</strong>
+        <button
+          type="button"
+          class="payment-copy"
+          aria-label="Copiar titular"
+          (click)="$any(this).copyPaymentData($any(this).paymentModalData?.accountHolder || $any(this).paymentModalData?.name, 'Titular')"
+        >
+          ⧉
+        </button>
       </div>
 
       <div class="payment-data-row">
         <span>Banco</span>
         <strong>{{ $any(this).paymentModalData?.bankName || 'No informado' }}</strong>
+        <button
+          type="button"
+          class="payment-copy"
+          aria-label="Copiar banco"
+          (click)="$any(this).copyPaymentData($any(this).paymentModalData?.bankName, 'Banco')"
+        >
+          ⧉
+        </button>
       </div>
 
       <div class="payment-data-row">
         <span>Tipo de cuenta</span>
         <strong>{{ $any(this).paymentModalData?.accountType || 'No informado' }}</strong>
+        <button
+          type="button"
+          class="payment-copy"
+          aria-label="Copiar tipo de cuenta"
+          (click)="$any(this).copyPaymentData($any(this).paymentModalData?.accountType, 'Tipo de cuenta')"
+        >
+          ⧉
+        </button>
       </div>
 
       <div class="payment-data-row">
         <span>Numero de cuenta</span>
         <strong>{{ $any(this).paymentModalData?.accountNumber || 'No informado' }}</strong>
+        <button
+          type="button"
+          class="payment-copy"
+          aria-label="Copiar numero de cuenta"
+          (click)="$any(this).copyPaymentData($any(this).paymentModalData?.accountNumber, 'Numero de cuenta')"
+        >
+          ⧉
+        </button>
       </div>
 
       <div class="payment-data-row">
         <span>Correo</span>
         <strong>{{ $any(this).paymentModalData?.accountEmail || 'No informado' }}</strong>
+        <button
+          type="button"
+          class="payment-copy"
+          aria-label="Copiar correo"
+          (click)="$any(this).copyPaymentData($any(this).paymentModalData?.accountEmail, 'Correo')"
+        >
+          ⧉
+        </button>
       </div>
     </div>
 

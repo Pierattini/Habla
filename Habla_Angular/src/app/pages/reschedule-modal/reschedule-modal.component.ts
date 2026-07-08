@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { ChangeDetectorRef } from '@angular/core';
+import { zonedDateTimeToIso } from '../../utils/timezone.util';
 
 @Component({
   selector: 'app-reschedule-modal',
@@ -15,6 +16,7 @@ import { ChangeDetectorRef } from '@angular/core';
 export class RescheduleModalComponent {
 
   @Input() appointment: any;
+  @Input() userRole: string | null = null;
   private readonly confirmedReservationStatuses = ['CONFIRMED', 'RESCHEDULED'];
 
   selectedDate: string = '';
@@ -44,14 +46,22 @@ export class RescheduleModalComponent {
 
   // 📅 cargar horarios
   loadSlots(event: any) {
-    const date = new Date(event.detail.value);
-    date.setHours(12, 0, 0, 0);
+    const dateKey = this.normalizeDateKey(event?.detail?.value || this.selectedDate);
 
-    this.selectedDate = date.toISOString();
+    if (!dateKey) {
+      this.selectedDate = '';
+      this.selectedHour = null;
+      this.availableSlots = [];
+      this.noSlots = true;
+      return;
+    }
+
+    this.selectedDate = dateKey;
+    this.selectedHour = null;
 
     const professionalId = this.appointment.professionalId;
 
-    this.auth.getAvailableSlots(professionalId, this.selectedDate)
+    this.auth.getAvailableSlots(professionalId, dateKey)
       .subscribe((slots: string[]) => {
 
   // 🔥 detectar si no hay horarios
@@ -67,6 +77,20 @@ if (!slots || slots.length === 0) {
   this.noSlots = false; // ✅ hay horarios normales
 }
 });
+  }
+
+  private normalizeDateKey(value: string): string {
+    if (!value) return '';
+
+    if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+      return value.slice(0, 10);
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toISOString().slice(0, 10);
   }
 
   // 💰 penalización
@@ -91,6 +115,7 @@ isPaymentConfirmed(): boolean {
 }
 
 shouldApplyPenalty(): boolean {
+  if (this.userRole === 'PROFESSIONAL') return false;
   return this.isPaymentConfirmed() && this.isWithin48Hours();
 }
 
@@ -200,7 +225,7 @@ Se aplicará una penalización del 50%.
   // 📤 enviar datos
   sendReschedule(withPayment: boolean) {
     this.modalCtrl.dismiss({
-      date: this.selectedDate,
+      date: zonedDateTimeToIso(this.selectedDate, this.selectedHour || '00:00'),
       hour: this.selectedHour,
       payRequired: withPayment
     });

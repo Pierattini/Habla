@@ -29,6 +29,13 @@ export const routes: Routes = [
       import('./pages/legal/legal-page.component').then(m => m.LegalPageComponent)
   },
 
+  {
+    path: 'delete-account',
+    loadComponent: () =>
+      import('./pages/account-delete-public/account-delete-public.component')
+        .then(m => m.AccountDeletePublicComponent)
+  },
+
   // ðŸ“± TABS
   {
     path: 'tabs',
@@ -64,6 +71,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/support/support.component')
             .then(m => m.SupportComponent),
+      },
+      {
+        path: 'account/delete',
+        loadComponent: () =>
+          import('./pages/account-delete/account-delete.component')
+            .then(m => m.AccountDeleteComponent),
       },
       {
         path: 'admin-support',

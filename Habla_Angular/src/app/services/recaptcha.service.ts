@@ -21,7 +21,7 @@ export class RecaptchaService {
   async execute(action: string): Promise<string> {
     const siteKey = environment.recaptchaSiteKey;
 
-    if (!siteKey) {
+    if (!siteKey || siteKey.startsWith('REPLACE_WITH_')) {
       return '';
     }
 

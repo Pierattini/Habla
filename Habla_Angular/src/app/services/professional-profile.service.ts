@@ -46,10 +46,12 @@ export interface ProfessionalProfile {
   taxCountry: string;
   taxCity: string;
   taxDocumentNote: string;
+  timezone: string;
 }
 
 export interface ProfessionalProfileResponse {
   id: string;
+  timezone?: string | null;
   professional?: Partial<ProfessionalProfile>;
 }
 

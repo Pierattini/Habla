@@ -1,0 +1,156 @@
+:host {
+  display: block;
+  color: var(--app-text);
+}
+
+ion-content {
+  --background: var(--app-bg);
+}
+
+.delete-account-page {
+  width: min(430px, 100%);
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 24px 18px 110px;
+  background:
+    radial-gradient(circle at top right, rgba(192, 132, 252, 0.16), transparent 34%),
+    var(--app-bg);
+}
+
+.delete-account-header {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.back-button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.1);
+  color: var(--app-primary);
+}
+
+.back-button ion-icon {
+  font-size: 20px;
+}
+
+.delete-account-header span {
+  color: var(--app-primary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.delete-account-header h1 {
+  margin: 2px 0 0;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.delete-account-card {
+  padding: 24px 20px;
+  border: 1px solid rgba(168, 85, 247, 0.14);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.delete-icon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin-bottom: 16px;
+  border-radius: 20px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.delete-icon ion-icon {
+  font-size: 28px;
+}
+
+.delete-account-card h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.delete-account-card p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.notice {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: start;
+  margin: 18px 0;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(245, 158, 11, 0.11);
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.notice ion-icon {
+  margin-top: 1px;
+  font-size: 19px;
+}
+
+.confirmation-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--app-text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.confirmation-field input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid rgba(168, 85, 247, 0.18);
+  border-radius: 18px;
+  outline: none;
+  background: rgba(168, 85, 247, 0.04);
+  color: var(--app-text);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.confirmation-field input:focus {
+  border-color: var(--app-primary);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.12);
+}
+
+.success-message,
+.error-message {
+  margin: 0 0 14px !important;
+  font-weight: 800;
+}
+
+.success-message {
+  color: #16a34a !important;
+}
+
+.error-message {
+  color: #dc2626 !important;
+}
+
+ion-button {
+  margin-top: 10px;
+  font-weight: 900;
+}

@@ -34,8 +34,6 @@ export class MessagesComponent {
     this.conversationNotFound = false;
     this.loaded = false;
 
-    console.log('Messages professionalId recibido:', professionalId);
-
     this.loadConversations(professionalId);
   }
 
@@ -49,14 +47,10 @@ export class MessagesComponent {
       next: (data) => {
         this.conversations = data ?? [];
 
-        console.log('Messages conversaciones cargadas:', this.conversations);
-
         if (professionalId) {
           const existingConversation = this.conversations.find(
             (c: any) => String(c.otherUser?.id) === String(professionalId)
           );
-
-          console.log('Messages conversacion encontrada:', existingConversation);
 
           if (existingConversation) {
             this.conversationNotFound = false;
@@ -75,7 +69,6 @@ export class MessagesComponent {
         this.loaded = true;
         this.cdr.detectChanges();
 
-        console.log('Conversations:', this.conversations);
       },
 
       error: (err) => {

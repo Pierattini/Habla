@@ -17,6 +17,7 @@ import {
   IonText,
 } from '@ionic/angular/standalone';
 import { API_URL } from '../../core/config/api.config';
+import { isZonedDateTimeInPast, zonedDateTimeToIso } from '../../utils/timezone.util';
 import {
   PublicProfessional,
   PublicProfessionalService,
@@ -154,11 +155,7 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
   }
 
   isHourDisabled(hour: string): boolean {
-    const [h, m] = hour.split(':');
-    const selected = new Date(`${this.selectedDate}T00:00:00`);
-    selected.setHours(Number(h), Number(m), 0, 0);
-
-    return selected < new Date();
+    return isZonedDateTimeInPast(this.selectedDate, hour);
   }
 
   async shareProfile(): Promise<void> {
@@ -208,14 +205,10 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
     this.isBooking = true;
     this.statusMessage = '';
 
-    const [hour, minute] = this.selectedHour.split(':');
-    const date = new Date(`${this.selectedDate}T12:00:00`);
-    date.setHours(Number(hour), Number(minute), 0, 0);
-
     this.http
       .post(`${API_URL}/appointments`, {
         professionalId: this.professional.id,
-        date: date.toISOString(),
+        date: zonedDateTimeToIso(this.selectedDate, this.selectedHour),
         documentRequested: false,
         attentionMode: this.selectedAttentionMode,
       })

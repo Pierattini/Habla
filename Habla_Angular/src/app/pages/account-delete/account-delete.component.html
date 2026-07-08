@@ -1,0 +1,71 @@
+<ion-content>
+  <main class="delete-account-page">
+    <header class="delete-account-header">
+      <button
+        type="button"
+        class="back-button"
+        aria-label="Volver"
+        (click)="goBack()"
+      >
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+
+      <div>
+        <span>Configuracion / Cuenta</span>
+        <h1>Eliminar cuenta</h1>
+      </div>
+    </header>
+
+    <section class="delete-account-card">
+      <div class="delete-icon">
+        <ion-icon name="trash-outline"></ion-icon>
+      </div>
+
+      <h2>Solicitud de eliminacion</h2>
+      <p>
+        Al continuar, tu cuenta se desactivara y tus datos personales se
+        anonimizaran. Conecta conservara solo la informacion necesaria para
+        historial de citas, seguridad, soporte y obligaciones legales.
+      </p>
+
+      <div class="notice">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        <span>
+          Esta accion cerrara tu sesion y no podras volver a ingresar con este
+          correo.
+        </span>
+      </div>
+
+      <label class="confirmation-field">
+        <span>Escribe ELIMINAR para confirmar</span>
+        <input
+          type="text"
+          [(ngModel)]="confirmation"
+          autocomplete="off"
+          inputmode="text"
+        />
+      </label>
+
+      <p *ngIf="message" class="success-message">{{ message }}</p>
+      <p *ngIf="error" class="error-message">{{ error }}</p>
+
+      <ion-button
+        expand="block"
+        color="danger"
+        [disabled]="!canSubmit || isSubmitting"
+        (click)="deleteAccount()"
+      >
+        {{ isSubmitting ? 'Eliminando...' : 'Eliminar mi cuenta' }}
+      </ion-button>
+
+      <ion-button
+        expand="block"
+        fill="clear"
+        [disabled]="isSubmitting"
+        (click)="goBack()"
+      >
+        Mantener mi cuenta
+      </ion-button>
+    </section>
+  </main>
+</ion-content>

@@ -268,20 +268,20 @@ async editName() {
   await alert.present();
 }
 
-onProfileImageSelected(event: Event) {
+async onProfileImageSelected(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
 
   if (!file) return;
 
   if (!file.type.startsWith('image/')) {
-    window.alert('Selecciona una imagen valida.');
+    await this.showProfileAlert('Imagen no valida', 'Selecciona una imagen valida.');
     input.value = '';
     return;
   }
 
   if (file.size > 2 * 1024 * 1024) {
-    window.alert('La imagen no puede superar 2 MB.');
+    await this.showProfileAlert('Imagen muy pesada', 'La imagen no puede superar 2 MB.');
     input.value = '';
     return;
   }
@@ -324,7 +324,7 @@ private saveProfileImage(image: string) {
       this.cdr.detectChanges();
     },
     error: () => {
-      window.alert('No se pudo actualizar la imagen. Intenta nuevamente.');
+      void this.showProfileAlert('No se pudo guardar', 'No se pudo actualizar la imagen. Intenta nuevamente.');
     },
   });
 }
@@ -502,7 +502,7 @@ async editTaxInfo() {
           const validationError = this.validateTaxPayload(payload);
 
           if (validationError) {
-            window.alert(validationError);
+            void this.showProfileAlert('Revisa los datos', validationError);
             return false;
           }
 
@@ -607,7 +607,7 @@ async editCustomerInterests() {
           const interests = Array.isArray(selected) ? selected.slice(0, 9) : [];
 
           if (Array.isArray(selected) && selected.length > 9) {
-            window.alert('Puedes seleccionar maximo 9 intereses.');
+            void this.showProfileAlert('Limite de intereses', 'Puedes seleccionar maximo 9 intereses.');
             return false;
           }
 
@@ -837,7 +837,7 @@ async editPreferredLocation() {
           const preferredRegion = this.cleanOptional(data.preferredRegion) || '';
 
           if (preferredCity.length > 80 || preferredRegion.length > 80) {
-            window.alert('Ciudad y region deben tener maximo 80 caracteres.');
+            void this.showProfileAlert('Revisa la ubicacion', 'Ciudad y region deben tener maximo 80 caracteres.');
             return false;
           }
 
@@ -850,6 +850,17 @@ async editPreferredLocation() {
         }
       }
     ]
+  });
+
+  await alert.present();
+}
+
+private async showProfileAlert(header: string, message: string): Promise<void> {
+  const alert = await this.alertCtrl.create({
+    header,
+    message,
+    buttons: ['Aceptar'],
+    cssClass: 'conecta-alert',
   });
 
   await alert.present();

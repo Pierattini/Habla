@@ -1,0 +1,38 @@
+<main class="delete-public-page">
+  <section class="delete-public-card">
+    <span class="eyebrow">Conecta</span>
+    <h1>Eliminar cuenta</h1>
+
+    <p>
+      Si ya no tienes acceso a la app, puedes solicitar la eliminacion de tu
+      cuenta y de los datos personales asociados escribiendo al correo oficial
+      de Conecta.
+    </p>
+
+    <div class="notice">
+      <strong>Incluye en tu solicitud:</strong>
+      <span>Nombre completo.</span>
+      <span>Correo registrado en Conecta.</span>
+      <span>Rol de la cuenta: paciente o profesional.</span>
+    </div>
+
+    <p>
+      Conecta puede conservar informacion estrictamente necesaria para seguridad,
+      soporte, historial operativo, documentos tributarios u obligaciones legales,
+      segun corresponda.
+    </p>
+
+    <a class="primary-action" [href]="mailto">
+      Solicitar eliminacion por correo
+    </a>
+
+    <p class="contact">
+      Correo oficial:
+      <a [href]="'mailto:' + supportEmail">{{ supportEmail }}</a>
+    </p>
+
+    <a class="secondary-link" routerLink="/privacy-policy">
+      Ver politica de privacidad
+    </a>
+  </section>
+</main>

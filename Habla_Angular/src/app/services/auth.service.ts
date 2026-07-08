@@ -136,6 +136,13 @@ updateProfile(data: any) {
     headers: this.getHeaders()
   });
 }
+
+deleteMyAccount(confirmation: string) {
+  return this.http.delete(`${this.api}/auth/me/delete-account`, {
+    headers: this.getHeaders(),
+    body: { confirmation },
+  });
+}
 // â° SLOTS DISPONIBLES (ðŸ”¥ ESTE FALTABA)
 getAvailableSlots(professionalId: string, date: string) {
   return this.http.get<string[]>(

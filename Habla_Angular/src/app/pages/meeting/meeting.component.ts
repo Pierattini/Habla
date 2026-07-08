@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { AlertController } from '@ionic/angular';
 import {
   IonButton,
   IonContent,
@@ -24,6 +25,7 @@ export class MeetingComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private meetingService: MeetingService,
+    private alertCtrl: AlertController,
   ) {}
 
   ngOnInit(): void {
@@ -69,12 +71,17 @@ export class MeetingComponent implements OnInit {
     }).format(new Date(this.room.date));
   }
 
-  joinMeeting(): void {
+  async joinMeeting(): Promise<void> {
     if (!this.room?.isAvailable) return;
 
-    alert(
-      'La sala de videollamada de Conecta esta preparada. Audio y video se integraran en la siguiente fase.',
-    );
+    const alert = await this.alertCtrl.create({
+      header: 'Videollamada Conecta',
+      message: 'La sala de videollamada de Conecta esta preparada. Audio y video se integraran en la siguiente fase.',
+      buttons: ['Aceptar'],
+      cssClass: 'conecta-alert',
+    });
+
+    await alert.present();
   }
 
   goToLogin(): void {

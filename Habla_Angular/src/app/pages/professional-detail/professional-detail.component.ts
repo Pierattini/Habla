@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { API_URL } from '../../core/config/api.config';
+import { isZonedDateTimeInPast, zonedDateTimeToIso } from '../../utils/timezone.util';
 import { AlertController } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
 import { ConectaMessageType } from '../../shared/conecta-message/conecta-message.component';
@@ -236,14 +237,7 @@ export class ProfessionalDetailComponent {
   });
 }
 isHourDisabled(hour: string): boolean {
-  const [h, m] = hour.split(':');
-
-  const selected = new Date(this.selectedDate + 'T00:00:00');
-  selected.setHours(Number(h), Number(m), 0, 0);
-
-  const now = new Date();
-
-  return selected < now;
+  return isZonedDateTimeInPast(this.selectedDate, hour);
 }
 
 getHourColor(hour: string): string {
@@ -292,14 +286,9 @@ async bookAppointment() {
 
   this.isBooking = true;
 
-  const [hour, minute] = this.selectedHour.split(':');
-
-  const date = new Date(this.selectedDate + 'T12:00:00');
-  date.setHours(Number(hour), Number(minute), 0, 0);
-
   const payload = {
     professionalId: this.professional.id,
-    date: date.toISOString(),
+    date: zonedDateTimeToIso(this.selectedDate, this.selectedHour),
     documentRequested: this.selectedDocumentMode !== 'NONE',
     documentCurrency: 'CLP',
     attentionMode: this.selectedAttentionMode,
@@ -316,8 +305,6 @@ async bookAppointment() {
     payload
   ).subscribe({
     next: () => {
-      console.log('✅ CITA OK');
-
       this.selectedHour = null;
       this.isBooking = false;
       this.showMessage(

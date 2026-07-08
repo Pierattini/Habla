@@ -34,10 +34,10 @@ export class LegalPageComponent {
         {
           title: 'Responsable del tratamiento',
           body: [
-            'Entidad: Conecta / [Nombre legal de la empresa pendiente de completar].',
-            'Comentario: reemplazar este texto por la razon social definitiva antes de publicar la version final.',
-            'Registro o identificacion legal: [pendiente de completar].',
-            'Domicilio: [pendiente de completar].',
+            'Responsable de la aplicacion: Conecta.',
+            'Pais principal de operacion: Chile, con soporte para usuarios y profesionales que puedan encontrarse en otros paises.',
+            'Conecta opera como plataforma digital para agenda, comunicacion, reservas, pagos informados por los usuarios y gestion entre pacientes y profesionales.',
+            'Para solicitudes relacionadas con datos personales, privacidad o soporte legal, utiliza el correo oficial indicado abajo.',
             'Email de contacto: app.info.conect@gmail.com.',
           ],
         },
@@ -54,7 +54,10 @@ export class LegalPageComponent {
             'Datos de cuenta como nombre, email, rol, pais, zona horaria e imagen de perfil.',
             'Datos de uso de la plataforma, incluyendo citas, mensajes, preferencias, historial de actividad y configuraciones de agenda.',
             'Datos profesionales como especialidad, descripcion, modalidad de atencion, ciudad, pais, disponibilidad, precios y experiencia.',
+            'Datos de citas como profesional, paciente, fecha, hora, modalidad, estado, reagendamientos, cancelaciones, recordatorios y enlace de videollamada cuando exista.',
+            'Datos de mensajeria enviados dentro de Conecta, incluyendo texto, archivos asociados y metadatos necesarios para entregar soporte y comunicacion entre las partes.',
             'Datos tributarios cuando el usuario solicita boleta, factura o documento tributario, por ejemplo nombre tributario, identificacion fiscal, direccion, ciudad y correo.',
+            'Datos de pago necesarios para operar el flujo de transferencia, confirmacion de pago, reembolsos, creditos y estados de citas.',
             'Datos tecnicos como direccion IP, dispositivo, sistema operativo, navegador, idioma, errores, eventos de seguridad y datos derivados de cookies o tecnologias equivalentes.',
           ],
         },
@@ -65,6 +68,7 @@ export class LegalPageComponent {
             'Permitir reservas, mensajes, gestion de agenda, soporte y documentos asociados a la atencion.',
             'Mostrar profesionales compatibles con intereses, pais, modalidad de atencion y busquedas realizadas por el usuario.',
             'Enviar notificaciones operativas, como confirmaciones, recordatorios, recuperacion de contrasena y avisos relacionados con citas.',
+            'Gestionar solicitudes de documentos tributarios, conservar comprobantes, enviar documentos al paciente y permitir al profesional revisar historial operativo.',
             'Mejorar seguridad, prevenir abuso, proteger datos de contacto, cumplir obligaciones legales y mantener la continuidad operativa del servicio.',
           ],
         },
@@ -96,7 +100,16 @@ export class LegalPageComponent {
           title: 'Conservacion de datos',
           body: [
             'Conservaremos los datos durante el tiempo necesario para cumplir la finalidad para la que fueron recopilados, prestar el servicio, resolver incidencias, cumplir obligaciones legales o defender posibles reclamaciones.',
+            'Los mensajes, citas y documentos asociados pueden conservarse por motivos de seguridad, soporte, trazabilidad, obligaciones tributarias o historial operativo de la relacion entre paciente y profesional.',
             'Los datos asociados a comunicaciones comerciales o preferencias opcionales se conservaran hasta que el usuario retire su consentimiento o solicite su eliminacion cuando corresponda.',
+          ],
+        },
+        {
+          title: 'Eliminacion de cuenta y datos',
+          body: [
+            'El usuario puede solicitar la eliminacion de su cuenta desde la app o mediante la pagina publica /delete-account si ya no tiene acceso a la aplicacion.',
+            'Al eliminar una cuenta, Conecta desactiva el acceso y anonimiza o elimina datos personales segun corresponda.',
+            'Podemos conservar informacion limitada cuando sea necesaria para seguridad, prevencion de fraude, soporte, historial de citas, documentos tributarios u obligaciones legales.',
           ],
         },
         {
@@ -138,8 +151,9 @@ export class LegalPageComponent {
           title: 'Identificacion de la plataforma',
           body: [
             'Conecta es una plataforma digital para buscar profesionales, solicitar citas, gestionar agenda, comunicacion, documentos y servicios asociados.',
-            'Entidad operadora: Conecta / [Nombre legal de la empresa pendiente de completar].',
-            'Comentario: completar la razon social, identificacion fiscal y domicilio antes de publicar la version definitiva.',
+            'Responsable de la aplicacion: Conecta.',
+            'Pais principal de operacion: Chile.',
+            'Contacto oficial: app.info.conect@gmail.com.',
           ],
         },
         {
@@ -162,7 +176,17 @@ export class LegalPageComponent {
           title: 'Citas, pagos y cancelaciones',
           body: [
             'Las reservas, reagendamientos, cancelaciones, documentos y pagos se gestionan segun las reglas visibles dentro de la plataforma.',
+            'Cuando el pago se informa por transferencia, el profesional debe confirmar su recepcion para que la cita quede confirmada segun el flujo de Conecta.',
+            'Las reglas de cancelacion y penalizacion se aplican segun el estado de la cita, el pago confirmado y la anticipacion indicada dentro de la app.',
             'El historial de citas y actividad puede conservarse para fines operativos, soporte, seguridad y cumplimiento.',
+          ],
+        },
+        {
+          title: 'Documentos tributarios',
+          body: [
+            'El paciente puede solicitar datos para boleta, factura u otro documento tributario cuando el flujo lo permita.',
+            'El profesional es responsable de emitir correctamente los documentos tributarios que correspondan a su actividad, salvo funciones automatizadas expresamente habilitadas por Conecta.',
+            'Conecta puede almacenar datos, archivos y estados de documentos para permitir historial, reenvio, descarga y soporte.',
           ],
         },
         {

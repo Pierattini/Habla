@@ -59,8 +59,6 @@ getProfessionals() {
   this.http.get<any>(`${API_URL}/users/professionals`)
     .subscribe({
       next: (res) => {
-        console.log('DATA:', res);
-
         this.professionals = Array.isArray(res) ? res : res?.data || [];
        // this.cd.detectChanges();
 
