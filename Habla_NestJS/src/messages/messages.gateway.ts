@@ -9,20 +9,15 @@ import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin:
+      process.env.CORS_ORIGINS?.split(',').map((origin) => origin.trim()) ||
+      process.env.PUBLIC_FRONTEND_URL ||
+      ['http://localhost:4200', 'http://localhost:8100'],
   },
 })
 export class MessagesGateway {
   @WebSocketServer()
   server!: Server;
-
-  handleConnection(client: Socket) {
-    console.log('Cliente conectado:', client.id);
-  }
-
-  handleDisconnect(client: Socket) {
-    console.log('Cliente desconectado:', client.id);
-  }
 
   @SubscribeMessage('joinConversation')
   handleJoin(

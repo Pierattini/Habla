@@ -773,7 +773,6 @@ export class MessagesService {
     if (!validation.blocked) return;
 
     console.warn('CONTACT_BLOCKED', {
-      userId,
       role,
       reason: validation.reason,
       date: new Date().toISOString(),
@@ -845,8 +844,8 @@ export class MessagesService {
         ticketId,
         conversationId,
       })
-      .catch((error) =>
-        console.error('Error enviando correo de nuevo ticket:', error),
+      .catch(() =>
+        console.error('Error enviando correo de nuevo ticket de soporte.'),
       );
   }
 
@@ -893,8 +892,8 @@ export class MessagesService {
         conversationId: ticket.conversationId,
         message: content,
       });
-    } catch (error) {
-      console.error('Error enviando correo de mensaje soporte:', error);
+    } catch {
+      console.error('Error enviando correo de mensaje soporte.');
     }
   }
 

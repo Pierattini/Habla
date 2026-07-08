@@ -32,6 +32,8 @@ model User {
   role                   Role
   createdAt              DateTime  @default(now())
   isActive               Boolean   @default(false)
+  deletionRequestedAt    DateTime?
+  deletedAt              DateTime?
   sessionDuration        Int?
   passwordResetTokenHash String?
   passwordResetExpiresAt DateTime?
@@ -98,9 +100,16 @@ model Appointment {
   creditUsed     Float? // cuánto crédito se usó
   remainingToPay Float? // cuánto falta pagar
 
+  paymentConfirmTokenHash      String?
+  paymentConfirmTokenExpiresAt DateTime?
+  paymentConfirmTokenUsedAt    DateTime?
+
   // 🔥 REEMBOLSO
   refundAccount String?
   refundBank    String?
+  refundDoneTokenHash      String?
+  refundDoneTokenExpiresAt DateTime?
+  refundDoneTokenUsedAt    DateTime?
 
   // 🔥 OTROS
   meetLink             String?

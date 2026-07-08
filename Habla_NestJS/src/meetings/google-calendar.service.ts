@@ -33,6 +33,23 @@ export class GoogleCalendarService {
 
   constructor(private prisma: PrismaService) {}
 
+  private formatDateTimeForTimeZone(date: Date, timeZone: string) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(date);
+    const value = (type: string) =>
+      parts.find((part) => part.type === type)?.value?.padStart(2, '0') || '00';
+
+    return `${value('year')}-${value('month')}-${value('day')}T${value('hour')}:${value('minute')}:${value('second')}`;
+  }
+
   getConnectionStatus(professionalUserId: string) {
     return this.prisma.googleCalendarConnection
       .findUnique({
@@ -121,6 +138,7 @@ export class GoogleCalendarService {
     const duration = appointment.professional.professional?.duration || 60;
     const start = appointment.date;
     const end = new Date(start.getTime() + duration * 60 * 1000);
+    const timeZone = appointment.professional.timezone || 'America/Santiago';
     const requestId = `conecta-${appointment.id}-${Date.now()}`;
 
     const event = await this.googleRequest<any>(
@@ -133,8 +151,14 @@ export class GoogleCalendarService {
             appointment.customer.name || appointment.customer.email
           }`,
           description: 'Cita online generada automaticamente por Conecta.',
-          start: { dateTime: start.toISOString() },
-          end: { dateTime: end.toISOString() },
+          start: {
+            dateTime: this.formatDateTimeForTimeZone(start, timeZone),
+            timeZone,
+          },
+          end: {
+            dateTime: this.formatDateTimeForTimeZone(end, timeZone),
+            timeZone,
+          },
           attendees: [
             { email: appointment.professional.email },
             ...(appointment.customer.email
@@ -175,6 +199,7 @@ export class GoogleCalendarService {
     const duration = appointment.professional.professional?.duration || 60;
     const start = appointment.date;
     const end = new Date(start.getTime() + duration * 60 * 1000);
+    const timeZone = appointment.professional.timezone || 'America/Santiago';
 
     await this.googleRequest(
       `https://www.googleapis.com/calendar/v3/calendars/primary/events/${appointment.calendarEventId}?sendUpdates=all`,
@@ -182,8 +207,14 @@ export class GoogleCalendarService {
       {
         method: 'PATCH',
         body: {
-          start: { dateTime: start.toISOString() },
-          end: { dateTime: end.toISOString() },
+          start: {
+            dateTime: this.formatDateTimeForTimeZone(start, timeZone),
+            timeZone,
+          },
+          end: {
+            dateTime: this.formatDateTimeForTimeZone(end, timeZone),
+            timeZone,
+          },
         },
       },
     );

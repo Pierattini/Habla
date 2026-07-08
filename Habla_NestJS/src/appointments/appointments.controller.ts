@@ -8,6 +8,7 @@ import {
   Patch,
   Param,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -18,6 +19,7 @@ import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { Request as ExpressRequest } from 'express';
 import { Res } from '@nestjs/common';
 import type { Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 interface AuthRequest extends ExpressRequest {
   user: {
     id: string;
@@ -102,15 +104,13 @@ export class AppointmentsController {
   }
 
   // 🟢 slots disponibles (público)
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @Get('available-slots')
   getAvailableSlots(
     @Query('professionalId') professionalId: string,
     @Query('date') date: string,
   ) {
-    return this.appointmentsService.getAvailableSlots(
-      professionalId,
-      new Date(date),
-    );
+    return this.appointmentsService.getAvailableSlots(professionalId, date);
   }
   @UseGuards(JwtAuthGuard)
   @Patch(':id/pay')
@@ -124,9 +124,20 @@ export class AppointmentsController {
     return this.appointmentsService.continueVideoCall(id, req.user.id);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Get(':id/confirm-payment-link')
-  async confirmFromEmail(@Param('id') id: string, @Res() res: Response) {
-    await this.appointmentsService.confirmPaymentFromLink(id);
+  confirmFromEmailWithoutToken() {
+    throw new BadRequestException('Enlace no valido o expirado.');
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Get(':id/confirm-payment-link/:token')
+  async confirmFromEmail(
+    @Param('id') id: string,
+    @Param('token') token: string,
+    @Res() res: Response,
+  ) {
+    await this.appointmentsService.confirmPaymentFromLink(id, token);
 
     // 🔥 REDIRECCIÓN AL FRONT
     return res.redirect(
@@ -162,9 +173,20 @@ export class AppointmentsController {
   ) {
     return this.appointmentsService.resolvePenalty(id, req.user.id, body);
   }
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Get(':id/refund-done')
-  async refundDone(@Param('id') id: string, @Res() res: Response) {
-    await this.appointmentsService.refundDone(id);
+  refundDoneWithoutToken() {
+    throw new BadRequestException('Enlace no valido o expirado.');
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Get(':id/refund-done/:token')
+  async refundDone(
+    @Param('id') id: string,
+    @Param('token') token: string,
+    @Res() res: Response,
+  ) {
+    await this.appointmentsService.refundDone(id, token);
 
     return res.redirect(`${this.getFrontendUrl()}/refund-success`);
   }

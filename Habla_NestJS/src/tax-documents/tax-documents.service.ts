@@ -1812,9 +1812,7 @@ export class TaxDocumentsService {
       });
 
       if (!appointment) {
-        console.warn(
-          `Appointment ${appointmentId} not found while syncing tax document status ${status}`,
-        );
+        console.warn('Appointment not found while syncing tax document status.');
         return;
       }
 
@@ -1827,11 +1825,8 @@ export class TaxDocumentsService {
             : {}),
         },
       });
-    } catch (error) {
-      console.warn(
-        `Could not sync appointment ${appointmentId} document status ${status}:`,
-        error,
-      );
+    } catch {
+      console.warn('Could not sync appointment document status.');
     }
   }
 

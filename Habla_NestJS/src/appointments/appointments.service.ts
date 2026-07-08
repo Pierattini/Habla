@@ -16,6 +16,12 @@ import {
   WeekDay,
 } from '@prisma/client';
 import * as nodemailer from 'nodemailer';
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from 'crypto';
 import { NotificationService } from '../notifications/notification.service';
 import type {
   NotificationChannel,
@@ -43,6 +49,15 @@ type AvailabilityConfig = {
   blockedRanges: unknown;
 };
 
+type AppointmentActionTokenPurpose = 'CONFIRM_PAYMENT' | 'REFUND_DONE';
+
+type AppointmentActionTokenPayload = {
+  appointmentId: string;
+  purpose: AppointmentActionTokenPurpose;
+  nonce: string;
+  exp: number;
+};
+
 type TimeRange = {
   startMinute: number;
   endMinute: number;
@@ -55,6 +70,7 @@ const RESERVED_APPOINTMENT_STATUSES = [
 
 const CONECTA_EMAIL = 'app.info.conect@gmail.com';
 const CONECTA_EMAIL_FROM = `Conecta <${CONECTA_EMAIL}>`;
+const BOOKING_TIMEZONE = 'America/Santiago';
 
 @Injectable()
 export class AppointmentsService {
@@ -68,6 +84,118 @@ export class AppointmentsService {
     private professionalAccess: ProfessionalAccessService,
     private taxDocumentJobsService: TaxDocumentJobsService,
   ) {}
+
+  private getActionTokenSecret(): string {
+    const secret =
+      process.env.ACTION_LINK_SECRET ||
+      process.env.JWT_SECRET ||
+      process.env.RECAPTCHA_SECRET_KEY;
+
+    if (!secret) {
+      throw new Error('ACTION_LINK_SECRET o JWT_SECRET debe estar configurado.');
+    }
+
+    return secret;
+  }
+
+  private hashActionToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private timingSafeStringEqual(a: string, b: string): boolean {
+    const aBuffer = Buffer.from(a);
+    const bBuffer = Buffer.from(b);
+
+    if (aBuffer.length !== bBuffer.length) {
+      return false;
+    }
+
+    return timingSafeEqual(aBuffer, bBuffer);
+  }
+
+  private signActionPayload(payload: string): string {
+    return createHmac('sha256', this.getActionTokenSecret())
+      .update(payload)
+      .digest('base64url');
+  }
+
+  private createAppointmentActionToken(
+    appointmentId: string,
+    purpose: AppointmentActionTokenPurpose,
+    ttlMinutes = 60 * 24 * 7,
+  ) {
+    const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000);
+    const payload: AppointmentActionTokenPayload = {
+      appointmentId,
+      purpose,
+      nonce: randomBytes(16).toString('hex'),
+      exp: expiresAt.getTime(),
+    };
+    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
+      'base64url',
+    );
+    const signature = this.signActionPayload(encodedPayload);
+    const token = `${encodedPayload}.${signature}`;
+
+    return {
+      token,
+      tokenHash: this.hashActionToken(token),
+      expiresAt,
+    };
+  }
+
+  private validateAppointmentActionToken(
+    token: string,
+    expectedAppointmentId: string,
+    expectedPurpose: AppointmentActionTokenPurpose,
+    expectedHash?: string | null,
+    expiresAt?: Date | null,
+  ): void {
+    if (!token || !expectedHash || !expiresAt) {
+      throw new BadRequestException('Enlace no valido o ya utilizado.');
+    }
+
+    if (expiresAt.getTime() < Date.now()) {
+      throw new BadRequestException('El enlace expiro.');
+    }
+
+    const [encodedPayload, signature] = token.split('.');
+
+    if (!encodedPayload || !signature) {
+      throw new BadRequestException('Enlace no valido.');
+    }
+
+    if (
+      !this.timingSafeStringEqual(
+        signature,
+        this.signActionPayload(encodedPayload),
+      )
+    ) {
+      throw new BadRequestException('Enlace no valido.');
+    }
+
+    let payload: AppointmentActionTokenPayload;
+
+    try {
+      payload = JSON.parse(
+        Buffer.from(encodedPayload, 'base64url').toString('utf8'),
+      ) as AppointmentActionTokenPayload;
+    } catch {
+      throw new BadRequestException('Enlace no valido.');
+    }
+
+    if (
+      payload.appointmentId !== expectedAppointmentId ||
+      payload.purpose !== expectedPurpose ||
+      payload.exp !== expiresAt.getTime()
+    ) {
+      throw new BadRequestException('Enlace no valido.');
+    }
+
+    if (!this.timingSafeStringEqual(this.hashActionToken(token), expectedHash)) {
+      throw new BadRequestException('Enlace no valido o ya utilizado.');
+    }
+  }
 
   private createMailTransporter() {
     return nodemailer.createTransport({
@@ -179,15 +307,7 @@ export class AppointmentsService {
       WeekDay.SAT,
     ];
     // 🔥 FORZAR fecha local sin desfase
-    const cleanDate = new Date(date);
-    cleanDate.setHours(0, 0, 0, 0);
-
-    const appointmentDay = dayMap[cleanDate.getDay()] as WeekDay;
-
-    console.log('DATE RAW:', date);
-    console.log('DAY CALCULADO:', appointmentDay);
-
-    const minutesFromMidnight = date.getHours() * 60 + date.getMinutes();
+    const appointmentDay = this.getWeekDayInBookingTimezone(date);
 
     const availability = await this.prisma.availability.findFirst({
       where: {
@@ -618,12 +738,13 @@ export class AppointmentsService {
     const isConfirmedReservation =
       appointment.status === AppointmentStatus.CONFIRMED ||
       appointment.status === AppointmentStatus.RESCHEDULED;
+    const isProfessionalActor = appointment.professionalId === userId;
 
     // 🔥 SI YA PAGÓ
     if (
       isConfirmedReservation
     ) {
-      const penalty = diffHours < 48 ? price * 0.5 : 0;
+      const penalty = !isProfessionalActor && diffHours < 48 ? price * 0.5 : 0;
 
       const updated = await this.prisma.appointment.update({
         where: { id },
@@ -684,8 +805,10 @@ export class AppointmentsService {
 
     return updated;
   }
-  async getAvailableSlots(professionalId: string, date: Date) {
-    this.assertDateWithinBookingWindow(date);
+  async getAvailableSlots(professionalId: string, date: string) {
+    const dateKey = this.normalizeBookingDateKey(date);
+    const bookingDay = this.zonedDateTimeToUtc(dateKey, 12 * 60);
+    this.assertDateWithinBookingWindow(bookingDay);
 
     const professional = await this.prisma.professional.findUnique({
       where: { userId: professionalId },
@@ -699,15 +822,13 @@ export class AppointmentsService {
     const duration =
       professional.duration ?? professional.user.sessionDuration ?? 60;
 
-    const cleanDate = new Date(date);
+    const cleanDate = bookingDay;
 
     if (isNaN(cleanDate.getTime())) {
       throw new ForbiddenException('Fecha inválida');
     }
 
-    cleanDate.setHours(0, 0, 0, 0);
-
-    const appointmentDay = this.getWeekDay(cleanDate);
+    const appointmentDay = this.getWeekDayInBookingTimezone(cleanDate);
 
     const availability = await this.prisma.availability.findMany({
       where: {
@@ -716,16 +837,18 @@ export class AppointmentsService {
       },
     });
 
-    const startOfDay = new Date(cleanDate);
-    const endOfDay = new Date(cleanDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    const startOfDay = this.zonedDateTimeToUtc(dateKey, 0);
+    const endOfDay = this.zonedDateTimeToUtc(
+      this.addDaysToDateKey(dateKey, 1),
+      0,
+    );
 
     const appointments = await this.prisma.appointment.findMany({
       where: {
         professionalId,
         date: {
           gte: startOfDay,
-          lte: endOfDay,
+          lt: endOfDay,
         },
         status: {
           in: RESERVED_APPOINTMENT_STATUSES,
@@ -743,8 +866,7 @@ export class AppointmentsService {
           : this.buildContinuousSlots(block, duration);
 
       for (const minute of candidates) {
-        const slotDate = new Date(cleanDate);
-        slotDate.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
+        const slotDate = this.zonedDateTimeToUtc(dateKey, minute);
 
         if (slotDate <= now) continue;
 
@@ -775,11 +897,11 @@ export class AppointmentsService {
     date: Date,
     duration: number,
   ) {
-    const minute = date.getHours() * 60 + date.getMinutes();
+    const minute = this.getMinutesInBookingTimezone(date);
     const availability = await this.prisma.availability.findMany({
       where: {
         professionalId,
-        day: this.getWeekDay(date),
+        day: this.getWeekDayInBookingTimezone(date),
       },
     });
 
@@ -901,6 +1023,112 @@ export class AppointmentsService {
     return dayMap[date.getDay()] as WeekDay;
   }
 
+  private getWeekDayInBookingTimezone(date: Date) {
+    const dayMap: Record<string, WeekDay> = {
+      Sun: WeekDay.SUN,
+      Mon: WeekDay.MON,
+      Tue: WeekDay.TUE,
+      Wed: WeekDay.WED,
+      Thu: WeekDay.THU,
+      Fri: WeekDay.FRI,
+      Sat: WeekDay.SAT,
+    };
+    const weekday = new Intl.DateTimeFormat('en-US', {
+      timeZone: BOOKING_TIMEZONE,
+      weekday: 'short',
+    }).format(date);
+
+    return dayMap[weekday] ?? this.getWeekDay(date);
+  }
+
+  private getMinutesInBookingTimezone(date: Date) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: BOOKING_TIMEZONE,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(date);
+    const hour = Number(parts.find((part) => part.type === 'hour')?.value ?? 0);
+    const minute = Number(parts.find((part) => part.type === 'minute')?.value ?? 0);
+
+    return hour * 60 + minute;
+  }
+
+  private getTimeZoneOffsetMs(date: Date, timeZone: string) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(date);
+    const value = (type: string) =>
+      Number(parts.find((part) => part.type === type)?.value ?? 0);
+    const asUtc = Date.UTC(
+      value('year'),
+      value('month') - 1,
+      value('day'),
+      value('hour'),
+      value('minute'),
+      value('second'),
+    );
+
+    return asUtc - date.getTime();
+  }
+
+  private zonedDateTimeToUtc(dateKey: string, minuteOfDay: number) {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    const hour = Math.floor(minuteOfDay / 60);
+    const minute = minuteOfDay % 60;
+    const utcGuess = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+    const firstOffset = this.getTimeZoneOffsetMs(
+      new Date(utcGuess),
+      BOOKING_TIMEZONE,
+    );
+    let utcTime = utcGuess - firstOffset;
+    const secondOffset = this.getTimeZoneOffsetMs(
+      new Date(utcTime),
+      BOOKING_TIMEZONE,
+    );
+
+    if (secondOffset !== firstOffset) {
+      utcTime = utcGuess - secondOffset;
+    }
+
+    return new Date(utcTime);
+  }
+
+  private normalizeBookingDateKey(input: string | Date) {
+    if (typeof input === 'string' && /^\d{4}-\d{2}-\d{2}/.test(input)) {
+      return input.slice(0, 10);
+    }
+
+    const date = input instanceof Date ? input : new Date(input);
+
+    if (isNaN(date.getTime())) return '';
+
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: BOOKING_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const value = (type: string) =>
+      parts.find((part) => part.type === type)?.value ?? '';
+
+    return `${value('year')}-${value('month')}-${value('day')}`;
+  }
+
+  private addDaysToDateKey(dateKey: string, days: number) {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day + days, 12, 0, 0, 0));
+
+    return date.toISOString().slice(0, 10);
+  }
+
   private minuteToTime(minute: number) {
     const hour = Math.floor(minute / 60)
       .toString()
@@ -990,8 +1218,8 @@ export class AppointmentsService {
       WeekDay.SAT,
     ];
 
-    const appointmentDay = dayMap[newDate.getDay()] as WeekDay;
-    const minutesFromMidnight = newDate.getHours() * 60 + newDate.getMinutes();
+    const appointmentDay = this.getWeekDayInBookingTimezone(newDate);
+    const minutesFromMidnight = this.getMinutesInBookingTimezone(newDate);
 
     const availability = await this.prisma.availability.findFirst({
       where: {
@@ -1045,11 +1273,17 @@ export class AppointmentsService {
     const isConfirmedReschedule =
       appointment.status === AppointmentStatus.CONFIRMED ||
       appointment.status === AppointmentStatus.RESCHEDULED;
+    const isProfessionalActor = appointment.professionalId === userId;
     const oldDate = new Date(appointment.date);
 
     const diffHours = (oldDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-    if (isConfirmedReschedule && !alreadyPenalized && diffHours < 48) {
+    if (
+      !isProfessionalActor &&
+      isConfirmedReschedule &&
+      !alreadyPenalized &&
+      diffHours < 48
+    ) {
       const price = professional.price || 0;
       const penalty = price * 0.5;
 
@@ -1124,8 +1358,8 @@ export class AppointmentsService {
         appointment.professional.email,
         appointment.id,
       );
-    } catch (error) {
-      console.error('Error enviando correo de pago:', error);
+    } catch {
+      console.error('Error enviando correo de pago.');
     }
 
     return updatedAppointment;
@@ -1275,8 +1509,21 @@ export class AppointmentsService {
   }
   async sendPaymentEmail(to: string, appointmentId: string) {
     const transporter = this.createMailTransporter();
+    const actionToken = this.createAppointmentActionToken(
+      appointmentId,
+      'CONFIRM_PAYMENT',
+    );
 
-    const confirmLink = `${this.getPublicApiUrl()}/appointments/${appointmentId}/confirm-payment-link`;
+    await this.prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        paymentConfirmTokenHash: actionToken.tokenHash,
+        paymentConfirmTokenExpiresAt: actionToken.expiresAt,
+        paymentConfirmTokenUsedAt: null,
+      },
+    });
+
+    const confirmLink = `${this.getPublicApiUrl()}/appointments/${appointmentId}/confirm-payment-link/${actionToken.token}`;
 
     await transporter.sendMail({
       from: this.getMailFrom(),
@@ -1318,7 +1565,7 @@ export class AppointmentsService {
       }),
     });
   }
-  async confirmPaymentFromLink(id: string) {
+  async confirmPaymentFromLink(id: string, token: string) {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id },
       include: {
@@ -1334,10 +1581,25 @@ export class AppointmentsService {
       throw new NotFoundException('Cita no encontrada');
     }
 
+    if (appointment.status === AppointmentStatus.CONFIRMED) {
+      return appointment;
+    }
+
+    this.validateAppointmentActionToken(
+      token,
+      appointment.id,
+      'CONFIRM_PAYMENT',
+      appointment.paymentConfirmTokenHash,
+      appointment.paymentConfirmTokenExpiresAt,
+    );
+
     const updated = await this.prisma.appointment.update({
       where: { id },
       data: {
         status: AppointmentStatus.CONFIRMED,
+        paymentConfirmTokenHash: null,
+        paymentConfirmTokenExpiresAt: null,
+        paymentConfirmTokenUsedAt: new Date(),
       },
     });
 
@@ -1425,9 +1687,6 @@ export class AppointmentsService {
       if (!body.bank || !body.account || !body.accountType) {
         throw new ForbiddenException('Faltan datos bancarios');
       }
-      console.log('PRICE:', price);
-      console.log('PENALTY:', penalty);
-      console.log('REFUND AMOUNT:', refundAmount);
       // 🔥 ENVIAR CORREO AL PROFESIONAL
       await this.sendRefundRequestEmail(
         appointment.professional.email,
@@ -1463,8 +1722,22 @@ export class AppointmentsService {
     customerName: string,
   ) {
     const transporter = this.createMailTransporter();
+    const actionToken = this.createAppointmentActionToken(
+      appointmentId,
+      'REFUND_DONE',
+      60 * 24 * 14,
+    );
 
-    const confirmLink = `${this.getPublicApiUrl()}/appointments/${appointmentId}/refund-done`;
+    await this.prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        refundDoneTokenHash: actionToken.tokenHash,
+        refundDoneTokenExpiresAt: actionToken.expiresAt,
+        refundDoneTokenUsedAt: null,
+      },
+    });
+
+    const confirmLink = `${this.getPublicApiUrl()}/appointments/${appointmentId}/refund-done/${actionToken.token}`;
 
     await transporter.sendMail({
       from: this.getMailFrom(),
@@ -1492,7 +1765,7 @@ export class AppointmentsService {
       }),
     });
   }
-  async refundDone(id: string) {
+  async refundDone(id: string, token: string) {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id },
       include: {
@@ -1504,6 +1777,18 @@ export class AppointmentsService {
       throw new NotFoundException('Cita no encontrada');
     }
 
+    if (appointment.status === AppointmentStatus.REFUNDED) {
+      return appointment;
+    }
+
+    this.validateAppointmentActionToken(
+      token,
+      appointment.id,
+      'REFUND_DONE',
+      appointment.refundDoneTokenHash,
+      appointment.refundDoneTokenExpiresAt,
+    );
+
     // 📧 enviar correo
     await this.sendRefundConfirmedEmail(
       appointment.customer.email,
@@ -1514,6 +1799,9 @@ export class AppointmentsService {
       where: { id },
       data: {
         status: AppointmentStatus.REFUNDED,
+        refundDoneTokenHash: null,
+        refundDoneTokenExpiresAt: null,
+        refundDoneTokenUsedAt: new Date(),
       },
     });
   }
@@ -1548,8 +1836,8 @@ export class AppointmentsService {
     const sendEmails = () => {
       this.sendMeetEmail(customerEmail, meetLink)
         .then(() => this.sendMeetEmail(professionalEmail, meetLink))
-        .catch((error) =>
-          console.error('Error enviando correos de videollamada:', error),
+        .catch(() =>
+          console.error('Error enviando correos de videollamada.'),
         );
     };
 
@@ -1867,11 +2155,8 @@ export class AppointmentsService {
   ): Promise<void> {
     try {
       await this.taxDocumentJobsService.enqueueAutomaticIssue(appointmentId);
-    } catch (error) {
-      console.error(
-        `[TaxDocuments] Automatic issue job enqueue failed for appointment ${appointmentId}`,
-        error,
-      );
+    } catch {
+      console.error('[TaxDocuments] Automatic issue job enqueue failed.');
     }
   }
 

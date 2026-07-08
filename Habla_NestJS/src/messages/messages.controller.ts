@@ -16,6 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { Role, SupportTicketStatus } from '@prisma/client';
+import { Throttle } from '@nestjs/throttler';
 @Controller('messages')
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
@@ -113,7 +114,14 @@ export class MessagesController {
   }
   @UseGuards(JwtAuthGuard)
   @Post('conversations/:id/upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
+  )
   uploadFile(
     @Param('id') id: string,
     @UploadedFile() file: any,

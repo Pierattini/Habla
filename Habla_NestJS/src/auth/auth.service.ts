@@ -285,6 +285,133 @@ export class AuthService {
     });
   }
 
+  async deleteMyAccount(id: string, confirmation: string) {
+    const cleanConfirmation = String(confirmation || '').trim().toUpperCase();
+
+    if (cleanConfirmation !== 'ELIMINAR') {
+      throw new BadRequestException(
+        'Debes escribir ELIMINAR para confirmar la solicitud.',
+      );
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        professional: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const now = new Date();
+    const anonymizedEmail = `deleted-${user.id}@deleted.conecta.local`;
+    const anonymizedPassword = await bcrypt.hash(randomBytes(32).toString('hex'), 10);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.userDeviceToken.deleteMany({
+        where: { userId: user.id },
+      });
+
+      await tx.googleCalendarConnection.deleteMany({
+        where: { professionalUserId: user.id },
+      });
+
+      await tx.zoomConnection.deleteMany({
+        where: { professionalUserId: user.id },
+      });
+
+      await tx.microsoftTeamsConnection.deleteMany({
+        where: { professionalUserId: user.id },
+      });
+
+      await tx.professionalTaxProviderCredential.deleteMany({
+        where: { professionalId: user.id },
+      });
+
+      await tx.professionalTaxFolioRange.deleteMany({
+        where: { professionalId: user.id },
+      });
+
+      if (user.professional) {
+        await tx.professional.update({
+          where: { userId: user.id },
+          data: {
+            slug: null,
+            professionId: null,
+            customProfession: null,
+            specialty: null,
+            description: null,
+            rules: null,
+            name: 'Cuenta eliminada',
+            price: null,
+            duration: null,
+            image: null,
+            officeAddress: null,
+            officeCity: null,
+            officeRegion: null,
+            officeCountry: null,
+            officeLatitude: null,
+            officeLongitude: null,
+            arrivalInstructions: null,
+            customVideoUrl: null,
+            bankName: null,
+            accountType: null,
+            accountNumber: null,
+            accountHolder: null,
+            accountEmail: null,
+            documentAutomationEnabled: false,
+            manualDocumentMode: true,
+            taxProvider: null,
+            taxId: null,
+            taxName: null,
+            taxEmail: null,
+            taxAddress: null,
+            taxCountry: null,
+            taxCity: null,
+            taxDocumentNote: null,
+          },
+        });
+      }
+
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          email: anonymizedEmail,
+          name: 'Cuenta eliminada',
+          image: null,
+          password: anonymizedPassword,
+          isActive: false,
+          deletionRequestedAt: now,
+          deletedAt: now,
+          passwordResetTokenHash: null,
+          passwordResetExpiresAt: null,
+          country: null,
+          timezone: null,
+          taxId: null,
+          taxName: null,
+          taxEmail: null,
+          taxAddress: null,
+          taxCountry: null,
+          taxCity: null,
+          taxDocumentNote: null,
+          wantsTaxDocumentByDefault: false,
+          customerInterests: [],
+          preferredAttentionMode: null,
+          preferredCity: null,
+          preferredRegion: null,
+          credit: 0,
+        },
+      });
+    });
+
+    return {
+      ok: true,
+      deletedAt: now,
+    };
+  }
+
   private buildProfessionalSlug(name: string): string {
     const base = String(name || 'profesional')
       .normalize('NFD')

@@ -11,6 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import type { AuthRequest } from '../auth/auth-request.interface';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -41,7 +42,14 @@ export class TaxProviderController {
   }
 
   @Post('me')
-  @UseInterceptors(FileInterceptor('certificate'))
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @UseInterceptors(
+    FileInterceptor('certificate', {
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    }),
+  )
   saveMe(
     @Request() req: AuthRequest,
     @Body() body: SaveTaxProviderCredentialDto,
@@ -61,7 +69,14 @@ export class TaxProviderController {
   }
 
   @Post('me/folios')
-  @UseInterceptors(FileInterceptor('caf'))
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @UseInterceptors(
+    FileInterceptor('caf', {
+      limits: {
+        fileSize: 2 * 1024 * 1024,
+      },
+    }),
+  )
   saveFolioRange(
     @Request() req: AuthRequest,
     @Body() body: SaveTaxFolioRangeDto,
