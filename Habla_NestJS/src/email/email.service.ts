@@ -8,7 +8,8 @@ import {
 } from './conecta-email-template';
 
 const CONECTA_EMAIL = 'app.info.conect@gmail.com';
-const CONECTA_EMAIL_FROM = `Conecta <${CONECTA_EMAIL}>`;
+const CONECTA_PUBLIC_EMAIL = 'soporte@turedpro.com';
+const CONECTA_EMAIL_FROM = `Conecta <${CONECTA_PUBLIC_EMAIL}>`;
 
 interface TaxDocumentEmailParams {
   customerName: string;
@@ -37,7 +38,6 @@ export class EmailService {
   async sendSupportTicketCreatedEmail(params: SupportTicketEmailParams) {
     const transporter = nodemailer.createTransport(this.getTransportConfig());
     const adminName = this.escapeHtml(params.adminName);
-    const customerName = this.escapeHtml(params.customerName);
 
     await transporter.sendMail({
       from: this.getMailFrom(),
@@ -138,7 +138,7 @@ export class EmailService {
     return { sent: true };
   }
 
-  async sendTaxDocumentPendingEmail() {
+  sendTaxDocumentPendingEmail() {
     if (process.env.ENABLE_DOCUMENT_EMAILS !== 'true') {
       return { skipped: true };
     }
@@ -146,7 +146,7 @@ export class EmailService {
     return { skipped: false };
   }
 
-  async sendTaxDocumentGeneratedEmail() {
+  sendTaxDocumentGeneratedEmail() {
     if (process.env.ENABLE_DOCUMENT_EMAILS !== 'true') {
       return { skipped: true };
     }
@@ -182,11 +182,7 @@ export class EmailService {
 
   private getMailFrom() {
     return (
-      process.env.EMAIL_FROM ||
-      process.env.MAIL_FROM ||
-      process.env.SMTP_USER ||
-      process.env.EMAIL_USER ||
-      CONECTA_EMAIL_FROM
+      process.env.EMAIL_FROM || process.env.MAIL_FROM || CONECTA_EMAIL_FROM
     );
   }
 
