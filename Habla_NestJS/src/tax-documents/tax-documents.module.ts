@@ -10,7 +10,13 @@ import { TaxDocumentsService } from './tax-documents.service';
 import { SiiDteDraftService } from './sii-dte-draft.service';
 
 @Module({
-  imports: [PrismaModule, CloudinaryModule, EmailModule, LibreDteModule, TaxProviderModule],
+  imports: [
+    PrismaModule,
+    CloudinaryModule,
+    EmailModule,
+    LibreDteModule,
+    TaxProviderModule,
+  ],
   controllers: [TaxDocumentsController],
   providers: [TaxDocumentsService, TaxDocumentJobsService, SiiDteDraftService],
   exports: [TaxDocumentsService, TaxDocumentJobsService],
