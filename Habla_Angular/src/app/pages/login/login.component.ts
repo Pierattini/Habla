@@ -203,7 +203,8 @@ export class LoginComponent implements OnInit {
     this.isSubmitting = true;
     this.errorMessage = '';
 
-    this.auth.login(this.email, this.password).subscribe({
+    this.recaptchaService.execute('login').then((recaptchaToken) => {
+      this.auth.login(this.email, this.password, recaptchaToken).subscribe({
       next: (res: any) => {
         this.saveSession(res);
         void this.pushNotifications.registerDevice();
@@ -215,6 +216,10 @@ export class LoginComponent implements OnInit {
         this.errorMessage = 'No pudimos iniciar sesion con esos datos.';
         this.isSubmitting = false;
       }
+      });
+    }).catch(() => {
+      this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
+      this.isSubmitting = false;
     });
   }
 
@@ -275,7 +280,8 @@ export class LoginComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.auth.requestPasswordReset(this.resetEmail.trim()).subscribe({
+    this.recaptchaService.execute('password_reset_request').then((recaptchaToken) => {
+      this.auth.requestPasswordReset(this.resetEmail.trim(), recaptchaToken).subscribe({
       next: () => {
         this.successMessage = 'Si el email existe, enviaremos un enlace para restablecer tu contrasena.';
         this.isSubmitting = false;
@@ -284,6 +290,10 @@ export class LoginComponent implements OnInit {
         this.errorMessage = 'No pudimos procesar la solicitud. Intenta nuevamente.';
         this.isSubmitting = false;
       },
+      });
+    }).catch(() => {
+      this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
+      this.isSubmitting = false;
     });
   }
 
@@ -309,7 +319,8 @@ export class LoginComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.auth.resetPassword(this.resetToken, this.resetPasswordValue).subscribe({
+    this.recaptchaService.execute('password_reset').then((recaptchaToken) => {
+      this.auth.resetPassword(this.resetToken, this.resetPasswordValue, recaptchaToken).subscribe({
       next: () => {
         this.successMessage = 'Contrasena actualizada. Ya puedes iniciar sesion.';
         this.mode = 'login';
@@ -323,11 +334,16 @@ export class LoginComponent implements OnInit {
         this.errorMessage = err?.error?.message || 'El enlace no es valido o expiro.';
         this.isSubmitting = false;
       },
+      });
+    }).catch(() => {
+      this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
+      this.isSubmitting = false;
     });
   }
 
   private loginAfterRegister(): void {
-    this.auth.login(this.registerForm.email.trim(), this.registerForm.password).subscribe({
+    this.recaptchaService.execute('login').then((recaptchaToken) => {
+      this.auth.login(this.registerForm.email.trim(), this.registerForm.password, recaptchaToken).subscribe({
       next: (res: any) => {
         this.saveSession(res);
         void this.pushNotifications.registerDevice();
@@ -346,6 +362,13 @@ export class LoginComponent implements OnInit {
         this.password = '';
         this.isSubmitting = false;
       }
+      });
+    }).catch(() => {
+      this.errorMessage = 'Cuenta creada. Inicia sesion para continuar.';
+      this.mode = 'login';
+      this.email = this.registerForm.email.trim();
+      this.password = '';
+      this.isSubmitting = false;
     });
   }
 

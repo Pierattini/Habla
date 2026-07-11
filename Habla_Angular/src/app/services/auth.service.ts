@@ -13,21 +13,26 @@ export class AuthService {
   constructor(private http: HttpClient) {}
 
   // ðŸ” LOGIN
-  login(email: string, password: string) {
+  login(email: string, password: string, recaptchaToken?: string) {
     return this.http.post(`${this.api}/auth/login`, {
       email,
-      password
+      password,
+      recaptchaToken,
     });
   }
 
-  requestPasswordReset(email: string) {
-    return this.http.post(`${this.api}/auth/request-password-reset`, { email });
+  requestPasswordReset(email: string, recaptchaToken?: string) {
+    return this.http.post(`${this.api}/auth/request-password-reset`, {
+      email,
+      recaptchaToken,
+    });
   }
 
-  resetPassword(token: string, password: string) {
+  resetPassword(token: string, password: string, recaptchaToken?: string) {
     return this.http.post(`${this.api}/auth/reset-password`, {
       token,
       password,
+      recaptchaToken,
     });
   }
 
