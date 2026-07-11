@@ -680,3 +680,10 @@ ion-modal.payment-data-modal::part(content) {
     transform: translateY(0) scale(1);
   }
 }
+
+.grecaptcha-badge {
+  right: auto !important;
+  left: 12px !important;
+  bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+  z-index: 1000 !important;
+}
