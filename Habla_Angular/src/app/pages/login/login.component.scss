@@ -5,8 +5,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   background:
-    radial-gradient(circle at top right, rgba(192, 132, 252, 0.24), transparent 34%),
-    var(--app-bg);
+    radial-gradient(circle at top right, rgba(192, 132, 252, 0.24), transparent 34%), var(--app-bg);
   color: var(--app-text);
 }
 
@@ -268,13 +267,18 @@
   font: inherit;
   font-size: 16px;
   box-shadow: 0 14px 34px rgba(168, 85, 247, 0.08);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .profession-search-field input:focus {
   border-color: var(--app-primary-light);
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.12), 0 18px 42px rgba(168, 85, 247, 0.13);
+  box-shadow:
+    0 0 0 4px rgba(168, 85, 247, 0.12),
+    0 18px 42px rgba(168, 85, 247, 0.13);
 }
 
 .profession-suggestions {
@@ -309,7 +313,9 @@
 
 .profession-suggestions button {
   cursor: pointer;
-  transition: background 0.18s ease, transform 0.18s ease;
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease;
 }
 
 .profession-suggestions button:hover,
@@ -454,7 +460,10 @@
   color: var(--app-text);
   font: inherit;
   font-size: 15px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .field input,
@@ -625,6 +634,60 @@
 
 .login-button:active:not(:disabled) {
   transform: translateY(1px);
+}
+
+.google-button {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  background: #fff;
+  color: #3c4043;
+  font:
+    600 0.95rem/1.2 Arial,
+    sans-serif;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.google-button:hover:not(:disabled) {
+  background: #f8faff;
+  border-color: #c6dafc;
+}
+
+.google-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.google-mark {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: #7b8495;
+  font-size: 0.85rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e1e5ec;
+}
+
+.wizard-actions .google-button {
+  flex-basis: 100%;
 }
 
 .wizard-actions {

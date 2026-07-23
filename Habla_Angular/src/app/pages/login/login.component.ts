@@ -5,6 +5,7 @@ import { AuthService } from '../../services/auth.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { ProfessionItem, ProfessionService } from '../../services/profession.service';
 import { RecaptchaService } from '../../services/recaptcha.service';
+import { GoogleAuthService, GoogleSignInCancelledError } from '../../services/google-auth.service';
 
 type OnboardingMode = 'intro' | 'login' | 'register' | 'forgot' | 'reset';
 type AccountRole = 'CUSTOMER' | 'PROFESSIONAL';
@@ -15,10 +16,7 @@ type AttentionMode = 'ONLINE' | 'PRESENTIAL' | 'BOTH';
   standalone: true,
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
-  imports: [
-    FormsModule,
-    RouterLink,
-  ]
+  imports: [FormsModule, RouterLink],
 })
 export class LoginComponent implements OnInit {
   public mode: OnboardingMode = 'intro';
@@ -82,10 +80,11 @@ export class LoginComponent implements OnInit {
     private auth: AuthService,
     private professionService: ProfessionService,
     private recaptchaService: RecaptchaService,
+    private googleAuth: GoogleAuthService,
     private pushNotifications: PushNotificationService,
     private route: ActivatedRoute,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -155,7 +154,9 @@ export class LoginComponent implements OnInit {
   }
 
   public onRegisterEmailChange(value: string): void {
-    this.registerForm.email = String(value || '').trim().toLowerCase();
+    this.registerForm.email = String(value || '')
+      .trim()
+      .toLowerCase();
     this.errorMessage = '';
 
     if (this.emailCheckTimer) {
@@ -203,24 +204,92 @@ export class LoginComponent implements OnInit {
     this.isSubmitting = true;
     this.errorMessage = '';
 
-    this.recaptchaService.execute('login').then((recaptchaToken) => {
-      this.auth.login(this.email, this.password, recaptchaToken).subscribe({
-      next: (res: any) => {
-        this.saveSession(res);
-        void this.pushNotifications.registerDevice();
-        this.router.navigateByUrl(
-          res?.user?.role === 'ADMIN' ? '/admin/dashboard' : '/tabs/home'
-        );
-      },
-      error: () => {
-        this.errorMessage = 'No pudimos iniciar sesion con esos datos.';
+    this.recaptchaService
+      .execute('login')
+      .then((recaptchaToken) => {
+        this.auth.login(this.email, this.password, recaptchaToken).subscribe({
+          next: (res: any) => {
+            this.saveSession(res);
+            void this.pushNotifications.registerDevice();
+            this.router.navigateByUrl(
+              res?.user?.role === 'ADMIN' ? '/admin/dashboard' : '/tabs/home',
+            );
+          },
+          error: () => {
+            this.errorMessage = 'No pudimos iniciar sesion con esos datos.';
+            this.isSubmitting = false;
+          },
+        });
+      })
+      .catch(() => {
+        this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
         this.isSubmitting = false;
-      }
       });
-    }).catch(() => {
-      this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
+  }
+
+  public async continueWithGoogle(fromRegistration = false): Promise<void> {
+    if (this.isSubmitting) return;
+
+    if (localStorage.getItem('token')) {
+      this.navigateAfterLogin({ user: { role: localStorage.getItem('role') } });
+      return;
+    }
+
+    if (fromRegistration && !this.registerForm.acceptedTerms) {
+      this.errorMessage = 'Debes aceptar terminos y politica de privacidad.';
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    try {
+      const idToken = await this.googleAuth.signIn();
+      const registration = fromRegistration
+        ? {
+            role: this.selectedRole,
+            acceptedTerms: this.registerForm.acceptedTerms,
+            customerInterests:
+              this.selectedRole === 'CUSTOMER' ? [this.registerForm.interest] : undefined,
+            preferredAttentionMode:
+              this.selectedRole === 'CUSTOMER' ? this.registerForm.attentionMode : undefined,
+            specialty:
+              this.selectedRole === 'PROFESSIONAL' ? this.registerForm.specialty.trim() : undefined,
+            professionId:
+              this.selectedRole === 'PROFESSIONAL' && this.registerForm.professionId
+                ? this.registerForm.professionId
+                : undefined,
+            customProfession:
+              this.selectedRole === 'PROFESSIONAL' && this.customProfessionMode
+                ? this.customProfession.trim()
+                : undefined,
+            attentionMode:
+              this.selectedRole === 'PROFESSIONAL' ? this.registerForm.attentionMode : undefined,
+          }
+        : undefined;
+
+      this.auth.loginWithGoogle(idToken, registration).subscribe({
+        next: (res: any) => {
+          this.saveSession(res);
+          void this.pushNotifications.registerDevice();
+          this.navigateAfterLogin(res);
+        },
+        error: (err) => {
+          this.errorMessage =
+            err?.error?.message || 'No pudimos validar tu cuenta de Google. Intentalo nuevamente.';
+          this.isSubmitting = false;
+          this.cdr.detectChanges();
+        },
+      });
+    } catch (error) {
+      this.errorMessage =
+        error instanceof GoogleSignInCancelledError
+          ? 'Inicio con Google cancelado.'
+          : 'No pudimos abrir Google. Revisa tu conexion e intentalo nuevamente.';
       this.isSubmitting = false;
-    });
+      this.cdr.detectChanges();
+    }
   }
 
   public register(): void {
@@ -229,43 +298,46 @@ export class LoginComponent implements OnInit {
     this.isSubmitting = true;
     this.errorMessage = '';
 
-    this.recaptchaService.execute('register').then((recaptchaToken) => {
-      this.auth.register({
-      name: this.registerForm.name.trim(),
-      email: this.registerForm.email.trim(),
-      password: this.registerForm.password,
-      role: this.selectedRole,
-      customerInterests: this.selectedRole === 'CUSTOMER'
-        ? [this.registerForm.interest]
-        : undefined,
-      preferredAttentionMode: this.selectedRole === 'CUSTOMER'
-        ? this.registerForm.attentionMode
-        : undefined,
-      specialty: this.selectedRole === 'PROFESSIONAL'
-        ? this.registerForm.specialty.trim()
-        : undefined,
-      professionId: this.selectedRole === 'PROFESSIONAL' && this.registerForm.professionId
-        ? this.registerForm.professionId
-        : undefined,
-      customProfession: this.selectedRole === 'PROFESSIONAL' && this.customProfessionMode
-        ? this.customProfession.trim()
-        : undefined,
-      attentionMode: this.selectedRole === 'PROFESSIONAL'
-        ? this.registerForm.attentionMode
-        : undefined,
-      acceptedTerms: this.registerForm.acceptedTerms,
-      recaptchaToken,
-      }).subscribe({
-        next: () => this.loginAfterRegister(),
-        error: (err) => {
-          this.errorMessage = err?.error?.message || 'No pudimos crear la cuenta.';
-          this.isSubmitting = false;
-        }
+    this.recaptchaService
+      .execute('register')
+      .then((recaptchaToken) => {
+        this.auth
+          .register({
+            name: this.registerForm.name.trim(),
+            email: this.registerForm.email.trim(),
+            password: this.registerForm.password,
+            role: this.selectedRole,
+            customerInterests:
+              this.selectedRole === 'CUSTOMER' ? [this.registerForm.interest] : undefined,
+            preferredAttentionMode:
+              this.selectedRole === 'CUSTOMER' ? this.registerForm.attentionMode : undefined,
+            specialty:
+              this.selectedRole === 'PROFESSIONAL' ? this.registerForm.specialty.trim() : undefined,
+            professionId:
+              this.selectedRole === 'PROFESSIONAL' && this.registerForm.professionId
+                ? this.registerForm.professionId
+                : undefined,
+            customProfession:
+              this.selectedRole === 'PROFESSIONAL' && this.customProfessionMode
+                ? this.customProfession.trim()
+                : undefined,
+            attentionMode:
+              this.selectedRole === 'PROFESSIONAL' ? this.registerForm.attentionMode : undefined,
+            acceptedTerms: this.registerForm.acceptedTerms,
+            recaptchaToken,
+          })
+          .subscribe({
+            next: () => this.loginAfterRegister(),
+            error: (err) => {
+              this.errorMessage = err?.error?.message || 'No pudimos crear la cuenta.';
+              this.isSubmitting = false;
+            },
+          });
+      })
+      .catch(() => {
+        this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
+        this.isSubmitting = false;
       });
-    }).catch(() => {
-      this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
-      this.isSubmitting = false;
-    });
   }
 
   public requestPasswordReset(): void {
@@ -280,21 +352,25 @@ export class LoginComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.recaptchaService.execute('password_reset_request').then((recaptchaToken) => {
-      this.auth.requestPasswordReset(this.resetEmail.trim(), recaptchaToken).subscribe({
-      next: () => {
-        this.successMessage = 'Si el email existe, enviaremos un enlace para restablecer tu contrasena.';
+    this.recaptchaService
+      .execute('password_reset_request')
+      .then((recaptchaToken) => {
+        this.auth.requestPasswordReset(this.resetEmail.trim(), recaptchaToken).subscribe({
+          next: () => {
+            this.successMessage =
+              'Si el email existe, enviaremos un enlace para restablecer tu contrasena.';
+            this.isSubmitting = false;
+          },
+          error: () => {
+            this.errorMessage = 'No pudimos procesar la solicitud. Intenta nuevamente.';
+            this.isSubmitting = false;
+          },
+        });
+      })
+      .catch(() => {
+        this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
         this.isSubmitting = false;
-      },
-      error: () => {
-        this.errorMessage = 'No pudimos procesar la solicitud. Intenta nuevamente.';
-        this.isSubmitting = false;
-      },
       });
-    }).catch(() => {
-      this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
-      this.isSubmitting = false;
-    });
   }
 
   public resetPassword(): void {
@@ -319,57 +395,67 @@ export class LoginComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.recaptchaService.execute('password_reset').then((recaptchaToken) => {
-      this.auth.resetPassword(this.resetToken, this.resetPasswordValue, recaptchaToken).subscribe({
-      next: () => {
-        this.successMessage = 'Contrasena actualizada. Ya puedes iniciar sesion.';
-        this.mode = 'login';
-        this.password = '';
-        this.resetPasswordValue = '';
-        this.resetPasswordConfirm = '';
-        this.router.navigate(['/login'], { replaceUrl: true });
+    this.recaptchaService
+      .execute('password_reset')
+      .then((recaptchaToken) => {
+        this.auth
+          .resetPassword(this.resetToken, this.resetPasswordValue, recaptchaToken)
+          .subscribe({
+            next: () => {
+              this.successMessage = 'Contrasena actualizada. Ya puedes iniciar sesion.';
+              this.mode = 'login';
+              this.password = '';
+              this.resetPasswordValue = '';
+              this.resetPasswordConfirm = '';
+              this.router.navigate(['/login'], { replaceUrl: true });
+              this.isSubmitting = false;
+            },
+            error: (err) => {
+              this.errorMessage = err?.error?.message || 'El enlace no es valido o expiro.';
+              this.isSubmitting = false;
+            },
+          });
+      })
+      .catch(() => {
+        this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
         this.isSubmitting = false;
-      },
-      error: (err) => {
-        this.errorMessage = err?.error?.message || 'El enlace no es valido o expiro.';
-        this.isSubmitting = false;
-      },
       });
-    }).catch(() => {
-      this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
-      this.isSubmitting = false;
-    });
   }
 
   private loginAfterRegister(): void {
-    this.recaptchaService.execute('login').then((recaptchaToken) => {
-      this.auth.login(this.registerForm.email.trim(), this.registerForm.password, recaptchaToken).subscribe({
-      next: (res: any) => {
-        this.saveSession(res);
-        void this.pushNotifications.registerDevice();
-        if (res?.user?.role === 'ADMIN') {
-          this.router.navigateByUrl('/admin/dashboard');
-          this.isSubmitting = false;
-          return;
-        }
+    this.recaptchaService
+      .execute('login')
+      .then((recaptchaToken) => {
+        this.auth
+          .login(this.registerForm.email.trim(), this.registerForm.password, recaptchaToken)
+          .subscribe({
+            next: (res: any) => {
+              this.saveSession(res);
+              void this.pushNotifications.registerDevice();
+              if (res?.user?.role === 'ADMIN') {
+                this.router.navigateByUrl('/admin/dashboard');
+                this.isSubmitting = false;
+                return;
+              }
 
-        this.completeOnboardingProfile();
-      },
-      error: () => {
+              this.completeOnboardingProfile();
+            },
+            error: () => {
+              this.errorMessage = 'Cuenta creada. Inicia sesion para continuar.';
+              this.mode = 'login';
+              this.email = this.registerForm.email.trim();
+              this.password = '';
+              this.isSubmitting = false;
+            },
+          });
+      })
+      .catch(() => {
         this.errorMessage = 'Cuenta creada. Inicia sesion para continuar.';
         this.mode = 'login';
         this.email = this.registerForm.email.trim();
         this.password = '';
         this.isSubmitting = false;
-      }
       });
-    }).catch(() => {
-      this.errorMessage = 'Cuenta creada. Inicia sesion para continuar.';
-      this.mode = 'login';
-      this.email = this.registerForm.email.trim();
-      this.password = '';
-      this.isSubmitting = false;
-    });
   }
 
   private completeOnboardingProfile(): void {
@@ -387,9 +473,7 @@ export class LoginComponent implements OnInit {
     this.auth.updateProfile(profilePayload).subscribe({
       next: () => {
         this.router.navigateByUrl(
-          this.selectedRole === 'PROFESSIONAL'
-            ? '/tabs/professional-dashboard'
-            : '/tabs/home'
+          this.selectedRole === 'PROFESSIONAL' ? '/tabs/professional-dashboard' : '/tabs/home',
         );
       },
       error: () => {
@@ -397,7 +481,7 @@ export class LoginComponent implements OnInit {
       },
       complete: () => {
         this.isSubmitting = false;
-      }
+      },
     });
   }
 
@@ -428,7 +512,8 @@ export class LoginComponent implements OnInit {
     }
 
     if (!this.isPasswordStrong()) {
-      this.errorMessage = 'La contrasena debe tener mayuscula, minuscula, numero y caracter especial.';
+      this.errorMessage =
+        'La contrasena debe tener mayuscula, minuscula, numero y caracter especial.';
       return false;
     }
 
@@ -468,9 +553,7 @@ export class LoginComponent implements OnInit {
     if (this.registerStep === 1) return 'Elige como quieres usar Conecta';
     if (this.registerStep === 2) return 'Crea tu acceso';
     if (this.registerStep === 3) {
-      return this.selectedRole === 'CUSTOMER'
-        ? 'Que estas buscando?'
-        : 'Que servicio ofreces?';
+      return this.selectedRole === 'CUSTOMER' ? 'Que estas buscando?' : 'Que servicio ofreces?';
     }
 
     return 'Como prefieres atenderte?';
@@ -559,16 +642,16 @@ export class LoginComponent implements OnInit {
   public isCustomProfessionValid(): boolean {
     const value = this.customProfession.trim();
 
-    return value.length >= 3 &&
-      value.length <= 50 &&
-      /^[\p{L}\s-]+$/u.test(value);
+    return value.length >= 3 && value.length <= 50 && /^[\p{L}\s-]+$/u.test(value);
   }
 
   public shouldShowProfessionSuggestions(): boolean {
-    return this.selectedRole === 'PROFESSIONAL' &&
+    return (
+      this.selectedRole === 'PROFESSIONAL' &&
       this.professionSearchFocused &&
       !this.selectedProfession &&
-      !this.customProfessionMode;
+      !this.customProfessionMode
+    );
   }
 
   public getProfessionCategoryLabel(profession: ProfessionItem): string {
@@ -580,9 +663,7 @@ export class LoginComponent implements OnInit {
   }
 
   public getSelectedOptions(): string[] {
-    return this.selectedRole === 'CUSTOMER'
-      ? this.customerInterests
-      : [];
+    return this.selectedRole === 'CUSTOMER' ? this.customerInterests : [];
   }
 
   private isCurrentStepValid(): boolean {
@@ -600,14 +681,16 @@ export class LoginComponent implements OnInit {
       }
 
       if (this.emailCheckStatus !== 'available') {
-        this.errorMessage = this.emailCheckStatus === 'taken'
-          ? 'Este correo ya esta registrado.'
-          : 'Espera la validacion del correo.';
+        this.errorMessage =
+          this.emailCheckStatus === 'taken'
+            ? 'Este correo ya esta registrado.'
+            : 'Espera la validacion del correo.';
         return false;
       }
 
       if (!this.isPasswordStrong()) {
-        this.errorMessage = 'La contrasena debe tener minimo 8 caracteres, mayuscula, minuscula, numero y caracter especial.';
+        this.errorMessage =
+          'La contrasena debe tener minimo 8 caracteres, mayuscula, minuscula, numero y caracter especial.';
         return false;
       }
 
@@ -641,11 +724,13 @@ export class LoginComponent implements OnInit {
     if (this.registerStep === 1) return true;
 
     if (this.registerStep === 2) {
-      return this.isFullNameValid() &&
+      return (
+        this.isFullNameValid() &&
         this.isEmailValid() &&
         this.emailCheckStatus === 'available' &&
         this.isPasswordStrong() &&
-        this.doPasswordsMatch();
+        this.doPasswordsMatch()
+      );
     }
 
     if (this.registerStep === 3) {
@@ -657,21 +742,21 @@ export class LoginComponent implements OnInit {
   }
 
   public canSubmitRegister(): boolean {
-    return this.registerStep === 4 &&
+    return (
+      this.registerStep === 4 &&
       !this.isSubmitting &&
       this.isFullNameValid() &&
       this.isEmailValid() &&
       this.emailCheckStatus === 'available' &&
       this.isPasswordStrong() &&
       this.doPasswordsMatch() &&
-      this.registerForm.acceptedTerms === true;
+      this.registerForm.acceptedTerms === true
+    );
   }
 
   public isFullNameValid(): boolean {
     const name = this.registerForm.name.trim().replace(/\s+/g, ' ');
-    return name.length >= 5 &&
-      name.length <= 80 &&
-      /^[\p{L}]+(?:[ -][\p{L}]+)+$/u.test(name);
+    return name.length >= 5 && name.length <= 80 && /^[\p{L}]+(?:[ -][\p{L}]+)+$/u.test(name);
   }
 
   public isEmailValid(): boolean {
@@ -705,8 +790,10 @@ export class LoginComponent implements OnInit {
   }
 
   public doPasswordsMatch(): boolean {
-    return !!this.registerForm.confirmPassword &&
-      this.registerForm.password === this.registerForm.confirmPassword;
+    return (
+      !!this.registerForm.confirmPassword &&
+      this.registerForm.password === this.registerForm.confirmPassword
+    );
   }
 
   public getFieldState(valid: boolean, touchedValue: string): 'valid' | 'invalid' | '' {
@@ -729,28 +816,42 @@ export class LoginComponent implements OnInit {
     localStorage.setItem('name', res.user.name || 'Usuario');
   }
 
+  private navigateAfterLogin(res: any): void {
+    const role = res?.user?.role || localStorage.getItem('role');
+    this.router.navigateByUrl(
+      role === 'ADMIN'
+        ? '/admin/dashboard'
+        : role === 'PROFESSIONAL'
+          ? '/tabs/professional-dashboard'
+          : '/tabs/home',
+    );
+    this.isSubmitting = false;
+  }
+
   private cleanOptional(value: string): string | undefined {
     const cleaned = value?.trim();
     return cleaned ? cleaned : undefined;
   }
 
   public loadProfessionSuggestions(search: string): void {
-    this.professionService.getProfessions({
-      search,
-    }).subscribe({
-      next: (professions) => {
-        this.professionSuggestions = professions.slice(0, 12);
+    this.professionService
+      .getProfessions({
+        search,
+      })
+      .subscribe({
+        next: (professions) => {
+          this.professionSuggestions = professions.slice(0, 12);
 
-        const existing = this.findExistingProfession(search);
+          const existing = this.findExistingProfession(search);
 
-        if (existing && search.length > 0) {
-          this.selectProfession(existing);
-        }
-      },
-      error: () => {
-        this.professionSuggestions = [];
-      },
-    });
+          if (existing && search.length > 0) {
+            this.selectProfession(existing);
+          }
+        },
+        error: () => {
+          this.professionSuggestions = [];
+        },
+      });
   }
 
   private findExistingProfession(value: string): ProfessionItem | null {
@@ -758,15 +859,13 @@ export class LoginComponent implements OnInit {
 
     if (!normalized) return null;
 
-    return this.professionSuggestions.find((profession) => {
-      const names = [
-        profession.name,
-        profession.slug,
-        ...(profession.aliases || []),
-      ];
+    return (
+      this.professionSuggestions.find((profession) => {
+        const names = [profession.name, profession.slug, ...(profession.aliases || [])];
 
-      return names.some((item) => this.normalizeProfession(item) === normalized);
-    }) || null;
+        return names.some((item) => this.normalizeProfession(item) === normalized);
+      }) || null
+    );
   }
 
   private getProfessionValidationError(): string | null {

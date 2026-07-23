@@ -1,555 +1,656 @@
 <main class="login-page">
   @if ($any(this).mode === 'intro') {
-  <section
-    class="splash-panel"
-    aria-label="Cargando Conecta"
-  >
-    <img class="splash-brand-image" src="assets/conecta-full.png" alt="Conecta" />
-  </section>
+    <section class="splash-panel" aria-label="Cargando Conecta">
+      <img class="splash-brand-image" src="assets/conecta-full.png" alt="Conecta" />
+    </section>
   }
 
   @if ($any(this).mode !== 'intro') {
-  <section
-    class="onboarding-shell"
-    aria-label="Acceso Conecta"
-  >
-    <div class="brand-row">
-      <div class="brand-mark small">
-        <img src="assets/soloimagen.png" alt="Conecta" />
+    <section class="onboarding-shell" aria-label="Acceso Conecta">
+      <div class="brand-row">
+        <div class="brand-mark small">
+          <img src="assets/soloimagen.png" alt="Conecta" />
+        </div>
+        <img
+          class="brand-wordmark"
+          src="assets/logoletra.png"
+          alt="Conecta - Conecta con lo que importa"
+        />
       </div>
-      <img class="brand-wordmark" src="assets/logoletra.png" alt="Conecta - Conecta con lo que importa" />
-    </div>
 
-    <div class="mode-tabs" aria-label="Modo de acceso">
-      <button
-        type="button"
-        [class.active]="$any(this).mode === 'register'"
-        (click)="$any(this).showRegister()"
-      >
-        Crear cuenta
-      </button>
+      <div class="mode-tabs" aria-label="Modo de acceso">
+        <button
+          type="button"
+          [class.active]="$any(this).mode === 'register'"
+          (click)="$any(this).showRegister()"
+        >
+          Crear cuenta
+        </button>
 
-      <button
-        type="button"
-        [class.active]="$any(this).mode === 'login'"
-        (click)="$any(this).showLogin()"
-      >
-        Iniciar sesion
-      </button>
-    </div>
+        <button
+          type="button"
+          [class.active]="$any(this).mode === 'login'"
+          (click)="$any(this).showLogin()"
+        >
+          Iniciar sesion
+        </button>
+      </div>
 
-    @if ($any(this).mode === 'register') {
-      <div class="step-progress" aria-label="Progreso de registro">
-        @for (step of [1, 2, 3, 4]; track step) {
-        <span [class.active]="$any(this).registerStep >= step"></span>
+      @if ($any(this).mode === 'register') {
+        <div class="step-progress" aria-label="Progreso de registro">
+          @for (step of [1, 2, 3, 4]; track step) {
+            <span [class.active]="$any(this).registerStep >= step"></span>
+          }
+        </div>
+
+        <header class="login-heading">
+          <span>Paso {{ $any(this).registerStep }} de 4</span>
+          <h1>{{ $any(this).getStepTitle() }}</h1>
+          <p>{{ $any(this).getStepSubtitle() }}</p>
+        </header>
+
+        @if ($any(this).registerStep === 1) {
+          <div class="role-grid">
+            <button
+              type="button"
+              class="role-card"
+              [class.active]="$any(this).selectedRole === 'CUSTOMER'"
+              (click)="$any(this).selectRole('CUSTOMER')"
+            >
+              <span>Cliente</span>
+              <strong>Quiero encontrar atencion</strong>
+              <small>Busca profesionales, agenda y conversa desde un solo lugar.</small>
+            </button>
+
+            <button
+              type="button"
+              class="role-card"
+              [class.active]="$any(this).selectedRole === 'PROFESSIONAL'"
+              (click)="$any(this).selectRole('PROFESSIONAL')"
+            >
+              <span>Profesional</span>
+              <strong>Quiero ofrecer mis servicios</strong>
+              <small>Administra agenda, perfil, documentos y clientes.</small>
+            </button>
+          </div>
         }
-      </div>
 
-      <header class="login-heading">
-        <span>Paso {{ $any(this).registerStep }} de 4</span>
-        <h1>{{ $any(this).getStepTitle() }}</h1>
-        <p>{{ $any(this).getStepSubtitle() }}</p>
-      </header>
+        @if ($any(this).registerStep === 2) {
+          <div class="form-grid">
+            <label class="field full">
+              <span>Nombre completo</span>
+              <input
+                type="text"
+                autocomplete="name"
+                aria-describedby="register-name-help"
+                [class.valid]="
+                  $any(this).getFieldState(
+                    $any(this).isFullNameValid(),
+                    $any(this).registerForm.name
+                  ) === 'valid'
+                "
+                [class.invalid]="
+                  $any(this).getFieldState(
+                    $any(this).isFullNameValid(),
+                    $any(this).registerForm.name
+                  ) === 'invalid'
+                "
+                [ngModel]="$any(this).registerForm.name"
+                (ngModelChange)="$any(this).onRegisterNameChange($event)"
+                placeholder="Nombre y apellido"
+                maxlength="80"
+              />
+              <small
+                id="register-name-help"
+                [class.ok]="$any(this).isFullNameValid()"
+                [class.error]="$any(this).registerForm.name && !$any(this).isFullNameValid()"
+              >
+                {{
+                  $any(this).isFullNameValid()
+                    ? 'Nombre valido'
+                    : 'Debes ingresar nombre y apellido.'
+                }}
+              </small>
+            </label>
 
-      @if ($any(this).registerStep === 1) {
-      <div class="role-grid">
-        <button
-          type="button"
-          class="role-card"
-          [class.active]="$any(this).selectedRole === 'CUSTOMER'"
-          (click)="$any(this).selectRole('CUSTOMER')"
-        >
-          <span>Cliente</span>
-          <strong>Quiero encontrar atencion</strong>
-          <small>Busca profesionales, agenda y conversa desde un solo lugar.</small>
-        </button>
+            <label class="field full">
+              <span>Email</span>
+              <input
+                type="email"
+                autocomplete="email"
+                aria-describedby="register-email-help"
+                [class.valid]="$any(this).emailCheckStatus === 'available'"
+                [class.invalid]="
+                  $any(this).emailCheckStatus === 'taken' ||
+                  $any(this).emailCheckStatus === 'invalid'
+                "
+                [ngModel]="$any(this).registerForm.email"
+                (ngModelChange)="$any(this).onRegisterEmailChange($event)"
+                placeholder="tu@email.com"
+              />
+              <small
+                id="register-email-help"
+                [class.ok]="$any(this).emailCheckStatus === 'available'"
+                [class.error]="
+                  $any(this).emailCheckStatus === 'taken' ||
+                  $any(this).emailCheckStatus === 'invalid'
+                "
+              >
+                {{ $any(this).getEmailMessage() }}
+              </small>
+            </label>
 
-        <button
-          type="button"
-          class="role-card"
-          [class.active]="$any(this).selectedRole === 'PROFESSIONAL'"
-          (click)="$any(this).selectRole('PROFESSIONAL')"
-        >
-          <span>Profesional</span>
-          <strong>Quiero ofrecer mis servicios</strong>
-          <small>Administra agenda, perfil, documentos y clientes.</small>
-        </button>
-      </div>
+            <label class="field full password-field">
+              <span>Contrasena</span>
+              <div class="password-control">
+                <input
+                  [type]="$any(this).showRegisterPassword ? 'text' : 'password'"
+                  autocomplete="new-password"
+                  aria-describedby="register-password-help"
+                  [class.valid]="$any(this).isPasswordStrong()"
+                  [class.invalid]="
+                    $any(this).registerForm.password && !$any(this).isPasswordStrong()
+                  "
+                  [ngModel]="$any(this).registerForm.password"
+                  (ngModelChange)="$any(this).onRegisterPasswordChange($event)"
+                  placeholder="Minimo 8 caracteres"
+                />
+                <button
+                  type="button"
+                  (click)="$any(this).showRegisterPassword = !$any(this).showRegisterPassword"
+                >
+                  {{ $any(this).showRegisterPassword ? 'Ocultar' : 'Mostrar' }}
+                </button>
+              </div>
+              <div class="password-strength" [class.strong]="$any(this).getPasswordScore() === 5">
+                <span [style.width.%]="$any(this).getPasswordScore() * 20"></span>
+              </div>
+              <small
+                id="register-password-help"
+                [class.ok]="$any(this).isPasswordStrong()"
+                [class.error]="$any(this).registerForm.password && !$any(this).isPasswordStrong()"
+              >
+                Seguridad: {{ $any(this).getPasswordStrengthLabel() }}. Usa mayuscula, minuscula,
+                numero y caracter especial.
+              </small>
+            </label>
+
+            <label class="field full password-field">
+              <span>Confirmar contrasena</span>
+              <div class="password-control">
+                <input
+                  [type]="$any(this).showRegisterConfirmPassword ? 'text' : 'password'"
+                  autocomplete="new-password"
+                  aria-describedby="register-confirm-password-help"
+                  [class.valid]="$any(this).doPasswordsMatch()"
+                  [class.invalid]="
+                    $any(this).registerForm.confirmPassword && !$any(this).doPasswordsMatch()
+                  "
+                  [ngModel]="$any(this).registerForm.confirmPassword"
+                  (ngModelChange)="$any(this).onRegisterConfirmPasswordChange($event)"
+                  placeholder="Repite tu contrasena"
+                />
+                <button
+                  type="button"
+                  (click)="
+                    $any(this).showRegisterConfirmPassword = !$any(this).showRegisterConfirmPassword
+                  "
+                >
+                  {{ $any(this).showRegisterConfirmPassword ? 'Ocultar' : 'Mostrar' }}
+                </button>
+              </div>
+              <small
+                id="register-confirm-password-help"
+                [class.ok]="$any(this).doPasswordsMatch()"
+                [class.error]="
+                  $any(this).registerForm.confirmPassword && !$any(this).doPasswordsMatch()
+                "
+              >
+                {{
+                  $any(this).doPasswordsMatch()
+                    ? 'Las contrasenas coinciden.'
+                    : 'Las contrasenas no coinciden.'
+                }}
+              </small>
+            </label>
+          </div>
+        }
+
+        @if ($any(this).registerStep === 3) {
+          @if ($any(this).selectedRole === 'CUSTOMER') {
+            <div class="option-grid">
+              @for (option of $any(this).getSelectedOptions(); track option) {
+                <button
+                  type="button"
+                  class="option-card"
+                  [class.active]="$any(this).registerForm.interest === option"
+                  (click)="$any(this).selectInterest(option)"
+                >
+                  {{ option }}
+                </button>
+              }
+            </div>
+          }
+
+          @if ($any(this).selectedRole === 'PROFESSIONAL') {
+            <div class="profession-picker">
+              <label class="profession-search-field">
+                <span>Busca tu profesion o especialidad</span>
+                <input
+                  type="text"
+                  autocomplete="off"
+                  [ngModel]="$any(this).professionSearch"
+                  (ngModelChange)="
+                    $any(this).professionSearch = $event; $any(this).onProfessionSearchChange()
+                  "
+                  (focus)="
+                    $any(this).professionSearchFocused = true;
+                    $any(this).loadProfessionSuggestions($any(this).professionSearch)
+                  "
+                  placeholder="Ej: psicologo, barbero, abogado..."
+                />
+              </label>
+
+              @if ($any(this).selectedProfession) {
+                <div class="selected-profession">
+                  <div>
+                    <strong>{{ $any(this).selectedProfession.name }}</strong>
+                    <span>{{
+                      $any(this).getProfessionCategoryLabel($any(this).selectedProfession)
+                    }}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    (click)="
+                      $any(this).selectedProfession = null;
+                      $any(this).registerForm.professionId = '';
+                      $any(this).registerForm.specialty = '';
+                      $any(this).professionSearch = ''
+                    "
+                  >
+                    Cambiar
+                  </button>
+                </div>
+              }
+
+              @if ($any(this).shouldShowProfessionSuggestions()) {
+                <div class="profession-suggestions">
+                  @for (profession of $any(this).professionSuggestions; track profession.id) {
+                    <button
+                      type="button"
+                      (click)="
+                        $any(this).selectProfession(profession);
+                        $any(this).professionSearchFocused = false
+                      "
+                    >
+                      <strong>{{ profession.name }}</strong>
+                      <span>{{ $any(this).getProfessionCategoryLabel(profession) }}</span>
+                    </button>
+                  }
+
+                  <button
+                    type="button"
+                    class="custom-option"
+                    (click)="
+                      $any(this).useCustomProfession(); $any(this).professionSearchFocused = false
+                    "
+                  >
+                    <strong>Otro</strong>
+                    <span>Escribir una profesion que no esta en el catalogo</span>
+                  </button>
+                </div>
+              }
+
+              @if ($any(this).customProfessionMode) {
+                <label
+                  class="field full custom-profession-field"
+                  [class.valid]="$any(this).isCustomProfessionValid()"
+                  [class.invalid]="
+                    $any(this).customProfession && !$any(this).isCustomProfessionValid()
+                  "
+                >
+                  <span>Escribe tu profesion</span>
+                  <input
+                    type="text"
+                    maxlength="50"
+                    [ngModel]="$any(this).customProfession"
+                    (ngModelChange)="
+                      $any(this).customProfession = $event; $any(this).onCustomProfessionChange()
+                    "
+                    placeholder="Ejemplo: Neuropsicologo, Terapeuta Holistico, Coach Ejecutivo."
+                  />
+                  <small
+                    [class.ok]="$any(this).isCustomProfessionValid()"
+                    [class.error]="
+                      $any(this).customProfession && !$any(this).isCustomProfessionValid()
+                    "
+                  >
+                    {{ $any(this).getCustomProfessionMessage() }}
+                  </small>
+                </label>
+              }
+            </div>
+          }
+        }
+
+        @if ($any(this).registerStep === 4) {
+          <div class="option-grid">
+            <button
+              type="button"
+              class="option-card"
+              [class.active]="$any(this).registerForm.attentionMode === 'ONLINE'"
+              (click)="$any(this).selectAttentionMode('ONLINE')"
+            >
+              <strong>Online</strong>
+              <small>Atencion por videollamada.</small>
+            </button>
+
+            <button
+              type="button"
+              class="option-card"
+              [class.active]="$any(this).registerForm.attentionMode === 'PRESENTIAL'"
+              (click)="$any(this).selectAttentionMode('PRESENTIAL')"
+            >
+              <strong>Presencial</strong>
+              <small>Busca atencion cerca de ti.</small>
+            </button>
+
+            <button
+              type="button"
+              class="option-card"
+              [class.active]="$any(this).registerForm.attentionMode === 'BOTH'"
+              (click)="$any(this).selectAttentionMode('BOTH')"
+            >
+              <strong>Ambas</strong>
+              <small>Manten tus opciones abiertas.</small>
+            </button>
+          </div>
+
+          <label class="consent-row">
+            <input
+              type="checkbox"
+              [ngModel]="$any(this).registerForm.acceptedTerms"
+              (ngModelChange)="$any(this).registerForm.acceptedTerms = $event"
+            />
+            <span>
+              Acepto los
+              <a routerLink="/terms">terminos</a>, la
+              <a routerLink="/privacy-policy">politica de privacidad</a>
+              y el tratamiento de mis datos.
+            </span>
+          </label>
+
+          <p class="recaptcha-notice">
+            Este sitio esta protegido por Google reCAPTCHA. Aplican la
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">
+              Politica de Privacidad
+            </a>
+            y los
+            <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">
+              Terminos del servicio
+            </a>
+            de Google.
+          </p>
+        }
+
+        @if ($any(this).errorMessage) {
+          <p class="form-error">
+            {{ $any(this).errorMessage }}
+          </p>
+        }
+
+        <div class="wizard-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="$any(this).registerStep === 1 || $any(this).isSubmitting"
+            (click)="$any(this).previousRegisterStep()"
+          >
+            Atras
+          </button>
+
+          @if ($any(this).registerStep < 4) {
+            <button
+              type="button"
+              class="login-button"
+              [disabled]="!$any(this).canContinueRegister()"
+              (click)="$any(this).nextRegisterStep()"
+            >
+              Continuar
+            </button>
+          }
+
+          @if ($any(this).registerStep === 4) {
+            <button
+              type="button"
+              class="login-button"
+              [disabled]="!$any(this).canSubmitRegister()"
+              (click)="$any(this).register()"
+            >
+              {{ $any(this).isSubmitting ? 'Creando cuenta...' : 'Crear cuenta' }}
+            </button>
+
+            <button
+              type="button"
+              class="google-button"
+              [disabled]="$any(this).isSubmitting || !$any(this).registerForm.acceptedTerms"
+              (click)="$any(this).continueWithGoogle(true)"
+            >
+              <svg class="google-mark" aria-hidden="true" viewBox="0 0 18 18">
+                <path
+                  fill="#4285F4"
+                  d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.8 2.7-6.5z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M9 18c2.4 0 4.5-.8 6-2.2L12 13.5c-.8.6-1.9.9-3 .9-2.3 0-4.3-1.6-5-3.7H1v2.3A9 9 0 0 0 9 18z"
+                />
+                <path fill="#FBBC05" d="M4 10.7a5.4 5.4 0 0 1 0-3.4V5H1a9 9 0 0 0 0 8l3-2.3z" />
+                <path
+                  fill="#EA4335"
+                  d="M9 3.6c1.3 0 2.5.5 3.5 1.4L15 2.5A8.4 8.4 0 0 0 9 0a9 9 0 0 0-8 5l3 2.3c.7-2.1 2.7-3.7 5-3.7z"
+                />
+              </svg>
+              Continuar con Google
+            </button>
+          }
+        </div>
       }
 
-      @if ($any(this).registerStep === 2) {
-      <div class="form-grid">
-        <label class="field full">
-          <span>Nombre completo</span>
-          <input
-            type="text"
-            autocomplete="name"
-            aria-describedby="register-name-help"
-            [class.valid]="$any(this).getFieldState($any(this).isFullNameValid(), $any(this).registerForm.name) === 'valid'"
-            [class.invalid]="$any(this).getFieldState($any(this).isFullNameValid(), $any(this).registerForm.name) === 'invalid'"
-            [ngModel]="$any(this).registerForm.name"
-            (ngModelChange)="$any(this).onRegisterNameChange($event)"
-            placeholder="Nombre y apellido"
-            maxlength="80"
-          />
-          <small
-            id="register-name-help"
-            [class.ok]="$any(this).isFullNameValid()"
-            [class.error]="$any(this).registerForm.name && !$any(this).isFullNameValid()"
-          >
-            {{ $any(this).isFullNameValid() ? 'Nombre valido' : 'Debes ingresar nombre y apellido.' }}
-          </small>
-        </label>
+      @if ($any(this).mode === 'login') {
+        <header class="login-heading compact">
+          <span>Bienvenido de vuelta</span>
+          <h1>Iniciar sesion</h1>
+          <p>Accede a tus citas, mensajes y actividad.</p>
+        </header>
 
-        <label class="field full">
+        <label class="field">
           <span>Email</span>
           <input
             type="email"
             autocomplete="email"
-            aria-describedby="register-email-help"
-            [class.valid]="$any(this).emailCheckStatus === 'available'"
-            [class.invalid]="$any(this).emailCheckStatus === 'taken' || $any(this).emailCheckStatus === 'invalid'"
-            [ngModel]="$any(this).registerForm.email"
-            (ngModelChange)="$any(this).onRegisterEmailChange($event)"
-            placeholder="tu@email.com"
+            placeholder="Email"
+            [ngModel]="$any(this).email"
+            (ngModelChange)="$any(this).email = $event"
           />
-          <small
-            id="register-email-help"
-            [class.ok]="$any(this).emailCheckStatus === 'available'"
-            [class.error]="$any(this).emailCheckStatus === 'taken' || $any(this).emailCheckStatus === 'invalid'"
-          >
-            {{ $any(this).getEmailMessage() }}
-          </small>
         </label>
 
-        <label class="field full password-field">
+        <label class="field">
           <span>Contrasena</span>
-          <div class="password-control">
-            <input
-              [type]="$any(this).showRegisterPassword ? 'text' : 'password'"
-              autocomplete="new-password"
-              aria-describedby="register-password-help"
-              [class.valid]="$any(this).isPasswordStrong()"
-              [class.invalid]="$any(this).registerForm.password && !$any(this).isPasswordStrong()"
-              [ngModel]="$any(this).registerForm.password"
-              (ngModelChange)="$any(this).onRegisterPasswordChange($event)"
-              placeholder="Minimo 8 caracteres"
-            />
-            <button
-              type="button"
-              (click)="$any(this).showRegisterPassword = !$any(this).showRegisterPassword"
-            >
-              {{ $any(this).showRegisterPassword ? 'Ocultar' : 'Mostrar' }}
-            </button>
-          </div>
-          <div class="password-strength" [class.strong]="$any(this).getPasswordScore() === 5">
-            <span [style.width.%]="$any(this).getPasswordScore() * 20"></span>
-          </div>
-          <small
-            id="register-password-help"
-            [class.ok]="$any(this).isPasswordStrong()"
-            [class.error]="$any(this).registerForm.password && !$any(this).isPasswordStrong()"
-          >
-            Seguridad: {{ $any(this).getPasswordStrengthLabel() }}.
-            Usa mayuscula, minuscula, numero y caracter especial.
-          </small>
+          <input
+            type="password"
+            autocomplete="current-password"
+            placeholder="Contrasena"
+            [ngModel]="$any(this).password"
+            (ngModelChange)="$any(this).password = $event"
+          />
         </label>
 
-        <label class="field full password-field">
+        @if ($any(this).errorMessage) {
+          <p class="form-error">
+            {{ $any(this).errorMessage }}
+          </p>
+        }
+
+        @if ($any(this).successMessage) {
+          <p class="form-success">
+            {{ $any(this).successMessage }}
+          </p>
+        }
+
+        <button
+          type="button"
+          class="login-button"
+          [disabled]="$any(this).isSubmitting"
+          (click)="$any(this).login()"
+        >
+          {{ $any(this).isSubmitting ? 'Ingresando...' : 'Iniciar sesion' }}
+        </button>
+
+        <div class="auth-divider"><span>o</span></div>
+
+        <button
+          type="button"
+          class="google-button"
+          [disabled]="$any(this).isSubmitting"
+          (click)="$any(this).continueWithGoogle(false)"
+        >
+          <svg class="google-mark" aria-hidden="true" viewBox="0 0 18 18">
+            <path
+              fill="#4285F4"
+              d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.8 2.7-6.5z"
+            />
+            <path
+              fill="#34A853"
+              d="M9 18c2.4 0 4.5-.8 6-2.2L12 13.5c-.8.6-1.9.9-3 .9-2.3 0-4.3-1.6-5-3.7H1v2.3A9 9 0 0 0 9 18z"
+            />
+            <path fill="#FBBC05" d="M4 10.7a5.4 5.4 0 0 1 0-3.4V5H1a9 9 0 0 0 0 8l3-2.3z" />
+            <path
+              fill="#EA4335"
+              d="M9 3.6c1.3 0 2.5.5 3.5 1.4L15 2.5A8.4 8.4 0 0 0 9 0a9 9 0 0 0-8 5l3 2.3c.7-2.1 2.7-3.7 5-3.7z"
+            />
+          </svg>
+          Continuar con Google
+        </button>
+
+        <button
+          type="button"
+          class="text-button"
+          [disabled]="$any(this).isSubmitting"
+          (click)="$any(this).showForgotPassword()"
+        >
+          Olvide mi contrasena
+        </button>
+      }
+
+      @if ($any(this).mode === 'forgot') {
+        <header class="login-heading compact">
+          <span>Recuperar acceso</span>
+          <h1>Restablece tu contrasena</h1>
+          <p>Te enviaremos un enlace temporal si el correo existe en Conecta.</p>
+        </header>
+
+        <label class="field">
+          <span>Email</span>
+          <input
+            type="email"
+            autocomplete="email"
+            placeholder="tu@email.com"
+            [ngModel]="$any(this).resetEmail"
+            (ngModelChange)="$any(this).resetEmail = $event"
+          />
+        </label>
+
+        @if ($any(this).errorMessage) {
+          <p class="form-error">
+            {{ $any(this).errorMessage }}
+          </p>
+        }
+
+        @if ($any(this).successMessage) {
+          <p class="form-success">
+            {{ $any(this).successMessage }}
+          </p>
+        }
+
+        <div class="wizard-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="$any(this).isSubmitting"
+            (click)="$any(this).showLogin()"
+          >
+            Volver
+          </button>
+
+          <button
+            type="button"
+            class="login-button"
+            [disabled]="$any(this).isSubmitting"
+            (click)="$any(this).requestPasswordReset()"
+          >
+            {{ $any(this).isSubmitting ? 'Enviando...' : 'Enviar enlace' }}
+          </button>
+        </div>
+      }
+
+      @if ($any(this).mode === 'reset') {
+        <header class="login-heading compact">
+          <span>Nuevo acceso</span>
+          <h1>Crea una nueva contrasena</h1>
+          <p>Usa una contrasena segura para volver a entrar a Conecta.</p>
+        </header>
+
+        <label class="field">
+          <span>Nueva contrasena</span>
+          <input
+            type="password"
+            autocomplete="new-password"
+            placeholder="Minimo 6 caracteres"
+            [ngModel]="$any(this).resetPasswordValue"
+            (ngModelChange)="$any(this).resetPasswordValue = $event"
+          />
+        </label>
+
+        <label class="field">
           <span>Confirmar contrasena</span>
-          <div class="password-control">
-            <input
-              [type]="$any(this).showRegisterConfirmPassword ? 'text' : 'password'"
-              autocomplete="new-password"
-              aria-describedby="register-confirm-password-help"
-              [class.valid]="$any(this).doPasswordsMatch()"
-              [class.invalid]="$any(this).registerForm.confirmPassword && !$any(this).doPasswordsMatch()"
-              [ngModel]="$any(this).registerForm.confirmPassword"
-              (ngModelChange)="$any(this).onRegisterConfirmPasswordChange($event)"
-              placeholder="Repite tu contrasena"
-            />
-            <button
-              type="button"
-              (click)="$any(this).showRegisterConfirmPassword = !$any(this).showRegisterConfirmPassword"
-            >
-              {{ $any(this).showRegisterConfirmPassword ? 'Ocultar' : 'Mostrar' }}
-            </button>
-          </div>
-          <small
-            id="register-confirm-password-help"
-            [class.ok]="$any(this).doPasswordsMatch()"
-            [class.error]="$any(this).registerForm.confirmPassword && !$any(this).doPasswordsMatch()"
-          >
-            {{ $any(this).doPasswordsMatch() ? 'Las contrasenas coinciden.' : 'Las contrasenas no coinciden.' }}
-          </small>
-        </label>
-      </div>
-      }
-
-      @if ($any(this).registerStep === 3) {
-      @if ($any(this).selectedRole === 'CUSTOMER') {
-      <div class="option-grid">
-        @for (option of $any(this).getSelectedOptions(); track option) {
-        <button
-          type="button"
-          class="option-card"
-          [class.active]="$any(this).registerForm.interest === option"
-          (click)="$any(this).selectInterest(option)"
-        >
-          {{ option }}
-        </button>
-        }
-      </div>
-      }
-
-      @if ($any(this).selectedRole === 'PROFESSIONAL') {
-      <div class="profession-picker">
-        <label class="profession-search-field">
-          <span>Busca tu profesion o especialidad</span>
           <input
-            type="text"
-            autocomplete="off"
-            [ngModel]="$any(this).professionSearch"
-            (ngModelChange)="$any(this).professionSearch = $event; $any(this).onProfessionSearchChange()"
-            (focus)="$any(this).professionSearchFocused = true; $any(this).loadProfessionSuggestions($any(this).professionSearch)"
-            placeholder="Ej: psicologo, barbero, abogado..."
+            type="password"
+            autocomplete="new-password"
+            placeholder="Repite tu contrasena"
+            [ngModel]="$any(this).resetPasswordConfirm"
+            (ngModelChange)="$any(this).resetPasswordConfirm = $event"
           />
         </label>
 
-        @if ($any(this).selectedProfession) {
-        <div class="selected-profession">
-          <div>
-            <strong>{{ $any(this).selectedProfession.name }}</strong>
-            <span>{{ $any(this).getProfessionCategoryLabel($any(this).selectedProfession) }}</span>
-          </div>
-
-          <button
-            type="button"
-            (click)="$any(this).selectedProfession = null; $any(this).registerForm.professionId = ''; $any(this).registerForm.specialty = ''; $any(this).professionSearch = ''"
-          >
-            Cambiar
-          </button>
-        </div>
+        @if ($any(this).errorMessage) {
+          <p class="form-error">
+            {{ $any(this).errorMessage }}
+          </p>
         }
 
-        @if ($any(this).shouldShowProfessionSuggestions()) {
-        <div class="profession-suggestions">
-          @for (profession of $any(this).professionSuggestions; track profession.id) {
-          <button
-            type="button"
-            (click)="$any(this).selectProfession(profession); $any(this).professionSearchFocused = false"
-          >
-            <strong>{{ profession.name }}</strong>
-            <span>{{ $any(this).getProfessionCategoryLabel(profession) }}</span>
-          </button>
-          }
-
-          <button
-            type="button"
-            class="custom-option"
-            (click)="$any(this).useCustomProfession(); $any(this).professionSearchFocused = false"
-          >
-            <strong>Otro</strong>
-            <span>Escribir una profesion que no esta en el catalogo</span>
-          </button>
-        </div>
+        @if ($any(this).successMessage) {
+          <p class="form-success">
+            {{ $any(this).successMessage }}
+          </p>
         }
-
-        @if ($any(this).customProfessionMode) {
-        <label
-          class="field full custom-profession-field"
-          [class.valid]="$any(this).isCustomProfessionValid()"
-          [class.invalid]="$any(this).customProfession && !$any(this).isCustomProfessionValid()"
-        >
-          <span>Escribe tu profesion</span>
-          <input
-            type="text"
-            maxlength="50"
-            [ngModel]="$any(this).customProfession"
-            (ngModelChange)="$any(this).customProfession = $event; $any(this).onCustomProfessionChange()"
-            placeholder="Ejemplo: Neuropsicologo, Terapeuta Holistico, Coach Ejecutivo."
-          />
-          <small
-            [class.ok]="$any(this).isCustomProfessionValid()"
-            [class.error]="$any(this).customProfession && !$any(this).isCustomProfessionValid()"
-          >
-            {{ $any(this).getCustomProfessionMessage() }}
-          </small>
-        </label>
-        }
-      </div>
-      }
-      }
-
-      @if ($any(this).registerStep === 4) {
-      <div class="option-grid">
-        <button
-          type="button"
-          class="option-card"
-          [class.active]="$any(this).registerForm.attentionMode === 'ONLINE'"
-          (click)="$any(this).selectAttentionMode('ONLINE')"
-        >
-          <strong>Online</strong>
-          <small>Atencion por videollamada.</small>
-        </button>
-
-        <button
-          type="button"
-          class="option-card"
-          [class.active]="$any(this).registerForm.attentionMode === 'PRESENTIAL'"
-          (click)="$any(this).selectAttentionMode('PRESENTIAL')"
-        >
-          <strong>Presencial</strong>
-          <small>Busca atencion cerca de ti.</small>
-        </button>
-
-        <button
-          type="button"
-          class="option-card"
-          [class.active]="$any(this).registerForm.attentionMode === 'BOTH'"
-          (click)="$any(this).selectAttentionMode('BOTH')"
-        >
-          <strong>Ambas</strong>
-          <small>Manten tus opciones abiertas.</small>
-        </button>
-      </div>
-
-      <label class="consent-row">
-        <input
-          type="checkbox"
-          [ngModel]="$any(this).registerForm.acceptedTerms"
-          (ngModelChange)="$any(this).registerForm.acceptedTerms = $event"
-        />
-        <span>
-          Acepto los
-          <a routerLink="/terms">terminos</a>,
-          la
-          <a routerLink="/privacy-policy">politica de privacidad</a>
-          y el tratamiento de mis datos.
-        </span>
-      </label>
-
-      <p class="recaptcha-notice">
-        Este sitio esta protegido por Google reCAPTCHA.
-        Aplican la
-        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">
-          Politica de Privacidad
-        </a>
-        y los
-        <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">
-          Terminos del servicio
-        </a>
-        de Google.
-      </p>
-      }
-
-      @if ($any(this).errorMessage) {
-      <p class="form-error">
-        {{ $any(this).errorMessage }}
-      </p>
-      }
-
-      <div class="wizard-actions">
-        <button
-          type="button"
-          class="secondary-button"
-          [disabled]="$any(this).registerStep === 1 || $any(this).isSubmitting"
-          (click)="$any(this).previousRegisterStep()"
-        >
-          Atras
-        </button>
-
-        @if ($any(this).registerStep < 4) {
-        <button
-          type="button"
-          class="login-button"
-          [disabled]="!$any(this).canContinueRegister()"
-          (click)="$any(this).nextRegisterStep()"
-        >
-          Continuar
-        </button>
-        }
-
-        @if ($any(this).registerStep === 4) {
-        <button
-          type="button"
-          class="login-button"
-          [disabled]="!$any(this).canSubmitRegister()"
-          (click)="$any(this).register()"
-        >
-          {{ $any(this).isSubmitting ? 'Creando cuenta...' : 'Crear cuenta' }}
-        </button>
-        }
-      </div>
-    }
-
-    @if ($any(this).mode === 'login') {
-      <header class="login-heading compact">
-        <span>Bienvenido de vuelta</span>
-        <h1>Iniciar sesion</h1>
-        <p>Accede a tus citas, mensajes y actividad.</p>
-      </header>
-
-      <label class="field">
-        <span>Email</span>
-        <input
-          type="email"
-          autocomplete="email"
-          placeholder="Email"
-          [ngModel]="$any(this).email"
-          (ngModelChange)="$any(this).email = $event"
-        />
-      </label>
-
-      <label class="field">
-        <span>Contrasena</span>
-        <input
-          type="password"
-          autocomplete="current-password"
-          placeholder="Contrasena"
-          [ngModel]="$any(this).password"
-          (ngModelChange)="$any(this).password = $event"
-        />
-      </label>
-
-      @if ($any(this).errorMessage) {
-      <p class="form-error">
-        {{ $any(this).errorMessage }}
-      </p>
-      }
-
-      @if ($any(this).successMessage) {
-      <p class="form-success">
-        {{ $any(this).successMessage }}
-      </p>
-      }
-
-      <button
-        type="button"
-        class="login-button"
-        [disabled]="$any(this).isSubmitting"
-        (click)="$any(this).login()"
-      >
-        {{ $any(this).isSubmitting ? 'Ingresando...' : 'Iniciar sesion' }}
-      </button>
-
-      <button
-        type="button"
-        class="text-button"
-        [disabled]="$any(this).isSubmitting"
-        (click)="$any(this).showForgotPassword()"
-      >
-        Olvide mi contrasena
-      </button>
-    }
-
-    @if ($any(this).mode === 'forgot') {
-      <header class="login-heading compact">
-        <span>Recuperar acceso</span>
-        <h1>Restablece tu contrasena</h1>
-        <p>Te enviaremos un enlace temporal si el correo existe en Conecta.</p>
-      </header>
-
-      <label class="field">
-        <span>Email</span>
-        <input
-          type="email"
-          autocomplete="email"
-          placeholder="tu@email.com"
-          [ngModel]="$any(this).resetEmail"
-          (ngModelChange)="$any(this).resetEmail = $event"
-        />
-      </label>
-
-      @if ($any(this).errorMessage) {
-      <p class="form-error">
-        {{ $any(this).errorMessage }}
-      </p>
-      }
-
-      @if ($any(this).successMessage) {
-      <p class="form-success">
-        {{ $any(this).successMessage }}
-      </p>
-      }
-
-      <div class="wizard-actions">
-        <button
-          type="button"
-          class="secondary-button"
-          [disabled]="$any(this).isSubmitting"
-          (click)="$any(this).showLogin()"
-        >
-          Volver
-        </button>
 
         <button
           type="button"
           class="login-button"
           [disabled]="$any(this).isSubmitting"
-          (click)="$any(this).requestPasswordReset()"
+          (click)="$any(this).resetPassword()"
         >
-          {{ $any(this).isSubmitting ? 'Enviando...' : 'Enviar enlace' }}
+          {{ $any(this).isSubmitting ? 'Actualizando...' : 'Actualizar contrasena' }}
         </button>
-      </div>
-    }
-
-    @if ($any(this).mode === 'reset') {
-      <header class="login-heading compact">
-        <span>Nuevo acceso</span>
-        <h1>Crea una nueva contrasena</h1>
-        <p>Usa una contrasena segura para volver a entrar a Conecta.</p>
-      </header>
-
-      <label class="field">
-        <span>Nueva contrasena</span>
-        <input
-          type="password"
-          autocomplete="new-password"
-          placeholder="Minimo 6 caracteres"
-          [ngModel]="$any(this).resetPasswordValue"
-          (ngModelChange)="$any(this).resetPasswordValue = $event"
-        />
-      </label>
-
-      <label class="field">
-        <span>Confirmar contrasena</span>
-        <input
-          type="password"
-          autocomplete="new-password"
-          placeholder="Repite tu contrasena"
-          [ngModel]="$any(this).resetPasswordConfirm"
-          (ngModelChange)="$any(this).resetPasswordConfirm = $event"
-        />
-      </label>
-
-      @if ($any(this).errorMessage) {
-      <p class="form-error">
-        {{ $any(this).errorMessage }}
-      </p>
       }
 
-      @if ($any(this).successMessage) {
-      <p class="form-success">
-        {{ $any(this).successMessage }}
-      </p>
-      }
-
-      <button
-        type="button"
-        class="login-button"
-        [disabled]="$any(this).isSubmitting"
-        (click)="$any(this).resetPassword()"
-      >
-        {{ $any(this).isSubmitting ? 'Actualizando...' : 'Actualizar contrasena' }}
-      </button>
-    }
-
-    <footer class="legal-links">
-      <a routerLink="/privacy-policy">Politica de privacidad</a>
-      <a routerLink="/terms">Terminos</a>
-      <a routerLink="/cookies">Cookies</a>
-    </footer>
-  </section>
+      <footer class="legal-links">
+        <a routerLink="/privacy-policy">Politica de privacidad</a>
+        <a routerLink="/terms">Terminos</a>
+        <a routerLink="/cookies">Cookies</a>
+      </footer>
+    </section>
   }
 </main>

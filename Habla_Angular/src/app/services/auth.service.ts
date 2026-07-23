@@ -2,12 +2,10 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { API_URL } from '../core/config/api.config';
 
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
-
   private api = API_URL;
 
   constructor(private http: HttpClient) {}
@@ -18,6 +16,25 @@ export class AuthService {
       email,
       password,
       recaptchaToken,
+    });
+  }
+
+  loginWithGoogle(
+    idToken: string,
+    registration?: {
+      role: 'CUSTOMER' | 'PROFESSIONAL';
+      acceptedTerms: boolean;
+      customerInterests?: string[];
+      preferredAttentionMode?: 'ONLINE' | 'PRESENTIAL' | 'BOTH';
+      specialty?: string;
+      professionId?: string;
+      customProfession?: string;
+      attentionMode?: 'ONLINE' | 'PRESENTIAL' | 'BOTH';
+    },
+  ) {
+    return this.http.post(`${this.api}/auth/google`, {
+      idToken,
+      ...registration,
     });
   }
 
@@ -40,7 +57,7 @@ export class AuthService {
     const params = new URLSearchParams({ email });
 
     return this.http.get<{ available: boolean }>(
-      `${this.api}/auth/email-available?${params.toString()}`
+      `${this.api}/auth/email-available?${params.toString()}`,
     );
   }
 
@@ -66,23 +83,23 @@ export class AuthService {
     const token = localStorage.getItem('token');
 
     return new HttpHeaders({
-      Authorization: `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     });
   }
 
   // ðŸ‘¤ PERFIL (ðŸ”¥ ESTE ES CLAVE)
   getProfile() {
     return this.http.get(`${this.api}/auth/me`, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(),
     });
   }
 
   // ðŸ“… CITAS DEL USUARIO
   getMyAppointments() {
-  return this.http.get<any[]>(`${this.api}/appointments/mine`, {
-    headers: this.getHeaders()
-  });
-}
+    return this.http.get<any[]>(`${this.api}/appointments/mine`, {
+      headers: this.getHeaders(),
+    });
+  }
 
   // ðŸ‘¨â€âš•ï¸ PROFESIONALES
   getProfessionals(params?: {
@@ -112,7 +129,7 @@ export class AuthService {
     const url = `${this.api}/users/professionals${suffix}`;
 
     return this.http.get(url, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(),
     });
   }
 
@@ -122,40 +139,41 @@ export class AuthService {
     query.set('q', params.q);
     if (params.country) query.set('country', params.country);
 
-    return this.http.get<Array<{
-      type: 'profession' | 'professional';
-      id: string;
-      slug?: string;
-      label: string;
-      specialty?: string;
-      categoryName?: string | null;
-      categorySlug?: string | null;
-      city?: string | null;
-    }>>(`${this.api}/users/search-suggestions?${query.toString()}`, {
-      headers: this.getHeaders()
+    return this.http.get<
+      Array<{
+        type: 'profession' | 'professional';
+        id: string;
+        slug?: string;
+        label: string;
+        specialty?: string;
+        categoryName?: string | null;
+        categorySlug?: string | null;
+        city?: string | null;
+      }>
+    >(`${this.api}/users/search-suggestions?${query.toString()}`, {
+      headers: this.getHeaders(),
     });
   }
-// ACTUALIZAR PERFIL
-updateProfile(data: any) {
-  return this.http.patch(`${this.api}/users/me`, data, {
-    headers: this.getHeaders()
-  });
-}
+  // ACTUALIZAR PERFIL
+  updateProfile(data: any) {
+    return this.http.patch(`${this.api}/users/me`, data, {
+      headers: this.getHeaders(),
+    });
+  }
 
-deleteMyAccount(confirmation: string) {
-  return this.http.delete(`${this.api}/auth/me/delete-account`, {
-    headers: this.getHeaders(),
-    body: { confirmation },
-  });
+  deleteMyAccount(confirmation: string) {
+    return this.http.delete(`${this.api}/auth/me/delete-account`, {
+      headers: this.getHeaders(),
+      body: { confirmation },
+    });
+  }
+  // â° SLOTS DISPONIBLES (ðŸ”¥ ESTE FALTABA)
+  getAvailableSlots(professionalId: string, date: string) {
+    return this.http.get<string[]>(
+      `${this.api}/appointments/available-slots?professionalId=${professionalId}&date=${date}`,
+      {
+        headers: this.getHeaders(),
+      },
+    );
+  }
 }
-// â° SLOTS DISPONIBLES (ðŸ”¥ ESTE FALTABA)
-getAvailableSlots(professionalId: string, date: string) {
-  return this.http.get<string[]>(
-    `${this.api}/appointments/available-slots?professionalId=${professionalId}&date=${date}`,
-    {
-      headers: this.getHeaders()
-    }
-  );
-}
-}
-
