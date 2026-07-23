@@ -21,8 +21,38 @@ export class AuthController {
   // 🔐 LOGIN
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
-  login(@Body() body: { email: string; password: string }) {
-    return this.authService.login(body.email, body.password);
+  login(
+    @Body()
+    body: {
+      email: string;
+      password: string;
+      recaptchaToken?: string;
+    },
+  ) {
+    return this.authService.login(
+      body.email,
+      body.password,
+      body.recaptchaToken,
+    );
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('google')
+  googleLogin(
+    @Body()
+    body: {
+      idToken: string;
+      role?: Role;
+      acceptedTerms?: boolean;
+      customerInterests?: string[];
+      preferredAttentionMode?: AttentionModality;
+      professionId?: string;
+      customProfession?: string;
+      specialty?: string;
+      attentionMode?: AttentionModality;
+    },
+  ) {
+    return this.authService.googleLogin(body);
   }
 
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
@@ -33,14 +63,34 @@ export class AuthController {
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('request-password-reset')
-  requestPasswordReset(@Body() body: { email: string }) {
-    return this.authService.requestPasswordReset(body.email);
+  requestPasswordReset(
+    @Body()
+    body: {
+      email: string;
+      recaptchaToken?: string;
+    },
+  ) {
+    return this.authService.requestPasswordReset(
+      body.email,
+      body.recaptchaToken,
+    );
   }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('reset-password')
-  resetPassword(@Body() body: { token: string; password: string }) {
-    return this.authService.resetPassword(body.token, body.password);
+  resetPassword(
+    @Body()
+    body: {
+      token: string;
+      password: string;
+      recaptchaToken?: string;
+    },
+  ) {
+    return this.authService.resetPassword(
+      body.token,
+      body.password,
+      body.recaptchaToken,
+    );
   }
 
   // 👤 PERFIL
@@ -65,10 +115,7 @@ export class AuthController {
 
   @Delete('me/delete-account')
   @UseGuards(JwtAuthGuard)
-  deleteMyAccount(
-    @Request() req: any,
-    @Body() body: { confirmation: string },
-  ) {
+  deleteMyAccount(@Request() req: any, @Body() body: { confirmation: string }) {
     return this.authService.deleteMyAccount(req.user.id, body.confirmation);
   }
 

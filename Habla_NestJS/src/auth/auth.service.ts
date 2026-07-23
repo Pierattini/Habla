@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -6,6 +10,7 @@ import { AttentionModality, Role } from '@prisma/client';
 import { createHash, randomBytes } from 'crypto';
 import { NotificationService } from '../notifications/notification.service';
 import { RecaptchaService } from './recaptcha.service';
+import { FirebaseAuthService } from './firebase-auth.service';
 
 type RegisterInput = {
   name: string;
@@ -22,6 +27,18 @@ type RegisterInput = {
   recaptchaToken?: string;
 };
 
+type GoogleLoginInput = {
+  idToken: string;
+  role?: Role;
+  acceptedTerms?: boolean;
+  customerInterests?: string[];
+  preferredAttentionMode?: AttentionModality;
+  professionId?: string;
+  customProfession?: string;
+  specialty?: string;
+  attentionMode?: AttentionModality;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -29,10 +46,13 @@ export class AuthService {
     private jwtService: JwtService,
     private notificationService: NotificationService,
     private recaptchaService: RecaptchaService,
+    private firebaseAuthService: FirebaseAuthService,
   ) {}
 
   // ðŸ” LOGIN
-  async login(email: string, password: string) {
+  async login(email: string, password: string, recaptchaToken?: string) {
+    await this.recaptchaService.verify(recaptchaToken, 'login');
+
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -51,26 +71,129 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    };
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
 
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
-    };
+    return this.createLoginResponse(user);
   }
 
-  async requestPasswordReset(email: string) {
-    const normalizedEmail = String(email || '').trim().toLowerCase();
+  async googleLogin(data: GoogleLoginInput) {
+    const decoded = await this.firebaseAuthService.verifyGoogleIdToken(
+      data.idToken,
+    );
+    const email = this.normalizeEmail(decoded.email || '');
+    const googleId = decoded.uid;
+    const name = this.normalizeName(
+      decoded.name || email.split('@')[0] || 'Usuario',
+    );
+    const image = typeof decoded.picture === 'string' ? decoded.picture : null;
+    const role =
+      data.role === Role.PROFESSIONAL ? Role.PROFESSIONAL : Role.CUSTOMER;
+    const now = new Date();
+    const placeholderPassword = await bcrypt.hash(
+      randomBytes(32).toString('hex'),
+      10,
+    );
+
+    const existingGoogleUser = await this.prisma.user.findUnique({
+      where: { googleId },
+    });
+
+    if (existingGoogleUser && existingGoogleUser.email !== email) {
+      throw new UnauthorizedException(
+        'La cuenta de Google no coincide con este correo.',
+      );
+    }
+
+    const existingEmailUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingEmailUser && !existingEmailUser.isActive) {
+      throw new UnauthorizedException('User inactive');
+    }
+
+    if (
+      existingEmailUser?.googleId &&
+      existingEmailUser.googleId !== googleId
+    ) {
+      throw new UnauthorizedException(
+        'Este correo ya esta vinculado a otra cuenta de Google.',
+      );
+    }
+
+    if (!existingEmailUser && data.acceptedTerms !== true) {
+      throw new BadRequestException(
+        'Debes aceptar terminos y politica de privacidad para crear la cuenta.',
+      );
+    }
+
+    const professionalSlug =
+      !existingEmailUser && role === Role.PROFESSIONAL
+        ? await this.buildUniqueProfessionalSlug(name)
+        : null;
+    const customProfession = this.normalizeProfessionText(
+      data.customProfession || '',
+    );
+    const specialty = this.normalizeProfessionText(
+      data.specialty || customProfession || '',
+    );
+
+    const user = await this.prisma.user.upsert({
+      where: { email },
+      update: {
+        googleId,
+        lastLoginAt: now,
+        ...(image && !existingEmailUser?.image ? { image } : {}),
+      },
+      create: {
+        email,
+        name,
+        image,
+        password: placeholderPassword,
+        role,
+        isActive: true,
+        googleId,
+        lastLoginAt: now,
+        ...(role === Role.CUSTOMER && {
+          customerInterests: data.customerInterests?.filter(Boolean) || [],
+          preferredAttentionMode: data.preferredAttentionMode ?? null,
+        }),
+        ...(role === Role.PROFESSIONAL && {
+          professional: {
+            create: {
+              name,
+              slug: professionalSlug,
+              professionId: data.professionId || null,
+              customProfession: data.professionId
+                ? null
+                : customProfession || null,
+              specialty: specialty || null,
+              attentionMode: data.attentionMode ?? AttentionModality.ONLINE,
+            },
+          },
+        }),
+      },
+    });
+
+    if (!existingEmailUser) {
+      await this.sendRegistrationNotification(user);
+    }
+
+    return this.createLoginResponse(user);
+  }
+
+  async requestPasswordReset(email: string, recaptchaToken?: string) {
+    await this.recaptchaService.verify(
+      recaptchaToken,
+      'password_reset_request',
+    );
+
+    const normalizedEmail = String(email || '')
+      .trim()
+      .toLowerCase();
 
     if (!normalizedEmail) {
       throw new BadRequestException('Email is required');
@@ -113,7 +236,13 @@ export class AuthService {
     return { ok: true };
   }
 
-  async resetPassword(token: string, password: string) {
+  async resetPassword(
+    token: string,
+    password: string,
+    recaptchaToken?: string,
+  ) {
+    await this.recaptchaService.verify(recaptchaToken, 'password_reset');
+
     const cleanToken = String(token || '').trim();
 
     if (!cleanToken || !password) {
@@ -197,13 +326,21 @@ export class AuthService {
     const customerInterests = Array.isArray(data.customerInterests)
       ? data.customerInterests.filter(Boolean)
       : [];
-    const customProfession = this.normalizeProfessionText(data.customProfession || '');
-    const professionalSpecialty = role === Role.PROFESSIONAL
-      ? this.normalizeProfessionText(data.professionId ? data.specialty || '' : customProfession || data.specialty || '')
-      : '';
-    const professionalSlug = role === Role.PROFESSIONAL
-      ? await this.buildUniqueProfessionalSlug(normalizedName)
-      : null;
+    const customProfession = this.normalizeProfessionText(
+      data.customProfession || '',
+    );
+    const professionalSpecialty =
+      role === Role.PROFESSIONAL
+        ? this.normalizeProfessionText(
+            data.professionId
+              ? data.specialty || ''
+              : customProfession || data.specialty || '',
+          )
+        : '';
+    const professionalSlug =
+      role === Role.PROFESSIONAL
+        ? await this.buildUniqueProfessionalSlug(normalizedName)
+        : null;
 
     const user = await this.prisma.user.create({
       data: {
@@ -223,7 +360,9 @@ export class AuthService {
               slug: professionalSlug,
               specialty: professionalSpecialty || null,
               professionId: data.professionId || null,
-              customProfession: data.professionId ? null : customProfession || null,
+              customProfession: data.professionId
+                ? null
+                : customProfession || null,
               attentionMode: data.attentionMode ?? AttentionModality.ONLINE,
             },
           },
@@ -286,7 +425,9 @@ export class AuthService {
   }
 
   async deleteMyAccount(id: string, confirmation: string) {
-    const cleanConfirmation = String(confirmation || '').trim().toUpperCase();
+    const cleanConfirmation = String(confirmation || '')
+      .trim()
+      .toUpperCase();
 
     if (cleanConfirmation !== 'ELIMINAR') {
       throw new BadRequestException(
@@ -307,7 +448,10 @@ export class AuthService {
 
     const now = new Date();
     const anonymizedEmail = `deleted-${user.id}@deleted.conecta.local`;
-    const anonymizedPassword = await bcrypt.hash(randomBytes(32).toString('hex'), 10);
+    const anonymizedPassword = await bcrypt.hash(
+      randomBytes(32).toString('hex'),
+      10,
+    );
 
     await this.prisma.$transaction(async (tx) => {
       await tx.userDeviceToken.deleteMany({
@@ -465,14 +609,21 @@ export class AuthService {
 
     if (data.role === Role.PROFESSIONAL) {
       const professionId = String(data.professionId || '').trim();
-      const customProfession = this.normalizeProfessionText(data.customProfession || '');
+      const customProfession = this.normalizeProfessionText(
+        data.customProfession || '',
+      );
       const specialty = this.normalizeProfessionText(data.specialty || '');
 
       if (!professionId && !customProfession && !specialty) {
-        throw new BadRequestException('Selecciona o escribe el servicio que ofreces.');
+        throw new BadRequestException(
+          'Selecciona o escribe el servicio que ofreces.',
+        );
       }
 
-      if (!professionId && !this.isValidCustomProfession(customProfession || specialty)) {
+      if (
+        !professionId &&
+        !this.isValidCustomProfession(customProfession || specialty)
+      ) {
         throw new BadRequestException(
           'La profesion personalizada debe tener entre 3 y 50 caracteres y solo puede incluir letras, espacios, tildes y guiones.',
         );
@@ -481,15 +632,21 @@ export class AuthService {
   }
 
   private normalizeName(value: string): string {
-    return String(value || '').trim().replace(/\s+/g, ' ');
+    return String(value || '')
+      .trim()
+      .replace(/\s+/g, ' ');
   }
 
   private normalizeEmail(value: string): string {
-    return String(value || '').trim().toLowerCase();
+    return String(value || '')
+      .trim()
+      .toLowerCase();
   }
 
   private normalizeProfessionText(value: string): string {
-    return String(value || '').trim().replace(/\s+/g, ' ');
+    return String(value || '')
+      .trim()
+      .replace(/\s+/g, ' ');
   }
 
   private isValidFullName(value: string): boolean {
@@ -513,23 +670,51 @@ export class AuthService {
   private isStrongPassword(value: string): boolean {
     const password = String(value || '');
 
-    return password.length >= 8 &&
+    return (
+      password.length >= 8 &&
       /[A-Z]/.test(password) &&
       /[a-z]/.test(password) &&
       /\d/.test(password) &&
-      /[^A-Za-z0-9]/.test(password);
+      /[^A-Za-z0-9]/.test(password)
+    );
   }
 
   private isValidCustomProfession(value: string): boolean {
     const profession = this.normalizeProfessionText(value);
 
-    return profession.length >= 3 &&
+    return (
+      profession.length >= 3 &&
       profession.length <= 50 &&
-      /^[\p{L}\s-]+$/u.test(profession);
+      /^[\p{L}\s-]+$/u.test(profession)
+    );
   }
 
   private hashResetToken(token: string): string {
     return createHash('sha256').update(token).digest('hex');
+  }
+
+  private createLoginResponse(user: {
+    id: string;
+    email: string;
+    name: string | null;
+    role: Role;
+  }) {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    };
   }
 
   private getFrontendUrl(): string {
@@ -564,4 +749,3 @@ export class AuthService {
     }
   }
 }
-

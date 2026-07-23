@@ -9,6 +9,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { RecaptchaService } from './recaptcha.service';
+import { FirebaseAuthService } from './firebase-auth.service';
 
 @Module({
   imports: [
@@ -38,7 +39,7 @@ import { RecaptchaService } from './recaptcha.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RecaptchaService],
+  providers: [AuthService, JwtStrategy, RecaptchaService, FirebaseAuthService],
   exports: [AuthService],
 })
 export class AuthModule {}

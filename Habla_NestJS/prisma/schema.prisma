@@ -37,6 +37,8 @@ model User {
   sessionDuration        Int?
   passwordResetTokenHash String?
   passwordResetExpiresAt DateTime?
+  googleId               String?   @unique
+  lastLoginAt            DateTime?
 
   country  String?
   timezone String? @default("America/Santiago")
