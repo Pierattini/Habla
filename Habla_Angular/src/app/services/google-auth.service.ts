@@ -31,11 +31,17 @@ export class GoogleAuthService {
       }
 
       const config = environment.firebase;
-      if (!config.apiKey || !config.authDomain || !config.projectId || !config.appId) {
+      if (!config.apiKey || !config.authDomain || !config.projectId) {
         throw new Error('Firebase Web no esta configurado.');
       }
 
-      const app = getApps().length ? getApp() : initializeApp(config);
+      const firebaseConfig = {
+        apiKey: config.apiKey,
+        authDomain: config.authDomain,
+        projectId: config.projectId,
+        ...(config.appId ? { appId: config.appId } : {}),
+      };
+      const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
       const auth = getAuth(app);
       await setPersistence(auth, browserLocalPersistence);
       const provider = new GoogleAuthProvider();
