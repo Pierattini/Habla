@@ -6,6 +6,7 @@ import { PushNotificationService } from '../../services/push-notification.servic
 import { ProfessionItem, ProfessionService } from '../../services/profession.service';
 import { RecaptchaService } from '../../services/recaptcha.service';
 import { GoogleAuthService, GoogleSignInCancelledError } from '../../services/google-auth.service';
+import { timeout } from 'rxjs';
 
 type OnboardingMode = 'intro' | 'login' | 'register' | 'forgot' | 'reset';
 type AccountRole = 'CUSTOMER' | 'PROFESSIONAL';
@@ -64,9 +65,16 @@ export class LoginComponent implements OnInit {
   public professionSearchFocused = false;
   public showRegisterPassword = false;
   public showRegisterConfirmPassword = false;
-  public emailCheckStatus: 'idle' | 'checking' | 'available' | 'taken' | 'invalid' = 'idle';
+  public emailCheckStatus:
+    | 'idle'
+    | 'checking'
+    | 'available'
+    | 'taken'
+    | 'invalid'
+    | 'unavailable' = 'idle';
   private professionSearchTimer: ReturnType<typeof setTimeout> | null = null;
   private emailCheckTimer: ReturnType<typeof setTimeout> | null = null;
+  private errorMessageTimer: ReturnType<typeof setTimeout> | null = null;
 
   public countries = [
     { label: 'Chile', value: 'CL', timezone: 'America/Santiago' },
@@ -181,7 +189,7 @@ export class LoginComponent implements OnInit {
           this.cdr.detectChanges();
         },
         error: () => {
-          this.emailCheckStatus = 'invalid';
+          this.emailCheckStatus = 'unavailable';
           this.cdr.detectChanges();
         },
       });
@@ -216,13 +224,13 @@ export class LoginComponent implements OnInit {
             );
           },
           error: () => {
-            this.errorMessage = 'No pudimos iniciar sesion con esos datos.';
+            this.errorMessage = 'No pudimos iniciar sesión con esos datos.';
             this.isSubmitting = false;
           },
         });
       })
       .catch(() => {
-        this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
+        this.errorMessage = 'No pudimos verificar tu solicitud. Inténtalo nuevamente.';
         this.isSubmitting = false;
       });
   }
@@ -236,7 +244,7 @@ export class LoginComponent implements OnInit {
     }
 
     if (fromRegistration && !this.registerForm.acceptedTerms) {
-      this.errorMessage = 'Debes aceptar terminos y politica de privacidad.';
+      this.errorMessage = 'Debes aceptar términos y política de privacidad.';
       return;
     }
 
@@ -276,17 +284,19 @@ export class LoginComponent implements OnInit {
           this.navigateAfterLogin(res);
         },
         error: (err) => {
-          this.errorMessage =
-            err?.error?.message || 'No pudimos validar tu cuenta de Google. Intentalo nuevamente.';
+          this.showTemporaryError(
+            err?.error?.message || 'No pudimos validar tu cuenta de Google. Inténtalo nuevamente.',
+          );
           this.isSubmitting = false;
           this.cdr.detectChanges();
         },
       });
     } catch (error) {
-      this.errorMessage =
-        error instanceof GoogleSignInCancelledError
-          ? 'Inicio con Google cancelado.'
-          : 'No pudimos abrir Google. Revisa tu conexion e intentalo nuevamente.';
+      if (error instanceof GoogleSignInCancelledError) {
+        this.showTemporaryError('Inicio con Google cancelado.');
+      } else {
+        this.showTemporaryError(this.getGoogleSignInErrorMessage(error));
+      }
       this.isSubmitting = false;
       this.cdr.detectChanges();
     }
@@ -326,16 +336,21 @@ export class LoginComponent implements OnInit {
             acceptedTerms: this.registerForm.acceptedTerms,
             recaptchaToken,
           })
+          .pipe(timeout(30000))
           .subscribe({
             next: () => this.loginAfterRegister(),
             error: (err) => {
-              this.errorMessage = err?.error?.message || 'No pudimos crear la cuenta.';
+              this.errorMessage =
+                err?.name === 'TimeoutError'
+                  ? 'La creación de la cuenta tardó demasiado. Comprueba tu conexión e inténtalo nuevamente.'
+                  : err?.error?.message || 'No pudimos crear la cuenta.';
               this.isSubmitting = false;
+              this.cdr.detectChanges();
             },
           });
       })
       .catch(() => {
-        this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
+        this.errorMessage = 'No pudimos verificar tu solicitud. Inténtalo nuevamente.';
         this.isSubmitting = false;
       });
   }
@@ -358,7 +373,7 @@ export class LoginComponent implements OnInit {
         this.auth.requestPasswordReset(this.resetEmail.trim(), recaptchaToken).subscribe({
           next: () => {
             this.successMessage =
-              'Si el email existe, enviaremos un enlace para restablecer tu contrasena.';
+              'Si el email existe, enviaremos un enlace para restablecer tu contraseña.';
             this.isSubmitting = false;
           },
           error: () => {
@@ -368,7 +383,7 @@ export class LoginComponent implements OnInit {
         });
       })
       .catch(() => {
-        this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
+        this.errorMessage = 'No pudimos verificar tu solicitud. Inténtalo nuevamente.';
         this.isSubmitting = false;
       });
   }
@@ -377,12 +392,12 @@ export class LoginComponent implements OnInit {
     if (this.isSubmitting) return;
 
     if (!this.resetPasswordValue || !this.resetPasswordConfirm) {
-      this.errorMessage = 'Ingresa y confirma tu nueva contrasena.';
+      this.errorMessage = 'Ingresa y confirma tu nueva contraseña.';
       return;
     }
 
     if (this.resetPasswordValue.length < 6) {
-      this.errorMessage = 'La contrasena debe tener al menos 6 caracteres.';
+      this.errorMessage = 'La contraseña debe tener al menos 6 caracteres.';
       return;
     }
 
@@ -402,7 +417,7 @@ export class LoginComponent implements OnInit {
           .resetPassword(this.resetToken, this.resetPasswordValue, recaptchaToken)
           .subscribe({
             next: () => {
-              this.successMessage = 'Contrasena actualizada. Ya puedes iniciar sesion.';
+              this.successMessage = 'Contraseña actualizada. Ya puedes iniciar sesión.';
               this.mode = 'login';
               this.password = '';
               this.resetPasswordValue = '';
@@ -411,13 +426,13 @@ export class LoginComponent implements OnInit {
               this.isSubmitting = false;
             },
             error: (err) => {
-              this.errorMessage = err?.error?.message || 'El enlace no es valido o expiro.';
+              this.errorMessage = err?.error?.message || 'El enlace no es válido o expiró.';
               this.isSubmitting = false;
             },
           });
       })
       .catch(() => {
-        this.errorMessage = 'No pudimos verificar tu solicitud. Intentalo nuevamente.';
+        this.errorMessage = 'No pudimos verificar tu solicitud. Inténtalo nuevamente.';
         this.isSubmitting = false;
       });
   }
@@ -428,6 +443,7 @@ export class LoginComponent implements OnInit {
       .then((recaptchaToken) => {
         this.auth
           .login(this.registerForm.email.trim(), this.registerForm.password, recaptchaToken)
+          .pipe(timeout(30000))
           .subscribe({
             next: (res: any) => {
               this.saveSession(res);
@@ -441,7 +457,7 @@ export class LoginComponent implements OnInit {
               this.completeOnboardingProfile();
             },
             error: () => {
-              this.errorMessage = 'Cuenta creada. Inicia sesion para continuar.';
+              this.errorMessage = 'Cuenta creada. Inicia sesión para continuar.';
               this.mode = 'login';
               this.email = this.registerForm.email.trim();
               this.password = '';
@@ -450,7 +466,7 @@ export class LoginComponent implements OnInit {
           });
       })
       .catch(() => {
-        this.errorMessage = 'Cuenta creada. Inicia sesion para continuar.';
+        this.errorMessage = 'Cuenta creada. Inicia sesión para continuar.';
         this.mode = 'login';
         this.email = this.registerForm.email.trim();
         this.password = '';
@@ -470,17 +486,19 @@ export class LoginComponent implements OnInit {
       profilePayload.preferredAttentionMode = this.registerForm.attentionMode;
     }
 
-    this.auth.updateProfile(profilePayload).subscribe({
+    this.auth
+      .updateProfile(profilePayload)
+      .pipe(timeout(20000))
+      .subscribe({
       next: () => {
+        this.isSubmitting = false;
         this.router.navigateByUrl(
           this.selectedRole === 'PROFESSIONAL' ? '/tabs/professional-dashboard' : '/tabs/home',
         );
       },
       error: () => {
-        this.router.navigateByUrl('/tabs/home');
-      },
-      complete: () => {
         this.isSubmitting = false;
+        this.router.navigateByUrl('/tabs/home');
       },
     });
   }
@@ -497,12 +515,12 @@ export class LoginComponent implements OnInit {
     }
 
     if (!this.isEmailValid()) {
-      this.errorMessage = 'Ingresa un correo valido.';
+      this.errorMessage = 'Ingresa un correo válido.';
       return false;
     }
 
     if (this.emailCheckStatus === 'taken') {
-      this.errorMessage = 'Este correo ya esta registrado.';
+      this.errorMessage = 'Este correo ya está registrado.';
       return false;
     }
 
@@ -513,7 +531,7 @@ export class LoginComponent implements OnInit {
 
     if (!this.isPasswordStrong()) {
       this.errorMessage =
-        'La contrasena debe tener mayuscula, minuscula, numero y caracter especial.';
+        'La contraseña debe tener mayúscula, minúscula, número y carácter especial.';
       return false;
     }
 
@@ -530,7 +548,7 @@ export class LoginComponent implements OnInit {
     }
 
     if (!this.registerForm.acceptedTerms) {
-      this.errorMessage = 'Debes aceptar terminos y politica de privacidad.';
+      this.errorMessage = 'Debes aceptar términos y política de privacidad.';
       return false;
     }
 
@@ -553,17 +571,19 @@ export class LoginComponent implements OnInit {
     if (this.registerStep === 1) return 'Elige como quieres usar Conecta';
     if (this.registerStep === 2) return 'Crea tu acceso';
     if (this.registerStep === 3) {
-      return this.selectedRole === 'CUSTOMER' ? 'Que estas buscando?' : 'Que servicio ofreces?';
+      return this.selectedRole === 'CUSTOMER'
+        ? '¿Qué estás buscando?'
+        : '¿Qué servicio ofreces?';
     }
 
-    return 'Como prefieres atenderte?';
+    return '¿Cómo prefieres atender?';
   }
 
   public getStepSubtitle(): string {
-    if (this.registerStep === 1) return 'Configuraremos tu experiencia segun tu rol.';
-    if (this.registerStep === 2) return 'Solo pedimos lo minimo para crear tu cuenta.';
+    if (this.registerStep === 1) return 'Configuraremos tu experiencia según tu rol.';
+    if (this.registerStep === 2) return 'Solo pedimos lo mínimo para crear tu cuenta.';
     if (this.registerStep === 3) return 'Esto nos ayuda a mostrar mejores recomendaciones.';
-    return 'Puedes cambiarlo despues desde tu perfil.';
+    return 'Puedes cambiarlo después desde tu perfil.';
   }
 
   public selectInterest(value: string): void {
@@ -636,7 +656,7 @@ export class LoginComponent implements OnInit {
       return 'Usa solo letras, espacios, tildes y guiones.';
     }
 
-    return 'Profesion valida.';
+    return 'Profesión válida.';
   }
 
   public isCustomProfessionValid(): boolean {
@@ -676,21 +696,25 @@ export class LoginComponent implements OnInit {
       }
 
       if (!this.isEmailValid()) {
-        this.errorMessage = 'Ingresa un correo valido.';
+        this.errorMessage = 'Ingresa un correo válido.';
         return false;
       }
 
       if (this.emailCheckStatus !== 'available') {
-        this.errorMessage =
-          this.emailCheckStatus === 'taken'
-            ? 'Este correo ya esta registrado.'
-            : 'Espera la validacion del correo.';
+        if (this.emailCheckStatus === 'taken') {
+          this.errorMessage = 'Este correo ya está registrado.';
+        } else if (this.emailCheckStatus === 'unavailable') {
+          this.errorMessage =
+            'No pudimos comprobar el correo. Revisa tu conexión e intenta nuevamente.';
+        } else {
+          this.errorMessage = 'Espera la validacion del correo.';
+        }
         return false;
       }
 
       if (!this.isPasswordStrong()) {
         this.errorMessage =
-          'La contrasena debe tener minimo 8 caracteres, mayuscula, minuscula, numero y caracter especial.';
+          'La contraseña debe tener mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial.';
         return false;
       }
 
@@ -783,7 +807,7 @@ export class LoginComponent implements OnInit {
   public getPasswordStrengthLabel(): string {
     const score = this.getPasswordScore();
 
-    if (!this.registerForm.password) return 'Ingresa una contrasena segura.';
+    if (!this.registerForm.password) return 'Ingresa una contraseña segura.';
     if (score <= 2) return 'Debil';
     if (score <= 4) return 'Media';
     return 'Fuerte';
@@ -804,9 +828,12 @@ export class LoginComponent implements OnInit {
   public getEmailMessage(): string {
     if (!this.registerForm.email) return 'Ingresa tu correo.';
     if (this.emailCheckStatus === 'checking') return 'Validando correo...';
-    if (this.emailCheckStatus === 'taken') return 'Este correo ya esta registrado.';
+    if (this.emailCheckStatus === 'taken') return 'Este correo ya está registrado.';
     if (this.emailCheckStatus === 'available') return 'Correo disponible.';
-    return 'Ingresa un correo valido.';
+    if (this.emailCheckStatus === 'unavailable') {
+      return 'No pudimos comprobar el correo. Intenta nuevamente.';
+    }
+    return 'Ingresa un correo válido.';
   }
 
   private saveSession(res: any): void {
@@ -826,6 +853,36 @@ export class LoginComponent implements OnInit {
           : '/tabs/home',
     );
     this.isSubmitting = false;
+  }
+
+  private showTemporaryError(message: string): void {
+    if (this.errorMessageTimer) clearTimeout(this.errorMessageTimer);
+
+    this.errorMessage = message;
+    this.errorMessageTimer = setTimeout(() => {
+      this.errorMessage = '';
+      this.cdr.detectChanges();
+    }, 6000);
+  }
+
+  private getGoogleSignInErrorMessage(error: unknown): string {
+    const rawError = error as { code?: string | number; message?: string };
+    const details = `${rawError?.code || ''} ${rawError?.message || ''}`.toLowerCase();
+
+    if (
+      details.includes('developer_error') ||
+      details.includes('12500') ||
+      details.includes('code: 10') ||
+      details.includes('status code: 10')
+    ) {
+      return 'Google Sign-In aún no está configurado para esta versión de la aplicación.';
+    }
+
+    if (details.includes('network') || details.includes('status code: 7')) {
+      return 'No pudimos conectar con Google. Revisa tu conexión e inténtalo nuevamente.';
+    }
+
+    return 'No pudimos abrir Google en este momento. Inténtalo nuevamente.';
   }
 
   private cleanOptional(value: string): string | undefined {
@@ -883,15 +940,15 @@ export class LoginComponent implements OnInit {
     }
 
     if (this.customProfessionMode) {
-      if (value.length < 3) return 'La profesion debe tener al menos 3 caracteres.';
-      if (value.length > 50) return 'La profesion no puede superar 50 caracteres.';
+      if (value.length < 3) return 'La profesión debe tener al menos 3 caracteres.';
+      if (value.length > 50) return 'La profesión no puede superar 50 caracteres.';
       if (!/^[\p{L}\s-]+$/u.test(value)) {
         return 'Usa solo letras, espacios, tildes y guiones.';
       }
     }
 
     if (!this.customProfessionMode && !this.registerForm.professionId) {
-      return 'Selecciona una profesion del catalogo o usa Otra profesion.';
+      return 'Selecciona una profesión del catálogo o usa Otra profesión.';
     }
 
     return null;

@@ -17,6 +17,7 @@ declare global {
 })
 export class RecaptchaService {
   private scriptPromise: Promise<void> | null = null;
+  private readonly timeoutMs = 12000;
 
   async execute(action: string): Promise<string> {
     const siteKey = environment.recaptchaSiteKey;
@@ -25,13 +26,13 @@ export class RecaptchaService {
       return '';
     }
 
-    await this.loadScript(siteKey);
+    await this.withTimeout(this.loadScript(siteKey));
 
     if (!window.grecaptcha?.execute) {
       throw new Error('reCAPTCHA no disponible');
     }
 
-    return window.grecaptcha.execute(siteKey, { action });
+    return this.withTimeout(window.grecaptcha.execute(siteKey, { action }));
   }
 
   private loadScript(siteKey: string): Promise<void> {
@@ -39,13 +40,13 @@ export class RecaptchaService {
       return this.scriptPromise;
     }
 
-    this.scriptPromise = new Promise((resolve, reject) => {
+    const scriptPromise = new Promise<void>((resolve, reject) => {
       const existing = document.querySelector<HTMLScriptElement>(
         'script[data-recaptcha="v3"]',
       );
 
       if (existing) {
-        window.grecaptcha?.ready(resolve);
+        window.grecaptcha?.ready(() => resolve());
         return;
       }
 
@@ -54,11 +55,35 @@ export class RecaptchaService {
       script.async = true;
       script.defer = true;
       script.dataset['recaptcha'] = 'v3';
-      script.onload = () => window.grecaptcha?.ready(resolve);
+      script.onload = () => window.grecaptcha?.ready(() => resolve());
       script.onerror = () => reject(new Error('No se pudo cargar reCAPTCHA'));
       document.head.appendChild(script);
+    }).catch((error) => {
+      this.scriptPromise = null;
+      throw error;
     });
 
-    return this.scriptPromise;
+    this.scriptPromise = scriptPromise;
+    return scriptPromise;
+  }
+
+  private withTimeout<T>(operation: Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const timer = window.setTimeout(
+        () => reject(new Error('reCAPTCHA tardó demasiado en responder')),
+        this.timeoutMs,
+      );
+
+      operation.then(
+        (result) => {
+          window.clearTimeout(timer);
+          resolve(result);
+        },
+        (error) => {
+          window.clearTimeout(timer);
+          reject(error);
+        },
+      );
+    });
   }
 }

@@ -1,4 +1,4 @@
-package app.conecta.mobile;
+package app.conecta.mobileapp;
 
 import com.getcapacitor.BridgeActivity;
 

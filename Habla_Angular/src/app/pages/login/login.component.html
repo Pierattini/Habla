@@ -32,7 +32,7 @@
           [class.active]="$any(this).mode === 'login'"
           (click)="$any(this).showLogin()"
         >
-          Iniciar sesion
+          Iniciar sesión
         </button>
       </div>
 
@@ -58,7 +58,7 @@
               (click)="$any(this).selectRole('CUSTOMER')"
             >
               <span>Cliente</span>
-              <strong>Quiero encontrar atencion</strong>
+              <strong>Quiero encontrar atención</strong>
               <small>Busca profesionales, agenda y conversa desde un solo lugar.</small>
             </button>
 
@@ -107,7 +107,7 @@
               >
                 {{
                   $any(this).isFullNameValid()
-                    ? 'Nombre valido'
+                    ? 'Nombre válido'
                     : 'Debes ingresar nombre y apellido.'
                 }}
               </small>
@@ -122,7 +122,8 @@
                 [class.valid]="$any(this).emailCheckStatus === 'available'"
                 [class.invalid]="
                   $any(this).emailCheckStatus === 'taken' ||
-                  $any(this).emailCheckStatus === 'invalid'
+                  $any(this).emailCheckStatus === 'invalid' ||
+                  $any(this).emailCheckStatus === 'unavailable'
                 "
                 [ngModel]="$any(this).registerForm.email"
                 (ngModelChange)="$any(this).onRegisterEmailChange($event)"
@@ -133,7 +134,8 @@
                 [class.ok]="$any(this).emailCheckStatus === 'available'"
                 [class.error]="
                   $any(this).emailCheckStatus === 'taken' ||
-                  $any(this).emailCheckStatus === 'invalid'
+                  $any(this).emailCheckStatus === 'invalid' ||
+                  $any(this).emailCheckStatus === 'unavailable'
                 "
               >
                 {{ $any(this).getEmailMessage() }}
@@ -141,7 +143,7 @@
             </label>
 
             <label class="field full password-field">
-              <span>Contrasena</span>
+              <span>Contraseña</span>
               <div class="password-control">
                 <input
                   [type]="$any(this).showRegisterPassword ? 'text' : 'password'"
@@ -171,12 +173,12 @@
                 [class.error]="$any(this).registerForm.password && !$any(this).isPasswordStrong()"
               >
                 Seguridad: {{ $any(this).getPasswordStrengthLabel() }}. Usa mayuscula, minuscula,
-                numero y caracter especial.
+                número y carácter especial.
               </small>
             </label>
 
             <label class="field full password-field">
-              <span>Confirmar contrasena</span>
+              <span>Confirmar contraseña</span>
               <div class="password-control">
                 <input
                   [type]="$any(this).showRegisterConfirmPassword ? 'text' : 'password'"
@@ -188,7 +190,7 @@
                   "
                   [ngModel]="$any(this).registerForm.confirmPassword"
                   (ngModelChange)="$any(this).onRegisterConfirmPasswordChange($event)"
-                  placeholder="Repite tu contrasena"
+                  placeholder="Repite tu contraseña"
                 />
                 <button
                   type="button"
@@ -235,7 +237,7 @@
           @if ($any(this).selectedRole === 'PROFESSIONAL') {
             <div class="profession-picker">
               <label class="profession-search-field">
-                <span>Busca tu profesion o especialidad</span>
+                <span>Busca tu profesión o especialidad</span>
                 <input
                   type="text"
                   autocomplete="off"
@@ -297,7 +299,7 @@
                     "
                   >
                     <strong>Otro</strong>
-                    <span>Escribir una profesion que no esta en el catalogo</span>
+                    <span>Escribir una profesión que no está en el catálogo</span>
                   </button>
                 </div>
               }
@@ -310,7 +312,7 @@
                     $any(this).customProfession && !$any(this).isCustomProfessionValid()
                   "
                 >
-                  <span>Escribe tu profesion</span>
+                  <span>Escribe tu profesión</span>
                   <input
                     type="text"
                     maxlength="50"
@@ -343,7 +345,7 @@
               (click)="$any(this).selectAttentionMode('ONLINE')"
             >
               <strong>Online</strong>
-              <small>Atencion por videollamada.</small>
+              <small>Atención por videollamada.</small>
             </button>
 
             <button
@@ -353,7 +355,7 @@
               (click)="$any(this).selectAttentionMode('PRESENTIAL')"
             >
               <strong>Presencial</strong>
-              <small>Busca atencion cerca de ti.</small>
+              <small>Atiende en una ubicación física.</small>
             </button>
 
             <button
@@ -363,7 +365,7 @@
               (click)="$any(this).selectAttentionMode('BOTH')"
             >
               <strong>Ambas</strong>
-              <small>Manten tus opciones abiertas.</small>
+              <small>Mantén tus opciones abiertas.</small>
             </button>
           </div>
 
@@ -375,20 +377,20 @@
             />
             <span>
               Acepto los
-              <a routerLink="/terms">terminos</a>, la
-              <a routerLink="/privacy-policy">politica de privacidad</a>
+              <a routerLink="/terms">términos</a>, la
+              <a routerLink="/privacy-policy">política de privacidad</a>
               y el tratamiento de mis datos.
             </span>
           </label>
 
           <p class="recaptcha-notice">
-            Este sitio esta protegido por Google reCAPTCHA. Aplican la
+            Este sitio está protegido por Google reCAPTCHA. Aplican la
             <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">
-              Politica de Privacidad
+              Política de Privacidad
             </a>
             y los
             <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">
-              Terminos del servicio
+              Términos del servicio
             </a>
             de Google.
           </p>
@@ -461,7 +463,7 @@
       @if ($any(this).mode === 'login') {
         <header class="login-heading compact">
           <span>Bienvenido de vuelta</span>
-          <h1>Iniciar sesion</h1>
+          <h1>Iniciar sesión</h1>
           <p>Accede a tus citas, mensajes y actividad.</p>
         </header>
 
@@ -477,11 +479,11 @@
         </label>
 
         <label class="field">
-          <span>Contrasena</span>
+          <span>Contraseña</span>
           <input
             type="password"
             autocomplete="current-password"
-            placeholder="Contrasena"
+            placeholder="Contraseña"
             [ngModel]="$any(this).password"
             (ngModelChange)="$any(this).password = $event"
           />
@@ -505,7 +507,7 @@
           [disabled]="$any(this).isSubmitting"
           (click)="$any(this).login()"
         >
-          {{ $any(this).isSubmitting ? 'Ingresando...' : 'Iniciar sesion' }}
+          {{ $any(this).isSubmitting ? 'Ingresando...' : 'Iniciar sesión' }}
         </button>
 
         <div class="auth-divider"><span>o</span></div>
@@ -540,14 +542,14 @@
           [disabled]="$any(this).isSubmitting"
           (click)="$any(this).showForgotPassword()"
         >
-          Olvide mi contrasena
+          Olvidé mi contraseña
         </button>
       }
 
       @if ($any(this).mode === 'forgot') {
         <header class="login-heading compact">
           <span>Recuperar acceso</span>
-          <h1>Restablece tu contrasena</h1>
+          <h1>Restablece tu contraseña</h1>
           <p>Te enviaremos un enlace temporal si el correo existe en Conecta.</p>
         </header>
 
@@ -598,12 +600,12 @@
       @if ($any(this).mode === 'reset') {
         <header class="login-heading compact">
           <span>Nuevo acceso</span>
-          <h1>Crea una nueva contrasena</h1>
-          <p>Usa una contrasena segura para volver a entrar a Conecta.</p>
+          <h1>Crea una nueva contraseña</h1>
+          <p>Usa una contraseña segura para volver a entrar a Conecta.</p>
         </header>
 
         <label class="field">
-          <span>Nueva contrasena</span>
+          <span>Nueva contraseña</span>
           <input
             type="password"
             autocomplete="new-password"
@@ -614,11 +616,11 @@
         </label>
 
         <label class="field">
-          <span>Confirmar contrasena</span>
+          <span>Confirmar contraseña</span>
           <input
             type="password"
             autocomplete="new-password"
-            placeholder="Repite tu contrasena"
+            placeholder="Repite tu contraseña"
             [ngModel]="$any(this).resetPasswordConfirm"
             (ngModelChange)="$any(this).resetPasswordConfirm = $event"
           />
@@ -642,13 +644,13 @@
           [disabled]="$any(this).isSubmitting"
           (click)="$any(this).resetPassword()"
         >
-          {{ $any(this).isSubmitting ? 'Actualizando...' : 'Actualizar contrasena' }}
+          {{ $any(this).isSubmitting ? 'Actualizando...' : 'Actualizar contraseña' }}
         </button>
       }
 
       <footer class="legal-links">
-        <a routerLink="/privacy-policy">Politica de privacidad</a>
-        <a routerLink="/terms">Terminos</a>
+        <a routerLink="/privacy-policy">Política de privacidad</a>
+        <a routerLink="/terms">Términos</a>
         <a routerLink="/cookies">Cookies</a>
       </footer>
     </section>
