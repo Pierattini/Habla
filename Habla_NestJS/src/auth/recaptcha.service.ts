@@ -29,17 +29,27 @@ export class RecaptchaService {
       throw new BadRequestException('No pudimos verificar tu solicitud. Intentalo nuevamente.');
     }
 
-    const response = await fetch(
-      'https://www.google.com/recaptcha/api/siteverify',
-      {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    let response: Response;
+
+    try {
+      response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           secret,
           response: token,
         }).toString(),
-      },
-    );
+        signal: controller.signal,
+      });
+    } catch {
+      throw new BadRequestException(
+        'No pudimos verificar tu solicitud. Inténtalo nuevamente.',
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       throw new BadRequestException('No pudimos verificar tu solicitud. Intentalo nuevamente.');

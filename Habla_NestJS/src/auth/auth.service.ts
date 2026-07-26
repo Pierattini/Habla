@@ -179,7 +179,7 @@ export class AuthService {
     });
 
     if (!existingEmailUser) {
-      await this.sendRegistrationNotification(user);
+      void this.sendRegistrationNotification(user);
     }
 
     return this.createLoginResponse(user);
@@ -370,7 +370,7 @@ export class AuthService {
       },
     });
 
-    await this.sendRegistrationNotification(user);
+    void this.sendRegistrationNotification(user);
 
     return {
       id: user.id,
