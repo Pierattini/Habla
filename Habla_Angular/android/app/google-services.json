@@ -12,7 +12,28 @@
           "package_name": "app.conecta.mobileapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "190010749690-a6v30k0a1vdtbekvlesqp52okgj7tbk3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.conecta.mobileapp",
+            "certificate_hash": "efc57e88e6a3f990fb83ef6641ce7171e9fb4805"
+          }
+        },
+        {
+          "client_id": "190010749690-ffm9etc4r2g841h1qufbv8c57seet4bh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.conecta.mobileapp",
+            "certificate_hash": "1a3beb4eba0f18ef6837b82ff73bab6b1d613090"
+          }
+        },
+        {
+          "client_id": "190010749690-7ce7d49otu490re9djco98pj94jn3ess.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD7PS6NpuzsHnW5DdprbGjVgwuWJrYhFgs"
@@ -20,7 +41,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "190010749690-7ce7d49otu490re9djco98pj94jn3ess.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
