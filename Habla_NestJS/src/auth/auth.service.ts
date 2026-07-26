@@ -17,6 +17,8 @@ type RegisterInput = {
   email: string;
   password: string;
   role: Role;
+  country?: string;
+  timezone?: string;
   customerInterests?: string[];
   preferredAttentionMode?: AttentionModality;
   specialty?: string;
@@ -349,6 +351,8 @@ export class AuthService {
         password: hashedPassword,
         role,
         isActive: true,
+        country: data.country || null,
+        timezone: data.timezone || null,
         ...(role === Role.CUSTOMER && {
           customerInterests,
           preferredAttentionMode: data.preferredAttentionMode ?? null,
@@ -372,13 +376,7 @@ export class AuthService {
 
     void this.sendRegistrationNotification(user);
 
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      isActive: user.isActive,
-    };
+    return this.createLoginResponse(user);
   }
 
   // OBTENER USUARIO REAL

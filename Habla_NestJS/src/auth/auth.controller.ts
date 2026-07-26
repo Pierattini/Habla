@@ -129,6 +129,8 @@ export class AuthController {
       email: string;
       password: string;
       role: Role;
+      country?: string;
+      timezone?: string;
       customerInterests?: string[];
       preferredAttentionMode?: AttentionModality;
       specialty?: string;
