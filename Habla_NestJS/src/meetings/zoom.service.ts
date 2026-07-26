@@ -127,7 +127,7 @@ export class ZoomService {
             appointment.professional.timezone ||
             appointment.customer.timezone ||
             'America/Santiago',
-          agenda: 'Cita online generada automaticamente por Conecta.',
+          agenda: 'Cita online generada automáticamente por Conecta.',
           settings: {
             join_before_host: true,
             waiting_room: true,
@@ -398,7 +398,7 @@ export class ZoomService {
       !process.env.ZOOM_CLIENT_SECRET ||
       !process.env.ZOOM_REDIRECT_URI
     ) {
-      throw new BadRequestException('Falta configuracion OAuth de Zoom');
+      throw new BadRequestException('Falta configuración OAuth de Zoom');
     }
   }
 }

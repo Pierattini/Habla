@@ -38,7 +38,7 @@ export function buildNotificationTemplate(
 
   const templates: Record<NotificationType, NotificationTemplate> = {
     REGISTRATION_SUCCESS: {
-      subject: isEnglish ? 'Your Conecta account is ready' : 'Tu cuenta en Conecta esta lista',
+      subject: isEnglish ? 'Your Conecta account is ready' : 'Tu cuenta en Conecta está lista',
       text: isEnglish
         ? `Hi ${shared.name}, your Conecta account was created successfully.`
         : `Hola ${shared.name}, tu cuenta en Conecta fue creada correctamente.`,
@@ -53,12 +53,12 @@ export function buildNotificationTemplate(
       subject: isEnglish ? 'Recover your Conecta access' : 'Recupera tu acceso a Conecta',
       text: isEnglish
         ? `Hi ${shared.name}, recover your password here: ${shared.resetUrl}`
-        : `Hola ${shared.name}, puedes recuperar tu contrasena desde: ${shared.resetUrl}`,
+        : `Hola ${shared.name}, puedes recuperar tu contraseña desde: ${shared.resetUrl}`,
       html: wrapHtml(
         isEnglish ? 'Recover your access' : 'Recupera tu acceso',
         isEnglish
           ? `Hi ${shared.name}, recover your password here:<br>${button(shared.resetUrl, 'Reset password')}`
-          : `Hola ${shared.name}, puedes recuperar tu contrasena desde este enlace:<br>${button(shared.resetUrl, 'Restablecer contrasena')}`,
+          : `Hola ${shared.name}, puedes recuperar tu contraseña desde este enlace:<br>${button(shared.resetUrl, 'Restablecer contraseña')}`,
       ),
     },
     APPOINTMENT_BOOKED: appointmentTemplate(
@@ -78,8 +78,8 @@ export function buildNotificationTemplate(
     APPOINTMENT_CONTINUATION_LINK: appointmentTemplate(
       isEnglish
         ? 'New link to continue your session'
-        : 'Nuevo enlace para continuar tu sesion',
-      isEnglish ? 'Continue your session' : 'Continua tu sesion',
+        : 'Nuevo enlace para continuar tu sesión',
+      isEnglish ? 'Continue your session' : 'Continua tu sesión',
       shared,
       appointmentDetails,
       isEnglish,
@@ -201,7 +201,7 @@ function buildAppointmentDetails(
       <p><strong>${isEnglish ? 'Professional' : 'Profesional'}:</strong> ${escapeHtml(shared.professionalName)}</p>
       <p><strong>${isEnglish ? 'Patient' : 'Paciente'}:</strong> ${escapeHtml(shared.customerName)}</p>
       <p><strong>${isEnglish ? 'Modality' : 'Modalidad'}:</strong> ${escapeHtml(shared.modality || (isEnglish ? 'In person' : 'Presencial'))}</p>
-      <p><strong>${isEnglish ? 'Address' : 'Direccion'}:</strong><br>${escapeHtml(shared.fullAddress)}</p>
+      <p><strong>${isEnglish ? 'Address' : 'Dirección'}:</strong><br>${escapeHtml(shared.fullAddress)}</p>
       ${
         shared.arrivalInstructions
           ? `<p><strong>${isEnglish ? 'Arrival instructions' : 'Indicaciones'}:</strong><br>${escapeHtml(shared.arrivalInstructions)}</p>`

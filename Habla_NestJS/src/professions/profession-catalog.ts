@@ -75,7 +75,7 @@ export const PROFESSION_CATALOG: CategorySeed[] = [
       { name: 'Kinesiólogo(a)', slug: 'kinesiologo', icon: 'bone', aliases: ['kinesiologia'] },
       { name: 'Fisioterapeuta', slug: 'fisioterapeuta', icon: 'activity', aliases: ['fisioterapia'] },
       { name: 'Entrenador(a) Personal', slug: 'entrenador-personal', icon: 'dumbbell', aliases: ['personal trainer'] },
-      { name: 'Preparador(a) Físico(a)', slug: 'preparador-fisico', icon: 'dumbbell', aliases: ['preparacion fisica'] },
+      { name: 'Preparador(a) Físico(a)', slug: 'preparador-fisico', icon: 'dumbbell', aliases: ['preparación fisica'] },
       { name: 'Quiropráctico(a)', slug: 'quiropractico', icon: 'activity', aliases: ['quiropractica', 'kiropractico'] },
       { name: 'Osteópata', slug: 'osteopata', icon: 'activity', aliases: ['osteopatia'] },
       { name: 'Rehabilitador(a) Deportivo(a)', slug: 'rehabilitador-deportivo', icon: 'activity', aliases: ['rehabilitacion deportiva'] },
@@ -127,7 +127,7 @@ export const PROFESSION_CATALOG: CategorySeed[] = [
     name: 'Veterinaria',
     slug: 'veterinaria',
     icon: 'paw-print',
-    description: 'Atencion y cuidado profesional de animales.',
+    description: 'Atención y cuidado profesional de animales.',
     professions: [
       { name: 'Veterinario(a)', slug: 'veterinario', icon: 'paw-print', aliases: ['veterinaria'] },
       { name: 'Peluquería Canina', slug: 'peluqueria-canina', icon: 'paw-print', aliases: ['grooming', 'estetica canina'] },

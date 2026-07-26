@@ -150,7 +150,7 @@ export class GoogleCalendarService {
           summary: `Conecta - cita con ${
             appointment.customer.name || appointment.customer.email
           }`,
-          description: 'Cita online generada automaticamente por Conecta.',
+          description: 'Cita online generada automáticamente por Conecta.',
           start: {
             dateTime: this.formatDateTimeForTimeZone(start, timeZone),
             timeZone,
@@ -441,7 +441,7 @@ export class GoogleCalendarService {
       !process.env.GOOGLE_CLIENT_SECRET ||
       !process.env.GOOGLE_REDIRECT_URI
     ) {
-      throw new BadRequestException('Falta configuracion OAuth de Google');
+      throw new BadRequestException('Falta configuración OAuth de Google');
     }
   }
 }

@@ -19,14 +19,14 @@ export class RecaptchaService {
 
     if (!secret) {
       if (isProduction) {
-        throw new BadRequestException('Falta configuracion reCAPTCHA.');
+        throw new BadRequestException('Falta configuración reCAPTCHA.');
       }
 
       return;
     }
 
     if (!token) {
-      throw new BadRequestException('No pudimos verificar tu solicitud. Intentalo nuevamente.');
+      throw new BadRequestException('No pudimos verificar tu solicitud. Inténtalo nuevamente.');
     }
 
     const controller = new AbortController();
@@ -52,7 +52,7 @@ export class RecaptchaService {
     }
 
     if (!response.ok) {
-      throw new BadRequestException('No pudimos verificar tu solicitud. Intentalo nuevamente.');
+      throw new BadRequestException('No pudimos verificar tu solicitud. Inténtalo nuevamente.');
     }
 
     const result = (await response.json()) as RecaptchaVerifyResponse;
@@ -63,7 +63,7 @@ export class RecaptchaService {
       result.action !== expectedAction ||
       Number(result.score || 0) < minScore
     ) {
-      throw new BadRequestException('No pudimos verificar tu solicitud. Intentalo nuevamente.');
+      throw new BadRequestException('No pudimos verificar tu solicitud. Inténtalo nuevamente.');
     }
   }
 }

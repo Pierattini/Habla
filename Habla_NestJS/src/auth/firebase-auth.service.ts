@@ -63,7 +63,7 @@ export class FirebaseAuthService {
 
     if (!projectId) {
       throw new InternalServerErrorException(
-        'Google Sign-In no esta configurado en el servidor.',
+        'Google Sign-In no está configurado en el servidor.',
       );
     }
 
@@ -118,7 +118,7 @@ export class FirebaseAuthService {
         return cert(serviceAccount);
       } catch {
         throw new InternalServerErrorException(
-          'FIREBASE_SERVICE_ACCOUNT_BASE64 no es valido.',
+          'FIREBASE_SERVICE_ACCOUNT_BASE64 no es válido.',
         );
       }
     }

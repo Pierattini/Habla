@@ -44,12 +44,12 @@ export class SiiDteDraftService {
     const documentId = `DTE-${document.id}`;
 
     if (document.currency !== 'CLP') {
-      warnings.push('SII directo esta preparado inicialmente para CLP.');
+      warnings.push('SII directo está preparado inicialmente para CLP.');
     }
 
     const xml = [
-      '<?xml version="1.0" encoding="ISO-8859-1"?>',
-      '<DTE version="1.0">',
+      '<?xml versión="1.0" encoding="ISO-8859-1"?>',
+      '<DTE versión="1.0">',
       `<Documento ID="${this.escapeXml(documentId)}">`,
       '<Encabezado>',
       '<IdDoc>',
@@ -76,7 +76,7 @@ export class SiiDteDraftService {
       '</Encabezado>',
       '<Detalle>',
       '<NroLinDet>1</NroLinDet>',
-      '<NmbItem>Atencion profesional Conecta</NmbItem>',
+      '<NmbItem>Atención profesional Conecta</NmbItem>',
       `<DscItem>${this.escapeXml(document.professionalTaxNote || `Cita ${document.appointment.id} - ${serviceDate}`)}</DscItem>`,
       '<QtyItem>1</QtyItem>',
       `<PrcItem>${amount}</PrcItem>`,
@@ -104,7 +104,7 @@ export class SiiDteDraftService {
     const folio = Math.floor(Number(value));
 
     if (!Number.isFinite(folio) || folio <= 0) {
-      throw new BadRequestException('Falta un folio SII valido para preparar el XML');
+      throw new BadRequestException('Falta un folio SII válido para preparar el XML');
     }
 
     return folio;
@@ -114,7 +114,7 @@ export class SiiDteDraftService {
     const amount = Math.round(Number(value || 0));
 
     if (!Number.isFinite(amount) || amount <= 0) {
-      throw new BadRequestException('El documento no tiene un monto valido');
+      throw new BadRequestException('El documento no tiene un monto válido');
     }
 
     return amount;
@@ -124,7 +124,7 @@ export class SiiDteDraftService {
     return {
       rut: this.requireValue(document.professionalTaxId, 'RUT emisor'),
       name: this.requireValue(document.professionalTaxName, 'razon social emisor'),
-      address: this.requireValue(document.professionalTaxAddress, 'direccion emisor'),
+      address: this.requireValue(document.professionalTaxAddress, 'dirección emisor'),
       city: this.requireValue(document.professionalTaxCity, 'comuna emisor'),
     };
   }
@@ -133,7 +133,7 @@ export class SiiDteDraftService {
     return {
       rut: this.requireValue(document.customerTaxId, 'RUT receptor'),
       name: this.requireValue(document.customerTaxName, 'nombre receptor'),
-      address: this.requireValue(document.customerTaxAddress, 'direccion receptor'),
+      address: this.requireValue(document.customerTaxAddress, 'dirección receptor'),
       city: this.requireValue(document.customerTaxCity, 'comuna receptor'),
     };
   }

@@ -74,10 +74,10 @@ export class EmailService {
       subject: 'Nuevo mensaje de soporte en Conecta',
       html: buildConectaEmail({
         title: 'Nuevo mensaje de soporte',
-        preview: `${customerName} envio un nuevo mensaje en soporte.`,
+        preview: `${customerName} envió un nuevo mensaje en soporte.`,
         body: `
           <p>Hola ${adminName},</p>
-          <p>${customerName} envio un nuevo mensaje en soporte.</p>
+          <p>${customerName} envió un nuevo mensaje en soporte.</p>
           ${conectaInfoCard(`
             ${emailRow('Email', params.customerEmail)}
             ${emailRow('Ticket', params.ticketId)}

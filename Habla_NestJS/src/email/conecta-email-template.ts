@@ -88,7 +88,7 @@ export function buildConectaEmail(options: EmailTemplateOptions): string {
             <tr>
               <td align="center" style="padding:22px 18px 0;">
                 <p style="margin:0 0 8px; color:${BRAND_MUTED}; font-size:13px; line-height:1.55;">
-                  Este correo fue enviado automaticamente por Conecta. Para proteger tu informacion,
+                  Este correo fue enviado automáticamente por Conecta. Para proteger tu información,
                   gestiona tus citas y mensajes dentro de la plataforma.
                 </p>
                 <p style="margin:0; color:${BRAND_MUTED}; font-size:12px; line-height:1.6;">
@@ -118,7 +118,7 @@ function buildLogoHeaderHtml(): string {
         Conecta
       </div>
       <div style="padding-top:5px; font-size:12px; line-height:1.3; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:${BRAND_MUTED}; text-align:center;">
-        Gestion de citas
+        Gestión de citas
       </div>
     `;
   }

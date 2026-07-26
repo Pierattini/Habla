@@ -227,7 +227,7 @@ export class TaxProviderService {
       environment: result.environment,
       tokenPreview: result.tokenPreview,
       lastValidatedAt: updated.lastValidatedAt,
-      message: 'Conexion con SII validada correctamente',
+      message: 'Conexión con SII validada correctamente',
     };
   }
 
@@ -421,7 +421,7 @@ export class TaxProviderService {
     const endFolio = Number(this.extractXmlValue(xml, 'H'));
 
     if (!Number.isInteger(dteCode) || dteCode <= 0) {
-      throw new BadRequestException('El CAF no contiene tipo de DTE valido');
+      throw new BadRequestException('El CAF no contiene tipo de DTE válido');
     }
 
     if (
@@ -430,7 +430,7 @@ export class TaxProviderService {
       startFolio <= 0 ||
       endFolio < startFolio
     ) {
-      throw new BadRequestException('El CAF no contiene un rango de folios valido');
+      throw new BadRequestException('El CAF no contiene un rango de folios válido');
     }
 
     return {
@@ -553,7 +553,7 @@ export class TaxProviderService {
 
     if (!source) {
       throw new BadRequestException(
-        'SII_CERTIFICATE_ENCRYPTION_KEY no esta configurada',
+        'SII_CERTIFICATE_ENCRYPTION_KEY no está configurada',
       );
     }
 

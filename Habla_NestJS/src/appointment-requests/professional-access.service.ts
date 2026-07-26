@@ -121,7 +121,7 @@ export class ProfessionalAccessService {
 
     if (!access.canViewStats) {
       throw new ForbiddenException(
-        'Las estadisticas estan disponibles para profesionales con Plan Conecta activo.',
+        'Las estadísticas están disponibles para profesionales con Plan Conecta activo.',
       );
     }
 

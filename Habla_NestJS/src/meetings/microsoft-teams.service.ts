@@ -147,7 +147,7 @@ export class MicrosoftTeamsService {
           }`,
           body: {
             contentType: 'HTML',
-            content: 'Cita online generada automaticamente por Conecta.',
+            content: 'Cita online generada automáticamente por Conecta.',
           },
           start: {
             dateTime: start.toISOString(),
@@ -454,7 +454,7 @@ export class MicrosoftTeamsService {
       !process.env.MICROSOFT_CLIENT_SECRET ||
       !process.env.MICROSOFT_REDIRECT_URI
     ) {
-      throw new BadRequestException('Falta configuracion OAuth de Microsoft');
+      throw new BadRequestException('Falta configuración OAuth de Microsoft');
     }
   }
 }

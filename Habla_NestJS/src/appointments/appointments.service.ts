@@ -152,7 +152,7 @@ export class AppointmentsService {
     expiresAt?: Date | null,
   ): void {
     if (!token || !expectedHash || !expiresAt) {
-      throw new BadRequestException('Enlace no valido o ya utilizado.');
+      throw new BadRequestException('Enlace no válido o ya utilizado.');
     }
 
     if (expiresAt.getTime() < Date.now()) {
@@ -162,7 +162,7 @@ export class AppointmentsService {
     const [encodedPayload, signature] = token.split('.');
 
     if (!encodedPayload || !signature) {
-      throw new BadRequestException('Enlace no valido.');
+      throw new BadRequestException('Enlace no válido.');
     }
 
     if (
@@ -171,7 +171,7 @@ export class AppointmentsService {
         this.signActionPayload(encodedPayload),
       )
     ) {
-      throw new BadRequestException('Enlace no valido.');
+      throw new BadRequestException('Enlace no válido.');
     }
 
     let payload: AppointmentActionTokenPayload;
@@ -181,7 +181,7 @@ export class AppointmentsService {
         Buffer.from(encodedPayload, 'base64url').toString('utf8'),
       ) as AppointmentActionTokenPayload;
     } catch {
-      throw new BadRequestException('Enlace no valido.');
+      throw new BadRequestException('Enlace no válido.');
     }
 
     if (
@@ -189,11 +189,11 @@ export class AppointmentsService {
       payload.purpose !== expectedPurpose ||
       payload.exp !== expiresAt.getTime()
     ) {
-      throw new BadRequestException('Enlace no valido.');
+      throw new BadRequestException('Enlace no válido.');
     }
 
     if (!this.timingSafeStringEqual(this.hashActionToken(token), expectedHash)) {
-      throw new BadRequestException('Enlace no valido o ya utilizado.');
+      throw new BadRequestException('Enlace no válido o ya utilizado.');
     }
   }
 
@@ -285,7 +285,7 @@ export class AppointmentsService {
       !this.hasPresentialData(professional)
     ) {
       throw new BadRequestException(
-        'Este profesional debe completar direccion, ciudad y pais antes de recibir reservas presenciales',
+        'Este profesional debe completar dirección, ciudad y país antes de recibir reservas presenciales',
       );
     }
 
@@ -975,7 +975,7 @@ export class AppointmentsService {
 
     if (selectedDay < today || date > maxDate) {
       throw new ForbiddenException(
-        'Solo puedes agendar dentro de los proximos 6 meses',
+        'Solo puedes agendar dentro de los próximos 6 meses',
       );
     }
   }
@@ -1531,10 +1531,10 @@ export class AppointmentsService {
       subject: 'Pago recibido - Confirmar cita',
       html: buildConectaEmail({
         title: 'Pago recibido',
-        preview: 'Un cliente indico que ya realizo el pago.',
+        preview: 'Un cliente indicó que ya realizó el pago.',
         body: `
-          <p>Un cliente indico que ya realizo el pago.</p>
-          <p>Confirma el pago para continuar con la gestion de la cita.</p>
+          <p>Un cliente indicó que ya realizó el pago.</p>
+          <p>Confirma el pago para continuar con la gestión de la cita.</p>
         `,
         action: {
           label: 'Confirmar pago',
@@ -1550,12 +1550,12 @@ export class AppointmentsService {
     await transporter.sendMail({
       from: this.getMailFrom(),
       to,
-      subject: 'Tu videollamada esta lista',
+      subject: 'Tu videollamada está lista',
       html: buildConectaEmail({
-        title: 'Tu videollamada esta lista',
-        preview: 'Tu sesion comenzara pronto.',
+        title: 'Tu videollamada está lista',
+        preview: 'Tu sesión comenzara pronto.',
         body: `
-          <p>Tu sesion comenzara en 10 minutos.</p>
+          <p>Tu sesión comenzara en 10 minutos.</p>
           <p>Ingresa desde el boton cuando sea la hora de tu cita.</p>
         `,
         action: {
@@ -1753,7 +1753,7 @@ export class AppointmentsService {
             ${emailRow('Correo', customerEmail)}
             ${emailRow('Banco', bank)}
             ${emailRow('Tipo de cuenta', accountType)}
-            ${emailRow('Numero de cuenta', account)}
+            ${emailRow('Número de cuenta', account)}
             ${emailRow('Monto', `$${amount}`)}
           `)}
         `,
@@ -1814,10 +1814,10 @@ export class AppointmentsService {
       subject: 'Reembolso realizado',
       html: buildConectaEmail({
         title: 'Reembolso confirmado',
-        preview: 'El profesional ya realizo tu reembolso.',
+        preview: 'El profesional ya realizó tu reembolso.',
         body: `
           <p>Hola ${escapeEmailHtml(name)},</p>
-          <p>El profesional ya realizo tu reembolso.</p>
+          <p>El profesional ya realizó tu reembolso.</p>
           <p>El dinero deberia verse reflejado en tu cuenta segun los tiempos de tu banco.</p>
           <p>Gracias por usar Conecta.</p>
         `,
@@ -2184,7 +2184,7 @@ export class AppointmentsService {
 
     if (!requestedMode || requestedMode === AttentionModality.BOTH) {
       throw new BadRequestException(
-        'Selecciona si quieres atencion online o presencial',
+        'Selecciona si quieres atención online o presencial',
       );
     }
 
@@ -2250,8 +2250,8 @@ export class AppointmentsService {
     const missing = [
       !name ? 'nombre o razon social' : null,
       !taxId ? 'RUT / NIF / documento tributario' : null,
-      !address ? 'direccion' : null,
-      !phone ? 'telefono' : null,
+      !address ? 'dirección' : null,
+      !phone ? 'teléfono' : null,
     ].filter(Boolean);
 
     if (missing.length > 0) {
@@ -2274,19 +2274,19 @@ export class AppointmentsService {
 
     if (!address || address.length < 5 || address.length > 160) {
       throw new BadRequestException(
-        'La direccion debe tener entre 5 y 160 caracteres',
+        'La dirección debe tener entre 5 y 160 caracteres',
       );
     }
 
     if (!phone || !phonePattern.test(phone)) {
       throw new BadRequestException(
-        'El telefono debe tener entre 6 y 30 caracteres y usar un formato valido',
+        'El teléfono debe tener entre 6 y 30 caracteres y usar un formato válido',
       );
     }
 
     if (comment && comment.length > 300) {
       throw new BadRequestException(
-        'El comentario para la boleta o factura debe tener maximo 300 caracteres',
+        'El comentario para la boleta o factura debe tener máximo 300 caracteres',
       );
     }
   }

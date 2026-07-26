@@ -120,13 +120,13 @@ export class AuthService {
       existingEmailUser.googleId !== googleId
     ) {
       throw new UnauthorizedException(
-        'Este correo ya esta vinculado a otra cuenta de Google.',
+        'Este correo ya está vinculado a otra cuenta de Google.',
       );
     }
 
     if (!existingEmailUser && data.acceptedTerms !== true) {
       throw new BadRequestException(
-        'Debes aceptar terminos y politica de privacidad para crear la cuenta.',
+        'Debes aceptar términos y política de privacidad para crear la cuenta.',
       );
     }
 
@@ -318,7 +318,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new BadRequestException('Este correo ya esta registrado.');
+      throw new BadRequestException('Este correo ya está registrado.');
     }
 
     const role = data.role ?? Role.CUSTOMER;
@@ -592,18 +592,18 @@ export class AuthService {
     }
 
     if (!this.isValidEmail(data.email)) {
-      throw new BadRequestException('Correo electronico invalido.');
+      throw new BadRequestException('Correo electrónico invalido.');
     }
 
     if (!this.isStrongPassword(data.password)) {
       throw new BadRequestException(
-        'La contrasena debe tener minimo 8 caracteres, mayuscula, minuscula, numero y caracter especial.',
+        'La contraseña debe tener mínimo 8 caracteres, mayuscula, minuscula, número y carácter especial.',
       );
     }
 
     if (data.acceptedTerms !== true) {
       throw new BadRequestException(
-        'Debes aceptar terminos y politica de privacidad.',
+        'Debes aceptar términos y política de privacidad.',
       );
     }
 
@@ -625,7 +625,7 @@ export class AuthService {
         !this.isValidCustomProfession(customProfession || specialty)
       ) {
         throw new BadRequestException(
-          'La profesion personalizada debe tener entre 3 y 50 caracteres y solo puede incluir letras, espacios, tildes y guiones.',
+          'La profesión personalizada debe tener entre 3 y 50 caracteres y solo puede incluir letras, espacios, tildes y guiones.',
         );
       }
     }

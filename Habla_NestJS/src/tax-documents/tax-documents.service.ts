@@ -842,8 +842,8 @@ export class TaxDocumentsService {
                   : 'LIBREDTE_AUTO_DOCUMENT_FAILED',
               message:
                 status === DocumentStatus.DOCUMENT_GENERATED
-                  ? 'Documento emitido automaticamente con LibreDTE'
-                  : 'LibreDTE no pudo emitir automaticamente el documento',
+                  ? 'Documento emitido automáticamente con LibreDTE'
+                  : 'LibreDTE no pudo emitir automáticamente el documento',
               metadata: {
                 appointmentId,
                 folio: result.folio,
@@ -1363,7 +1363,7 @@ export class TaxDocumentsService {
             create: {
               actorId,
               type: 'DOCUMENT_SENT',
-              message: 'Documento enviado automaticamente al paciente',
+              message: 'Documento enviado automáticamente al paciente',
               metadata: {
                 customerEmail,
                 pdfUrl: document.pdfUrl,

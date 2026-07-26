@@ -819,7 +819,7 @@ export class UsersService {
       kinesiologo: ['Kinesiólogo'],
       cardiologo: ['Cardiólogo'],
       medico: ['Médico'],
-      'medico general': ['Médico General'],
+      'médico general': ['Médico General'],
       fonoaudiologo: ['Fonoaudiólogo'],
       estetica: ['Estética'],
       cosmetica: ['Cosmética'],

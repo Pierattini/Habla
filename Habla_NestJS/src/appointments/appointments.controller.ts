@@ -127,7 +127,7 @@ export class AppointmentsController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Get(':id/confirm-payment-link')
   confirmFromEmailWithoutToken() {
-    throw new BadRequestException('Enlace no valido o expirado.');
+    throw new BadRequestException('Enlace no válido o expirado.');
   }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
@@ -176,7 +176,7 @@ export class AppointmentsController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Get(':id/refund-done')
   refundDoneWithoutToken() {
-    throw new BadRequestException('Enlace no valido o expirado.');
+    throw new BadRequestException('Enlace no válido o expirado.');
   }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })

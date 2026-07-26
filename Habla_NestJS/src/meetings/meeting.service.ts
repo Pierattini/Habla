@@ -263,7 +263,7 @@ export class MeetingService {
     const now = new Date();
     const isAvailable = now >= availableFrom && now <= availableUntil;
 
-    let availabilityMessage = 'La sala esta disponible.';
+    let availabilityMessage = 'La sala está disponible.';
 
     if (now < availableFrom) {
       availabilityMessage =
@@ -271,7 +271,7 @@ export class MeetingService {
     }
 
     if (now > availableUntil) {
-      availabilityMessage = 'La sala ya no esta disponible.';
+      availabilityMessage = 'La sala ya no está disponible.';
     }
 
     return {
