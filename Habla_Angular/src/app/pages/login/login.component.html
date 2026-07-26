@@ -36,6 +36,7 @@
         </button>
       </div>
 
+      <form ngNoForm novalidate (submit)="$event.preventDefault()">
       @if ($any(this).mode === 'register') {
         <div class="step-progress" aria-label="Progreso de registro">
           @for (step of [1, 2, 3, 4]; track step) {
@@ -647,6 +648,7 @@
           {{ $any(this).isSubmitting ? 'Actualizando...' : 'Actualizar contraseña' }}
         </button>
       }
+      </form>
 
       <footer class="legal-links">
         <a routerLink="/privacy-policy">Política de privacidad</a>
