@@ -525,7 +525,7 @@ export class LoginComponent implements OnInit {
     }
 
     if (this.emailCheckStatus !== 'available') {
-      this.errorMessage = 'Espera la validacion del correo.';
+      this.errorMessage = 'Espera la validación del correo.';
       return false;
     }
 
@@ -568,7 +568,7 @@ export class LoginComponent implements OnInit {
   }
 
   public getStepTitle(): string {
-    if (this.registerStep === 1) return 'Elige como quieres usar Conecta';
+    if (this.registerStep === 1) return 'Elige cómo quieres usar Conecta';
     if (this.registerStep === 2) return 'Crea tu acceso';
     if (this.registerStep === 3) {
       return this.selectedRole === 'CUSTOMER'
@@ -650,8 +650,8 @@ export class LoginComponent implements OnInit {
     const value = this.customProfession.trim();
 
     if (!value) return 'Este campo es obligatorio si eliges Otro.';
-    if (value.length < 3) return 'Minimo 3 caracteres.';
-    if (value.length > 50) return 'Maximo 50 caracteres.';
+    if (value.length < 3) return 'Mínimo 3 caracteres.';
+    if (value.length > 50) return 'Máximo 50 caracteres.';
     if (!/^[\p{L}\s-]+$/u.test(value)) {
       return 'Usa solo letras, espacios, tildes y guiones.';
     }
@@ -707,7 +707,7 @@ export class LoginComponent implements OnInit {
           this.errorMessage =
             'No pudimos comprobar el correo. Revisa tu conexión e intenta nuevamente.';
         } else {
-          this.errorMessage = 'Espera la validacion del correo.';
+          this.errorMessage = 'Espera la validación del correo.';
         }
         return false;
       }
@@ -726,7 +726,7 @@ export class LoginComponent implements OnInit {
 
     if (this.registerStep === 3) {
       if (this.selectedRole === 'CUSTOMER' && !this.registerForm.interest) {
-        this.errorMessage = 'Selecciona una opcion.';
+        this.errorMessage = 'Selecciona una opción.';
         return false;
       }
 

@@ -30,7 +30,7 @@ export class AdminDashboardComponent {
     'Catalogo',
     'Notificaciones',
     'Reportes',
-    'Configuracion',
+    'Configuración',
   ];
 
   constructor(private adminService: AdminService) {}

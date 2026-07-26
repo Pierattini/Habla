@@ -19,7 +19,7 @@
       class="search-suggestions"
       *ngIf="showSuggestions && search.trim().length >= 2"
       role="listbox"
-      aria-label="Sugerencias de busqueda"
+      aria-label="Sugerencias de búsqueda"
     >
       <div
         class="suggestion-status"
@@ -45,7 +45,7 @@
             <ng-container *ngIf="suggestion.city"> • {{ suggestion.city }}</ng-container>
           </small>
           <small *ngIf="suggestion.type === 'profession'">
-            Profesion
+            Profesión
             <ng-container *ngIf="suggestion.categoryName"> • {{ suggestion.categoryName }}</ng-container>
           </small>
         </span>
@@ -55,12 +55,12 @@
         class="suggestion-status"
         *ngIf="!suggestionsLoading && searchSuggestions.length === 0"
       >
-        No encontramos resultados para tu busqueda.
+        No encontramos resultados para tu búsqueda.
       </div>
     </div>
   </div>
 
-  <div class="modality-filter" aria-label="Modalidad de atencion">
+  <div class="modality-filter" aria-label="Modalidad de atención">
     <button
       type="button"
       *ngFor="let mode of modalityFilters"
@@ -134,8 +134,8 @@
   >
     <div class="preference-heading">
       <div>
-        <span>Personaliza tu busqueda</span>
-        <h3>Que estas buscando?</h3>
+        <span>Personaliza tu búsqueda</span>
+        <h3>¿Qué estás buscando?</h3>
         <p>{{ selectedInterests.length }}/9 sectores seleccionados</p>
       </div>
       <div class="preference-actions">
@@ -188,7 +188,7 @@
       *ngIf="getFilteredInterestOptions().length === 0"
       class="preference-notice"
     >
-      No encontramos opciones con esa busqueda.
+      No encontramos opciones con esa búsqueda.
     </p>
 
     <p
@@ -210,7 +210,7 @@
       </label>
 
       <label>
-        <span>Region</span>
+        <span>Región</span>
         <input
           type="text"
           [(ngModel)]="preferredRegion"
@@ -251,7 +251,7 @@
         <strong>{{ profileCompletionItems.length }} pendientes</strong>
       </div>
 
-      <p>Mientras mas datos agregues, mejores recomendaciones veras.</p>
+      <p>Mientras más datos agregues, mejores recomendaciones verás.</p>
 
       <div class="completion-progress">
         <span [style.width.%]="getProfileCompletionPercent()"></span>
@@ -294,7 +294,7 @@
 
     <div *ngIf="!loading && totalProfessionals === 0" class="empty-state">
       <h3>No se encontraron profesionales</h3>
-      <p>Prueba con otro nombre, profesion o especialidad.</p>
+      <p>Prueba con otro nombre, profesión o especialidad.</p>
     </div>
 
     <article class="professional-card" *ngFor="let prof of filteredProfessionals">

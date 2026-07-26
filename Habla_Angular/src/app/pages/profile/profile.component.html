@@ -172,7 +172,7 @@
     <div class="card account-card">
       <div class="account-section">
         <div>
-          <span>Configuracion</span>
+          <span>Configuración</span>
           <h2>Cuenta</h2>
           <p>
             Administra acciones importantes de tu cuenta y privacidad.
@@ -198,14 +198,14 @@
       <div class="preferences-header">
         <div>
           <span>Completa tu experiencia</span>
-          <h2>Preferencias de busqueda</h2>
+          <h2>Preferencias de búsqueda</h2>
         </div>
 
         <strong>{{ $any(this).customerInterests.length }}/9</strong>
       </div>
 
       <p class="preferences-helper">
-        Estos datos activan recomendaciones mas precisas y completan las secciones pendientes del perfil.
+        Estos datos activan recomendaciones más precisas y completan las secciones pendientes del perfil.
       </p>
 
       <div class="preference-block">
@@ -217,7 +217,7 @@
             type="search"
             [value]="$any(this).interestSearch"
             (input)="$any(this).interestSearch = $any($event.target).value"
-            placeholder="Buscar profesion o especialidad"
+            placeholder="Buscar profesión o especialidad"
             autocomplete="off"
             aria-label="Buscar preferencias"
             [disabled]="!$any(this).customerPreferencesEditing"
@@ -269,7 +269,7 @@
 
       <div class="preference-block">
         <h3>Elige modalidad preferida</h3>
-        <p>Usaremos esta opcion para ordenar tus resultados.</p>
+        <p>Usaremos esta opción para ordenar tus resultados.</p>
 
         <div class="mode-grid">
           <button
@@ -285,7 +285,7 @@
       </div>
 
       <div class="preference-block">
-        <h3>Agrega ciudad o region preferida</h3>
+        <h3>Agrega ciudad o región preferida</h3>
         <p>Opcional, pero ayuda a mostrar profesionales cercanos.</p>
 
         <div class="location-grid">
@@ -321,7 +321,7 @@
           </label>
 
           <label>
-            <span>Region</span>
+            <span>Región</span>
             <div class="location-autocomplete">
               <input
                 type="text"
@@ -388,7 +388,7 @@
 
       <ion-item lines="none">
         <ion-label>
-          <h3>{{ $any(this).role === 'PROFESSIONAL' ? 'Gestion documental' : 'Preferencia de boleta' }}</h3>
+          <h3>{{ $any(this).role === 'PROFESSIONAL' ? 'Gestión documental' : 'Preferencia de boleta' }}</h3>
           <p>{{ $any(this).getDocumentPreferenceLabel() }}</p>
         </ion-label>
         <ion-button fill="clear" slot="end" (click)="$any(this).editDocumentPreference()">

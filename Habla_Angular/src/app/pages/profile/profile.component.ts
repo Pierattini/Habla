@@ -269,7 +269,7 @@ async onProfileImageSelected(event: Event) {
   if (!file) return;
 
   if (!file.type.startsWith('image/')) {
-    await this.showProfileAlert('Imagen no valida', 'Selecciona una imagen valida.');
+    await this.showProfileAlert('Imagen no válida', 'Selecciona una imagen válida.');
     input.value = '';
     return;
   }
@@ -429,7 +429,7 @@ async editTimezone() {
 async editTaxInfo() {
   const alert = await this.alertCtrl.create({
     header: this.role === 'PROFESSIONAL' ? 'Datos tributarios emisor' : 'Datos para boleta',
-    message: 'Usa datos reales para documentos tributarios. RUT/NIF/DNI: 6 a 20 caracteres. Nombre: 3 a 120. Email valido. Ciudad: 2 a 80. Direccion: 5 a 160.',
+    message: 'Usa datos reales para documentos tributarios. RUT/NIF/DNI: 6 a 20 caracteres. Nombre: 3 a 120. Email válido. Ciudad: 2 a 80. Dirección: 5 a 160.',
     inputs: [
       {
         name: 'taxId',
@@ -473,7 +473,7 @@ async editTaxInfo() {
         name: 'taxAddress',
         type: 'text',
         value: this.taxAddress,
-        placeholder: 'Direccion tributaria',
+        placeholder: 'Dirección tributaria',
         attributes: {
           maxlength: 160,
         },
@@ -522,7 +522,7 @@ async editTaxInfo() {
 async editDocumentPreference() {
   const isProfessional = this.role === 'PROFESSIONAL';
   const alert = await this.alertCtrl.create({
-    header: isProfessional ? 'Gestion de documentos' : 'Preferencia de boleta',
+    header: isProfessional ? 'Gestión de documentos' : 'Preferencia de boleta',
     inputs: isProfessional
       ? [
           {
@@ -601,7 +601,7 @@ async editCustomerInterests() {
           const interests = Array.isArray(selected) ? selected.slice(0, 9) : [];
 
           if (Array.isArray(selected) && selected.length > 9) {
-            void this.showProfileAlert('Limite de intereses', 'Puedes seleccionar maximo 9 intereses.');
+            void this.showProfileAlert('Límite de intereses', 'Puedes seleccionar máximo 9 intereses.');
             return false;
           }
 
@@ -709,7 +709,7 @@ saveCustomerPreferences() {
   const preferredRegion = this.cleanOptional(this.preferredRegion) || '';
 
   if (preferredCity.length > 80 || preferredRegion.length > 80) {
-    this.customerPreferencesMessage = 'Ciudad y region deben tener maximo 80 caracteres.';
+    this.customerPreferencesMessage = 'Ciudad y región deben tener máximo 80 caracteres.';
     return;
   }
 
@@ -804,7 +804,7 @@ async editPreferredAttentionMode() {
 
 async editPreferredLocation() {
   const alert = await this.alertCtrl.create({
-    header: 'Ubicacion preferida',
+    header: 'Ubicación preferida',
     message: 'Usaremos estos datos para recomendar profesionales cercanos.',
     inputs: [
       {
@@ -818,7 +818,7 @@ async editPreferredLocation() {
         name: 'preferredRegion',
         type: 'text',
         value: this.preferredRegion,
-        placeholder: 'Region',
+        placeholder: 'Región',
         attributes: { maxlength: 80 },
       },
     ],
@@ -831,7 +831,7 @@ async editPreferredLocation() {
           const preferredRegion = this.cleanOptional(data.preferredRegion) || '';
 
           if (preferredCity.length > 80 || preferredRegion.length > 80) {
-            void this.showProfileAlert('Revisa la ubicacion', 'Ciudad y region deben tener maximo 80 caracteres.');
+            void this.showProfileAlert('Revisa la ubicación', 'Ciudad y región deben tener máximo 80 caracteres.');
             return false;
           }
 
@@ -943,7 +943,7 @@ private validateTaxPayload(payload: {
   }
 
   if (payload.taxEmail && (payload.taxEmail.length > 120 || !emailPattern.test(payload.taxEmail))) {
-    return 'Ingresa un email tributario valido.';
+    return 'Ingresa un email tributario válido.';
   }
 
   if (payload.taxCity && (payload.taxCity.length < 2 || payload.taxCity.length > 80)) {
@@ -951,7 +951,7 @@ private validateTaxPayload(payload: {
   }
 
   if (payload.taxAddress && (payload.taxAddress.length < 5 || payload.taxAddress.length > 160)) {
-    return 'La direccion tributaria debe tener entre 5 y 160 caracteres.';
+    return 'La dirección tributaria debe tener entre 5 y 160 caracteres.';
   }
 
   return null;

@@ -47,7 +47,7 @@ export class MeetingComponent implements OnInit {
         this.loading = false;
 
         if (error?.status === 401) {
-          this.errorMessage = 'Debes iniciar sesion para acceder a esta sala.';
+          this.errorMessage = 'Debes iniciar sesión para acceder a esta sala.';
           return;
         }
 
@@ -76,7 +76,7 @@ export class MeetingComponent implements OnInit {
 
     const alert = await this.alertCtrl.create({
       header: 'Videollamada Conecta',
-      message: 'La sala de videollamada de Conecta esta preparada. Audio y video se integraran en la siguiente fase.',
+      message: 'La sala de videollamada de Conecta está preparada. Audio y video se integrarán en la siguiente fase.',
       buttons: ['Aceptar'],
       cssClass: 'conecta-alert',
     });

@@ -752,7 +752,7 @@ export class HomePage implements OnInit, OnDestroy {
     const mode = prof?.attentionMode || 'ONLINE';
 
     if (mode === 'PRESENTIAL') {
-      return [prof.officeCity, prof.officeRegion].filter(Boolean).join(', ') || 'Atencion presencial';
+      return [prof.officeCity, prof.officeRegion].filter(Boolean).join(', ') || 'Atención presencial';
     }
 
     if (mode === 'BOTH') {
@@ -908,7 +908,7 @@ export class HomePage implements OnInit, OnDestroy {
     }
 
     if (!user?.preferredCity && !user?.preferredRegion) {
-      missing.push('Agrega ciudad o region preferida');
+      missing.push('Agrega ciudad o región preferida');
     }
 
     return missing;

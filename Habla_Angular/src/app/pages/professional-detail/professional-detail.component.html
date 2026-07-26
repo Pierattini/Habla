@@ -54,7 +54,7 @@
           </div>
 
           <div class="meta-pill">
-            <span>Duracion</span>
+            <span>Duración</span>
             <strong>{{ professional.sessionDuration || 30 }} min</strong>
           </div>
         </div>
@@ -63,12 +63,12 @@
 
     <ion-card>
       <ion-card-header>
-        <ion-card-title>Informacion</ion-card-title>
+        <ion-card-title>Información</ion-card-title>
       </ion-card-header>
 
       <ion-card-content>
         <p>
-          {{ professional.description || professional.shortDescription || 'Agenda una sesion con este profesional segun la fecha y horario disponible.' }}
+          {{ professional.description || professional.shortDescription || 'Agenda una sesión con este profesional según la fecha y horario disponible.' }}
         </p>
 
         <p class="document-helper" *ngIf="professional.city">
@@ -83,7 +83,7 @@
 
     <ion-card>
       <ion-card-header>
-        <ion-card-title>Modalidad de atencion</ion-card-title>
+        <ion-card-title>Modalidad de atención</ion-card-title>
       </ion-card-header>
 
       <ion-card-content>
@@ -125,7 +125,7 @@
             />
             <span>
               <strong>Presencial</strong>
-              <small>{{ professional.officeCity || 'Direccion disponible al confirmar' }}</small>
+              <small>{{ professional.officeCity || 'Dirección disponible al confirmar' }}</small>
             </span>
           </label>
         </div>
@@ -141,7 +141,7 @@
           class="document-helper"
           *ngIf="$any(this).selectedAttentionMode === 'PRESENTIAL'"
         >
-          Direccion exacta disponible al confirmar la reserva.
+          Dirección exacta disponible al confirmar la reserva.
           {{ professional.officeCity ? ' Ciudad: ' + professional.officeCity : '' }}
           {{ professional.officeRegion ? ', ' + professional.officeRegion : '' }}
           {{ professional.officeCountry ? ', ' + professional.officeCountry : '' }}
@@ -247,7 +247,7 @@
           class="document-helper warning"
           *ngIf="$any(this).selectedDocumentMode !== 'NONE' && !$any(this).customerTaxData"
         >
-          Al solicitar la cita te pediremos nombre o razon social, documento tributario, direccion y telefono.
+          Al solicitar la cita te pediremos nombre o razon social, documento tributario, dirección y teléfono.
         </p>
 
         <div
@@ -275,7 +275,7 @@
           </label>
 
           <label>
-            <span>Direccion *</span>
+            <span>Dirección *</span>
             <input
               type="text"
               maxlength="160"
@@ -285,7 +285,7 @@
           </label>
 
           <label>
-            <span>Telefono *</span>
+            <span>Teléfono *</span>
             <input
               type="tel"
               maxlength="30"
@@ -299,7 +299,7 @@
             <textarea
               rows="3"
               maxlength="300"
-              placeholder="Informacion adicional opcional"
+              placeholder="Información adicional opcional"
               [(ngModel)]="taxData.taxComment"
             ></textarea>
           </label>

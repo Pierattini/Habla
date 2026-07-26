@@ -48,7 +48,7 @@
     *ngIf="$any(this).canJoinVideoCall(appt)"
     [disabled]="$any(this).videoContinuationLoadingId === appt.id"
     (click)="$any(this).askContinueVideoCall(appt)">
-    Continuar sesion
+    Continuar sesión
   </ion-button>
 
   <ion-button
@@ -665,7 +665,7 @@
         rows="4"
         [ngModel]="$any(this).reviewComment"
         (ngModelChange)="$any(this).reviewComment = $event"
-        placeholder="Cuenta brevemente como fue tu experiencia"
+        placeholder="Cuenta brevemente cómo fue tu experiencia"
       ></textarea>
       <small>{{ $any(this).reviewComment.length }}/500 caracteres</small>
     </label>
@@ -724,8 +724,8 @@
 
     <p class="calendar-intro" style="margin:0;color:#6b7280;font-size:13px;font-weight:700;line-height:1.45;">
       Tu cita ya quedo registrada en Conecta.
-      Conecta enviara automaticamente recordatorios de tu cita.
-      Si lo deseas, tambien puedes agregarla a tu calendario personal.
+      Conecta enviara automáticamente recordatorios de tu cita.
+      Si lo deseas, también puedes agregarla a tu calendario personal.
     </p>
 
     <div class="calendar-options" style="display:grid;gap:10px;margin-top:18px;">
@@ -799,7 +799,7 @@
     <h2 id="payment-modal-title">Datos para transferir</h2>
     <p class="payment-intro">
       Transfiere al profesional con estos datos. Luego presiona
-      <strong>Ya transferi</strong> para avisar que el pago fue realizado.
+      <strong>Ya transferí</strong> para avisar que el pago fue realizado.
     </p>
 
     <div class="payment-data-list">
@@ -843,13 +843,13 @@
       </div>
 
       <div class="payment-data-row">
-        <span>Numero de cuenta</span>
+        <span>Número de cuenta</span>
         <strong>{{ $any(this).paymentModalData?.accountNumber || 'No informado' }}</strong>
         <button
           type="button"
           class="payment-copy"
-          aria-label="Copiar numero de cuenta"
-          (click)="$any(this).copyPaymentData($any(this).paymentModalData?.accountNumber, 'Numero de cuenta')"
+          aria-label="Copiar número de cuenta"
+          (click)="$any(this).copyPaymentData($any(this).paymentModalData?.accountNumber, 'Número de cuenta')"
         >
           ⧉
         </button>

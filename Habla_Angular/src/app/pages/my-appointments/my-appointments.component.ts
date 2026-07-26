@@ -855,7 +855,7 @@ private downloadIcsFile(appt: any): void {
   const meetingUrl = appt.meetingUrl || appt.meetLink;
   const ics = [
     'BEGIN:VCALENDAR',
-    'VERSION:2.0',
+    'Versión:2.0',
     'PRODID:-//Conecta//Appointments//ES',
     'BEGIN:VEVENT',
     `UID:${appt.id}@conecta`,
@@ -905,7 +905,7 @@ private getCalendarLocation(appt: any): string {
       appt.appointmentCity,
       appt.appointmentRegion,
       appt.appointmentCountry,
-    ].filter(Boolean).join(', ') || 'Atencion presencial';
+    ].filter(Boolean).join(', ') || 'Atención presencial';
   }
 
   return appt?.meetingUrl || appt?.meetLink || 'Conecta';
@@ -945,7 +945,7 @@ getAppointmentModeDetail(appt: any): string {
       appt.appointmentCity,
       appt.appointmentRegion,
       appt.appointmentCountry,
-    ].filter(Boolean).join(', ') || 'Direccion presencial pendiente';
+    ].filter(Boolean).join(', ') || 'Dirección presencial pendiente';
   }
 
   if (appt?.meetLink) return 'Videollamada disponible';
@@ -1051,7 +1051,7 @@ async askContinueVideoCall(appt: any): Promise<void> {
   }
 
   const alert = await this.alertCtrl.create({
-    header: 'Termino la sesion?',
+    header: 'Termino la sesión?',
     message:
       'Si aun necesitan continuar, Conecta generara un nuevo enlace gratuito y lo enviara por correo al paciente y al profesional.',
     buttons: [

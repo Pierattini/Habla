@@ -254,8 +254,8 @@ async bookAppointment() {
   if (!token) {
     this.showMessage(
       'warning',
-      'Inicia sesion',
-      'Debes iniciar sesion para solicitar una cita.'
+      'Inicia sesión',
+      'Debes iniciar sesión para solicitar una cita.'
     );
     return;
   }
@@ -329,7 +329,7 @@ async bookAppointment() {
       this.showMessage(
         'error',
         'No pudimos reservar',
-        err?.error?.message || 'No fue posible completar la reserva. Intentalo nuevamente.'
+        err?.error?.message || 'No fue posible completar la reserva. Inténtalo nuevamente.'
       );
     }
   });
@@ -450,8 +450,8 @@ onAttentionModeChange(mode: 'ONLINE' | 'PRESENTIAL') {
 getAttentionModeLabel(): string {
   if (!this.professional) return '';
 
-  if (this.professional.attentionMode === 'ONLINE') return 'Atencion online';
-  if (this.professional.attentionMode === 'PRESENTIAL') return 'Atencion presencial';
+  if (this.professional.attentionMode === 'ONLINE') return 'Atención online';
+  if (this.professional.attentionMode === 'PRESENTIAL') return 'Atención presencial';
 
   return 'Online o presencial';
 }
@@ -472,7 +472,7 @@ getDocumentModeLabel(): string {
     return 'Completa los datos para que el profesional pueda emitir el documento.';
   }
 
-  return 'No se solicitara documento tributario para esta cita.';
+  return 'No se solicitará documento tributario para esta cita.';
 }
 
 canSubmitBooking(): boolean {
@@ -525,15 +525,15 @@ private validateTaxPayload(payload: {
   }
 
   if (!payload.taxAddress || payload.taxAddress.length < 5 || payload.taxAddress.length > 160) {
-    return 'La direccion debe tener entre 5 y 160 caracteres.';
+    return 'La dirección debe tener entre 5 y 160 caracteres.';
   }
 
   if (!payload.taxPhone || !phonePattern.test(payload.taxPhone)) {
-    return 'El telefono debe tener entre 6 y 30 caracteres y usar un formato valido.';
+    return 'El teléfono debe tener entre 6 y 30 caracteres y usar un formato válido.';
   }
 
   if (payload.taxComment && payload.taxComment.length > 300) {
-    return 'El comentario debe tener maximo 300 caracteres.';
+    return 'El comentario debe tener máximo 300 caracteres.';
   }
 
   return null;

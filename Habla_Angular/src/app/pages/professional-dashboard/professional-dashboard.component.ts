@@ -356,22 +356,22 @@ export class ProfessionalDashboardComponent {
     }
 
     if (!this.profile.description || this.profile.description.trim().length < 30) {
-      missing.push('Completa una descripcion clara');
+      missing.push('Completa una descripción clara');
     }
 
     if (!Number(this.profile.price)) {
-      missing.push('Define precio de sesion');
+      missing.push('Define precio de sesión');
     }
 
     if (!Number(this.profile.duration)) {
-      missing.push('Define duracion de sesion');
+      missing.push('Define duración de sesión');
     }
 
     if (
       ['PRESENTIAL', 'BOTH'].includes(this.profile.attentionMode) &&
       (!this.profile.officeAddress || !this.profile.officeCity || !this.profile.officeCountry)
     ) {
-      missing.push('Completa direccion presencial');
+      missing.push('Completa dirección presencial');
     }
 
     if (
@@ -601,7 +601,7 @@ export class ProfessionalDashboardComponent {
           window.location.href = response.url;
         },
         error: (err) => {
-          void this.showDashboardAlert('Conexion Google', err?.error?.message || 'No se pudo iniciar conexion con Google');
+          void this.showDashboardAlert('Conexión Google', err?.error?.message || 'No se pudo iniciar conexión con Google');
         },
       });
   }
@@ -618,7 +618,7 @@ export class ProfessionalDashboardComponent {
           };
         },
         error: (err) => {
-          void this.showDashboardAlert('Conexion Google', err?.error?.message || 'No se pudo desconectar Google');
+          void this.showDashboardAlert('Conexión Google', err?.error?.message || 'No se pudo desconectar Google');
         },
       });
   }
@@ -631,7 +631,7 @@ export class ProfessionalDashboardComponent {
           window.location.href = response.url;
         },
         error: (err) => {
-          void this.showDashboardAlert('Conexion Zoom', err?.error?.message || 'No se pudo iniciar conexion con Zoom');
+          void this.showDashboardAlert('Conexión Zoom', err?.error?.message || 'No se pudo iniciar conexión con Zoom');
         },
       });
   }
@@ -648,7 +648,7 @@ export class ProfessionalDashboardComponent {
           };
         },
         error: (err) => {
-          void this.showDashboardAlert('Conexion Zoom', err?.error?.message || 'No se pudo desconectar Zoom');
+          void this.showDashboardAlert('Conexión Zoom', err?.error?.message || 'No se pudo desconectar Zoom');
         },
       });
   }
@@ -661,7 +661,7 @@ export class ProfessionalDashboardComponent {
           window.location.href = response.url;
         },
         error: (err) => {
-          void this.showDashboardAlert('Conexion Microsoft', err?.error?.message || 'No se pudo iniciar conexion con Microsoft');
+          void this.showDashboardAlert('Conexión Microsoft', err?.error?.message || 'No se pudo iniciar conexión con Microsoft');
         },
       });
   }
@@ -678,7 +678,7 @@ export class ProfessionalDashboardComponent {
           };
         },
         error: (err) => {
-          void this.showDashboardAlert('Conexion Microsoft', err?.error?.message || 'No se pudo desconectar Microsoft');
+          void this.showDashboardAlert('Conexión Microsoft', err?.error?.message || 'No se pudo desconectar Microsoft');
         },
       });
   }
@@ -701,7 +701,7 @@ async onFileSelected(event: Event) {
   if (!file) return;
 
   if (!file.type.startsWith('image/')) {
-    await this.showDashboardAlert('Imagen no valida', 'Selecciona una imagen valida.');
+    await this.showDashboardAlert('Imagen no válida', 'Selecciona una imagen válida.');
     input.value = '';
     return;
   }
@@ -1069,7 +1069,7 @@ private prepareProfileImage(file: File): Promise<string> {
     const breakMinute = Number(this.profile.interval);
 
     if (!Number.isInteger(duration) || duration < 15 || duration > 240) {
-      errors.push('La duracion de sesion debe estar entre 15 y 240 minutos.');
+      errors.push('La duración de sesión debe estar entre 15 y 240 minutos.');
     }
 
     if (!Number.isInteger(breakMinute) || breakMinute < 0 || breakMinute > 240) {
@@ -1080,7 +1080,7 @@ private prepareProfileImage(file: File): Promise<string> {
       ['PRESENTIAL', 'BOTH'].includes(this.profile.attentionMode) &&
       (!this.profile.officeAddress || !this.profile.officeCity || !this.profile.officeCountry)
     ) {
-      errors.push('Para atencion presencial debes indicar direccion, ciudad y pais.');
+      errors.push('Para atención presencial debes indicar dirección, ciudad y país.');
     }
 
     if (['PRESENTIAL', 'BOTH'].includes(this.profile.attentionMode)) {
@@ -1091,7 +1091,7 @@ private prepareProfileImage(file: File): Promise<string> {
       const instructions = this.normalizeText(this.profile.arrivalInstructions);
 
       if (address && (address.length < 8 || address.length > 140)) {
-        errors.push('La direccion debe tener entre 8 y 140 caracteres.');
+        errors.push('La dirección debe tener entre 8 y 140 caracteres.');
       }
 
       if (city && (city.length < 2 || city.length > 60)) {
@@ -1099,19 +1099,19 @@ private prepareProfileImage(file: File): Promise<string> {
       }
 
       if (region.length > 60) {
-        errors.push('La region debe tener maximo 60 caracteres.');
+        errors.push('La región debe tener máximo 60 caracteres.');
       }
 
       if (country && (country.length < 2 || country.length > 40)) {
-        errors.push('El pais debe tener entre 2 y 40 caracteres.');
+        errors.push('El país debe tener entre 2 y 40 caracteres.');
       }
 
       if (instructions.length > 300) {
-        errors.push('Las instrucciones de llegada deben tener maximo 300 caracteres.');
+        errors.push('Las instrucciones de llegada deben tener máximo 300 caracteres.');
       }
 
       if (this.containsDirectContact([address, city, region, country, instructions].join(' '))) {
-        errors.push('No incluyas telefono, correo, enlaces ni redes sociales en la direccion presencial.');
+        errors.push('No incluyas teléfono, correo, enlaces ni redes sociales en la dirección presencial.');
       }
     }
 
@@ -1166,7 +1166,7 @@ private prepareProfileImage(file: File): Promise<string> {
         const slots = item.specificSlots.map((slot) => slot.time);
 
         if (slots.length === 0 || slots.some((slot) => !this.isValidTime(slot))) {
-          errors.push(`${item.day}: agrega al menos un horario especifico valido.`);
+          errors.push(`${item.day}: agrega al menos un horario específico válido.`);
         }
 
         if (new Set(slots).size !== slots.length) {
@@ -1301,7 +1301,7 @@ private prepareProfileImage(file: File): Promise<string> {
     const certificatePassword = this.taxProviderCertificatePassword.trim();
 
     if (!rut || rut.length < 6) {
-      this.taxProviderMessage = 'Ingresa un RUT emisor valido.';
+      this.taxProviderMessage = 'Ingresa un RUT emisor válido.';
       return;
     }
 
@@ -1382,7 +1382,7 @@ private prepareProfileImage(file: File): Promise<string> {
 
     this.taxProviderService.testSiiAuthentication().subscribe({
       next: (result) => {
-        this.taxProviderMessage = result.message || 'Conexion con SII validada.';
+        this.taxProviderMessage = result.message || 'Conexión con SII validada.';
         if (this.taxProviderCredential) {
           this.taxProviderCredential = {
             ...this.taxProviderCredential,
@@ -1392,8 +1392,8 @@ private prepareProfileImage(file: File): Promise<string> {
         }
       },
       error: (err) => {
-        console.error('Error probando conexion SII:', err);
-        this.taxProviderMessage = err?.error?.message || 'No se pudo validar la conexion con SII.';
+        console.error('Error probando conexión SII:', err);
+        this.taxProviderMessage = err?.error?.message || 'No se pudo validar la conexión con SII.';
         this.taxProviderTesting = false;
       },
       complete: () => {
@@ -1529,7 +1529,7 @@ private prepareProfileImage(file: File): Promise<string> {
   }
 
   showPlanComingSoon(): void {
-    this.planActionMessage = 'Proximamente podras activar tu plan desde la app. Por ahora esta funcion esta en preparacion.';
+    this.planActionMessage = 'Próximamente podrás activar tu plan desde la app. Por ahora esta función está en preparación.';
     void this.showDashboardAlert('Plan Conecta', this.planActionMessage);
   }
 
@@ -1611,7 +1611,7 @@ private prepareProfileImage(file: File): Promise<string> {
         this.professionalStats = stats;
       },
       error: (err) => {
-        console.error('Error cargando estadisticas:', err);
+        console.error('Error cargando estadísticas:', err);
         this.resetProfessionalStats();
       },
       complete: () => {
@@ -1823,7 +1823,7 @@ private prepareProfileImage(file: File): Promise<string> {
     if (!this.allowedTaxDocumentTypes.includes(file.type)) {
       input.value = '';
       delete this.selectedDocumentFiles[documentId];
-      void this.showDashboardAlert('Archivo no valido', 'Solo puedes subir PDF, JPG, JPEG o PNG');
+      void this.showDashboardAlert('Archivo no válido', 'Solo puedes subir PDF, JPG, JPEG o PNG');
       return;
     }
 

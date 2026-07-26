@@ -76,7 +76,7 @@
           <span>Creado: {{ ticket.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
           <span>Actualizado: {{ ticket.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
           <span *ngIf="getLastMessageDate(ticket)">
-            Ultimo mensaje: {{ getLastMessageDate(ticket) | date:'dd/MM/yyyy HH:mm' }}
+            Último mensaje: {{ getLastMessageDate(ticket) | date:'dd/MM/yyyy HH:mm' }}
           </span>
         </div>
 

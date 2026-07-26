@@ -34,7 +34,7 @@ export class SupportComponent {
       error: (err) => {
         this.errorMessage =
           err?.error?.message ||
-          'Soporte no esta disponible en este momento. Intenta nuevamente mas tarde.';
+          'Soporte no está disponible en este momento. Intenta nuevamente más tarde.';
         this.loading = false;
       },
       complete: () => {

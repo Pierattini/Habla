@@ -67,7 +67,7 @@
         <span>documentos encontrados</span>
       </div>
 
-      <small>Pagina {{ page }} de {{ totalPages }}</small>
+      <small>Página {{ page }} de {{ totalPages }}</small>
     </section>
 
     <section class="documents-list">
@@ -90,15 +90,15 @@
         <div class="document-meta">
           <span>Monto: {{ document.currency || 'CLP' }} {{ (document.amount || 0) | number:'1.0-0' }}</span>
           <span>Emision: {{ document.view?.issueDate ? (document.view?.issueDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}</span>
-          <span>Envio: {{ document.view?.sentDate ? (document.view?.sentDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}</span>
+          <span>Envío: {{ document.view?.sentDate ? (document.view?.sentDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}</span>
         </div>
 
         <div *ngIf="$any(document).customerTax" class="tax-request-data">
           <strong>Datos entregados por el paciente</strong>
           <span>Nombre: {{ $any(document).customerTax?.name || 'No informado' }}</span>
           <span>Documento: {{ $any(document).customerTax?.taxId || 'No informado' }}</span>
-          <span>Direccion: {{ $any(document).customerTax?.address || 'No informada' }}</span>
-          <span>Telefono: {{ $any(document).customerTax?.phone || 'No informado' }}</span>
+          <span>Dirección: {{ $any(document).customerTax?.address || 'No informada' }}</span>
+          <span>Teléfono: {{ $any(document).customerTax?.phone || 'No informado' }}</span>
           <span *ngIf="$any(document).customerTax?.comment">
             Comentario: {{ $any(document).customerTax.comment }}
           </span>
@@ -187,7 +187,7 @@
       [disabled]="loadingMore"
       (click)="loadMore()"
     >
-      {{ loadingMore ? 'Cargando...' : 'Cargar mas documentos' }}
+      {{ loadingMore ? 'Cargando...' : 'Cargar más documentos' }}
     </ion-button>
   </div>
 </ion-content>

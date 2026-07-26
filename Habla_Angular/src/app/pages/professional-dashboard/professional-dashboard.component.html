@@ -213,7 +213,7 @@
             <h3>{{ $any(this).getPlanStatusLabel() }}</h3>
             <p>
               {{ $any(this).isPlanActive
-                ? 'Tu Plan Conecta esta activo. Puedes gestionar solicitudes y responder pacientes.'
+                ? 'Tu Plan Conecta está activo. Puedes gestionar solicitudes y responder pacientes.'
                 : 'Tu perfil puede aparecer en busquedas, pero para gestionar solicitudes y responder pacientes debes activar tu Plan Conecta.' }}
             </p>
 
@@ -243,7 +243,7 @@
     <ion-card-content>
       <div class="documents-title-row">
         <h2 class="section-title">
-          Estadisticas
+          Estadísticas
         </h2>
 
         <span class="document-badge">
@@ -255,7 +255,7 @@
         *ngIf="!$any(this).isPlanActive"
         class="documents-empty"
       >
-        Las estadisticas estan disponibles para profesionales con Plan Conecta activo.
+        Las estadísticas están disponibles para profesionales con Plan Conecta activo.
       </div>
 
       <div
@@ -297,7 +297,7 @@
         *ngIf="$any(this).isPlanActive && $any(this).statsLoading"
         class="documents-empty"
       >
-        Cargando estadisticas...
+        Cargando estadísticas...
       </p>
     </ion-card-content>
   </ion-card>
@@ -665,7 +665,7 @@
           </span>
 
           <span>
-            Envio:
+            Envío:
             {{ $any(document).view?.sentDate ? ($any(document).view.sentDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}
           </span>
         </div>
@@ -758,7 +758,7 @@
           rows="5"
           maxlength="600"
           [counter]="true"
-          placeholder="Cuenta brevemente tu experiencia, enfoque y como ayudas a tus pacientes."
+          placeholder="Cuenta brevemente tu experiencia, enfoque y cómo ayudas a tus pacientes."
           [(ngModel)]="profile.description">
         </ion-textarea>
       </ion-item>
@@ -778,7 +778,7 @@
         </select>
 
         <p class="field-rule">
-          Los pacientes reservan en hora Chile. Tu calendario mostrara la cita en esta zona.
+          Los pacientes reservan en hora Chile. Tu calendario mostrará la cita en esta zona.
         </p>
       </div>
 
@@ -1173,7 +1173,7 @@
             <ion-input
               type="email"
               maxlength="120"
-              placeholder="facturacion@correo.com"
+              placeholder="facturación@correo.com"
               [ngModel]="$any(profile).taxEmail"
               (ngModelChange)="$any(profile).taxEmail = $event">
             </ion-input>
@@ -1194,7 +1194,7 @@
 
           <ion-item class="profile-field" lines="none">
             <ion-label position="stacked">
-              Pais
+              País
             </ion-label>
 
             <ion-input
@@ -1207,14 +1207,14 @@
 
           <ion-item class="profile-field profile-field-textarea" lines="none">
             <ion-label position="stacked">
-              Direccion tributaria
+              Dirección tributaria
             </ion-label>
 
             <ion-textarea
               rows="3"
               maxlength="160"
               [counter]="true"
-              placeholder="Direccion que usaras al emitir la boleta en SII"
+              placeholder="Dirección que usarás al emitir la boleta en SII"
               [ngModel]="$any(profile).taxAddress"
               (ngModelChange)="$any(profile).taxAddress = $event">
             </ion-textarea>
@@ -1260,7 +1260,7 @@
             <ion-input
               type="email"
               maxlength="120"
-              placeholder="facturacion@empresa.cl"
+              placeholder="facturación@empresa.cl"
               [ngModel]="$any(profile).taxEmail"
               (ngModelChange)="$any(profile).taxEmail = $event">
             </ion-input>
@@ -1284,7 +1284,7 @@
 
         <div class="documents-title-row">
           <h3 class="subsection-title">
-            Configuracion SII para empresa
+            Configuración SII para empresa
           </h3>
 
           <span
@@ -1296,7 +1296,7 @@
         </div>
 
         <p class="field-rule">
-          Esta configuracion se usa para emitir Boleta Electronica real con RUT empresa. El certificado y su clave se guardan cifrados.
+          Esta configuración se usa para emitir Boleta Electrónica real con RUT empresa. El certificado y su clave se guardan cifrados.
         </p>
 
         <div class="tax-help-grid">
@@ -1328,9 +1328,9 @@
 
             <ol class="field-rule">
               <li>Ingresa a sii.cl con el RUT empresa.</li>
-              <li>Ve a Servicios online y luego a Factura electronica.</li>
-              <li>Busca Solicitud de folios o Timbraje electronico.</li>
-              <li>Selecciona Boleta Electronica, normalmente tipo DTE 39.</li>
+              <li>Ve a Servicios online y luego a Factura electrónica.</li>
+              <li>Busca Solicitud de folios o Timbraje electrónico.</li>
+              <li>Selecciona Boleta Electrónica, normalmente tipo DTE 39.</li>
               <li>Solicita los folios y descarga el archivo XML autorizado.</li>
               <li>Sube ese XML en Conecta como archivo de folios SII.</li>
             </ol>
@@ -1400,7 +1400,7 @@
             [disabled]="$any(this).taxProviderSaving || $any(this).taxProviderTesting"
             (click)="$any(this).saveTaxProviderCredential()"
           >
-            {{ $any(this).taxProviderSaving ? 'Guardando...' : 'Guardar configuracion SII' }}
+            {{ $any(this).taxProviderSaving ? 'Guardando...' : 'Guardar configuración SII' }}
           </ion-button>
 
           <ion-button
@@ -1409,7 +1409,7 @@
             [disabled]="!$any(this).taxProviderCredential?.configured || $any(this).taxProviderSaving || $any(this).taxProviderTesting"
             (click)="$any(this).testTaxProviderAuthentication()"
           >
-            {{ $any(this).taxProviderTesting ? 'Validando...' : 'Probar conexion SII' }}
+            {{ $any(this).taxProviderTesting ? 'Validando...' : 'Probar conexión SII' }}
           </ion-button>
 
           <ion-button
@@ -1419,7 +1419,7 @@
             [disabled]="!$any(this).taxProviderCredential?.configured || $any(this).taxProviderSaving || $any(this).taxProviderTesting"
             (click)="$any(this).deleteTaxProviderCredential()"
           >
-            Eliminar configuracion
+            Eliminar configuración
           </ion-button>
         </div>
 
@@ -1487,7 +1487,7 @@
         >
           <div class="document-main">
             <div>
-              <h3>Boleta electronica</h3>
+              <h3>Boleta electrónica</h3>
               <p>Folios {{ range.startFolio }} al {{ range.endFolio }}</p>
             </div>
 
@@ -1533,11 +1533,11 @@
     <ion-card-content>
 
       <h2 class="section-title">
-        Modalidad de atencion
+        Modalidad de atención
       </h2>
 
       <div class="choice-field">
-        <p class="subsection-title">Tipo de atencion</p>
+        <p class="subsection-title">Tipo de atención</p>
         <div class="mode-selector">
           <label>
             <input type="radio" name="attentionMode" value="ONLINE" [(ngModel)]="profile.attentionMode">
@@ -1582,12 +1582,12 @@
         </div>
 
         <p *ngIf="$any(this).isVideoProvider('CONNECTA_AUTO')" class="helper-text">
-          Las videollamadas seran generadas automaticamente por Conecta cuando la cita sea confirmada.
+          Las videollamadas seran generadas automáticamente por Conecta cuando la cita sea confirmada.
         </p>
 
         <div *ngIf="$any(this).isVideoProvider('GOOGLE_MEET')" class="provider-action">
           <p *ngIf="!$any(this).googleConnection.connected">
-            Conecta tu cuenta de Google para generar automaticamente enlaces de Meet.
+            Conecta tu cuenta de Google para generar automáticamente enlaces de Meet.
           </p>
 
           <div *ngIf="$any(this).googleConnection.connected" class="connected-provider">
@@ -1617,7 +1617,7 @@
 
         <div *ngIf="$any(this).isVideoProvider('ZOOM')" class="provider-action">
           <p *ngIf="!$any(this).zoomConnection.connected">
-            Conecta tu cuenta de Zoom para generar automaticamente reuniones.
+            Conecta tu cuenta de Zoom para generar automáticamente reuniones.
           </p>
 
           <div *ngIf="$any(this).zoomConnection.connected" class="connected-provider">
@@ -1647,7 +1647,7 @@
 
         <div *ngIf="$any(this).isVideoProvider('MICROSOFT_TEAMS')" class="provider-action">
           <p *ngIf="!$any(this).teamsConnection.connected">
-            Conecta tu cuenta Microsoft para generar automaticamente reuniones de Teams.
+            Conecta tu cuenta Microsoft para generar automáticamente reuniones de Teams.
           </p>
 
           <div *ngIf="$any(this).teamsConnection.connected" class="connected-provider">
@@ -1689,14 +1689,14 @@
 
       <ng-container *ngIf="profile.attentionMode !== 'ONLINE'">
         <div class="presence-rules">
-          <strong>Reglas para atencion presencial</strong>
-          <span>Direccion, ciudad y pais son obligatorios.</span>
-          <span>No incluyas telefono, correo, WhatsApp ni redes sociales.</span>
+          <strong>Reglas para atención presencial</strong>
+          <span>Dirección, ciudad y país son obligatorios.</span>
+          <span>No incluyas teléfono, correo, WhatsApp ni redes sociales.</span>
         </div>
 
         <ion-item class="profile-field" lines="none">
           <ion-label position="stacked">
-            Direccion <span class="required-mark">*</span>
+            Dirección <span class="required-mark">*</span>
           </ion-label>
 
           <ion-input
@@ -1705,7 +1705,7 @@
             [(ngModel)]="profile.officeAddress">
           </ion-input>
         </ion-item>
-        <p class="field-rule">Minimo 8 y maximo 140 caracteres. No se muestra publicamente.</p>
+        <p class="field-rule">Mínimo 8 y máximo 140 caracteres. No se muestra publicamente.</p>
 
         <ion-item class="profile-field" lines="none">
           <ion-label position="stacked">
@@ -1718,11 +1718,11 @@
             [(ngModel)]="profile.officeCity">
           </ion-input>
         </ion-item>
-        <p class="field-rule">Minimo 2 y maximo 60 caracteres.</p>
+        <p class="field-rule">Mínimo 2 y máximo 60 caracteres.</p>
 
         <ion-item class="profile-field" lines="none">
           <ion-label position="stacked">
-            Region
+            Región
           </ion-label>
 
           <ion-input
@@ -1731,11 +1731,11 @@
             [(ngModel)]="profile.officeRegion">
           </ion-input>
         </ion-item>
-        <p class="field-rule">Opcional. Maximo 60 caracteres.</p>
+        <p class="field-rule">Opcional. Máximo 60 caracteres.</p>
 
         <ion-item class="profile-field" lines="none">
           <ion-label position="stacked">
-            Pais <span class="required-mark">*</span>
+            País <span class="required-mark">*</span>
           </ion-label>
 
           <ion-input
@@ -1755,11 +1755,11 @@
             rows="3"
             maxlength="300"
             [counter]="true"
-            placeholder="Ej: Tocar timbre 402. Entrada por recepcion."
+            placeholder="Ej: Tocar timbre 402. Entrada por recepción."
             [(ngModel)]="profile.arrivalInstructions">
           </ion-textarea>
         </ion-item>
-        <p class="field-rule">Opcional. Maximo 300 caracteres. No incluyas datos de contacto directo.</p>
+        <p class="field-rule">Opcional. Máximo 300 caracteres. No incluyas datos de contacto directo.</p>
       </ng-container>
 
     </ion-card-content>
@@ -1974,7 +1974,7 @@
       </h2>
 
       <p class="schedule-help">
-        La duracion y el descanso entre sesiones se configuran en Configuracion de Sesion.
+        La duración y el descanso entre sesiones se configuran en Configuración de Sesión.
       </p>
 
       <div
@@ -2131,7 +2131,7 @@
         rows="5"
         maxlength="2000"
         [counter]="true"
-        placeholder="Indica condiciones de cancelacion, puntualidad, reprogramaciones u otras reglas importantes para tus pacientes."
+        placeholder="Indica condiciones de cancelación, puntualidad, reprogramaciones u otras reglas importantes para tus pacientes."
         [(ngModel)]="profile.rules">
       </ion-textarea>
 

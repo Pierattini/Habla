@@ -1,7 +1,7 @@
 <section class="admin-list-page">
   <header class="section-header">
     <div>
-      <span>Administracion</span>
+      <span>Administración</span>
       <h2>Usuarios</h2>
       <p>{{ total }} usuarios encontrados</p>
     </div>
@@ -13,7 +13,7 @@
       <option *ngFor="let item of roles" [value]="item">{{ getRoleLabel(item) }}</option>
     </select>
     <select [(ngModel)]="country" (ngModelChange)="resetAndLoad()">
-      <option value="">Todos los paises</option>
+      <option value="">Todos los países</option>
       <option value="CL">Chile</option>
       <option value="ES">España</option>
     </select>
@@ -33,7 +33,7 @@
         <tr>
           <th>Usuario</th>
           <th>Rol</th>
-          <th>Pais</th>
+          <th>País</th>
           <th>Estado</th>
           <th>Creado</th>
           <th>Acciones</th>
@@ -61,11 +61,11 @@
           </td>
           <td>
             <select *ngIf="editingId === user.id; else countryText" [(ngModel)]="draft.country">
-              <option value="">Sin pais</option>
+              <option value="">Sin país</option>
               <option value="CL">Chile</option>
               <option value="ES">España</option>
             </select>
-            <ng-template #countryText>{{ user.country || 'Sin pais' }}</ng-template>
+            <ng-template #countryText>{{ user.country || 'Sin país' }}</ng-template>
           </td>
           <td>
             <span class="badge" [class.off]="!user.isActive">

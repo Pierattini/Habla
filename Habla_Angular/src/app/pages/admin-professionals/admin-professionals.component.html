@@ -1,7 +1,7 @@
 <section class="admin-list-page">
   <header class="section-header">
     <div>
-      <span>Administracion</span>
+      <span>Administración</span>
       <h2>Profesionales</h2>
       <p>{{ total }} profesionales encontrados</p>
     </div>
@@ -10,7 +10,7 @@
   <section class="filters professionals-filters">
     <input type="search" [(ngModel)]="search" (ngModelChange)="resetAndLoad()" placeholder="Buscar nombre, email o especialidad" />
     <select [(ngModel)]="country" (ngModelChange)="resetAndLoad()">
-      <option value="">Todos los paises</option>
+      <option value="">Todos los países</option>
       <option value="CL">Chile</option>
       <option value="ES">España</option>
     </select>
@@ -40,7 +40,7 @@
           <th>Profesional</th>
           <th>Especialidad</th>
           <th>Modalidad</th>
-          <th>Ubicacion</th>
+          <th>Ubicación</th>
           <th>Plan</th>
           <th>Estado</th>
           <th>Acciones</th>
@@ -75,12 +75,12 @@
           <td>
             <ng-container *ngIf="editingId !== professional.id; else editLocation">
               {{ professional.officeCity || 'Sin ciudad' }}
-              <small>{{ professional.officeCountry || professional.user.country || 'Sin pais' }}</small>
+              <small>{{ professional.officeCountry || professional.user.country || 'Sin país' }}</small>
             </ng-container>
             <ng-template #editLocation>
               <input [(ngModel)]="draft.city" placeholder="Ciudad" />
               <select [(ngModel)]="draft.country">
-                <option value="">Sin pais</option>
+                <option value="">Sin país</option>
                 <option value="CL">Chile</option>
                 <option value="ES">España</option>
               </select>
