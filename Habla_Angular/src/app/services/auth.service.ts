@@ -66,6 +66,8 @@ export class AuthService {
     email: string;
     password: string;
     role: 'CUSTOMER' | 'PROFESSIONAL';
+    country?: string;
+    timezone?: string;
     customerInterests?: string[];
     preferredAttentionMode?: 'ONLINE' | 'PRESENTIAL' | 'BOTH';
     specialty?: string;

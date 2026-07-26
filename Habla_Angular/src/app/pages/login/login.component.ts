@@ -317,6 +317,8 @@ export class LoginComponent implements OnInit {
             email: this.registerForm.email.trim(),
             password: this.registerForm.password,
             role: this.selectedRole,
+            country: this.registerForm.country,
+            timezone: this.registerForm.timezone,
             customerInterests:
               this.selectedRole === 'CUSTOMER' ? [this.registerForm.interest] : undefined,
             preferredAttentionMode:
@@ -338,7 +340,11 @@ export class LoginComponent implements OnInit {
           })
           .pipe(timeout(30000))
           .subscribe({
-            next: () => this.loginAfterRegister(),
+            next: (res: any) => {
+              this.saveSession(res);
+              void this.pushNotifications.registerDevice();
+              this.navigateAfterLogin(res);
+            },
             error: (err) => {
               this.errorMessage =
                 err?.name === 'TimeoutError'
@@ -435,72 +441,6 @@ export class LoginComponent implements OnInit {
         this.errorMessage = 'No pudimos verificar tu solicitud. Inténtalo nuevamente.';
         this.isSubmitting = false;
       });
-  }
-
-  private loginAfterRegister(): void {
-    this.recaptchaService
-      .execute('login')
-      .then((recaptchaToken) => {
-        this.auth
-          .login(this.registerForm.email.trim(), this.registerForm.password, recaptchaToken)
-          .pipe(timeout(30000))
-          .subscribe({
-            next: (res: any) => {
-              this.saveSession(res);
-              void this.pushNotifications.registerDevice();
-              if (res?.user?.role === 'ADMIN') {
-                this.router.navigateByUrl('/admin/dashboard');
-                this.isSubmitting = false;
-                return;
-              }
-
-              this.completeOnboardingProfile();
-            },
-            error: () => {
-              this.errorMessage = 'Cuenta creada. Inicia sesión para continuar.';
-              this.mode = 'login';
-              this.email = this.registerForm.email.trim();
-              this.password = '';
-              this.isSubmitting = false;
-            },
-          });
-      })
-      .catch(() => {
-        this.errorMessage = 'Cuenta creada. Inicia sesión para continuar.';
-        this.mode = 'login';
-        this.email = this.registerForm.email.trim();
-        this.password = '';
-        this.isSubmitting = false;
-      });
-  }
-
-  private completeOnboardingProfile(): void {
-    const profilePayload: any = {
-      name: this.registerForm.name.trim(),
-      country: this.registerForm.country,
-      timezone: this.registerForm.timezone,
-    };
-
-    if (this.selectedRole === 'CUSTOMER') {
-      profilePayload.customerInterests = [this.registerForm.interest];
-      profilePayload.preferredAttentionMode = this.registerForm.attentionMode;
-    }
-
-    this.auth
-      .updateProfile(profilePayload)
-      .pipe(timeout(20000))
-      .subscribe({
-      next: () => {
-        this.isSubmitting = false;
-        this.router.navigateByUrl(
-          this.selectedRole === 'PROFESSIONAL' ? '/tabs/professional-dashboard' : '/tabs/home',
-        );
-      },
-      error: () => {
-        this.isSubmitting = false;
-        this.router.navigateByUrl('/tabs/home');
-      },
-    });
   }
 
   private isRegisterValid(): boolean {
