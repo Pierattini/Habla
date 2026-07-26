@@ -22,10 +22,9 @@ async function bootstrap() {
   const developmentOrigins = [
     'http://localhost:4200',
     'http://localhost:8100',
-    'capacitor://localhost',
-    'https://localhost',
   ];
-  const configuredOrigins = (
+  const capacitorOrigins = ['capacitor://localhost', 'https://localhost'];
+  const configuredWebOrigins = (
     process.env.CORS_ORIGINS ||
     process.env.PUBLIC_FRONTEND_URL ||
     (!isProduction ? developmentOrigins.join(',') : '')
@@ -34,9 +33,13 @@ async function bootstrap() {
     .map((origin) => origin.trim())
     .filter(Boolean);
 
-  if (isProduction && configuredOrigins.length === 0) {
+  if (isProduction && configuredWebOrigins.length === 0) {
     throw new Error('CORS_ORIGINS debe configurarse en produccion.');
   }
+
+  const configuredOrigins = [
+    ...new Set([...configuredWebOrigins, ...capacitorOrigins]),
+  ];
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -45,7 +48,7 @@ async function bootstrap() {
         return;
       }
 
-      callback(new Error('Origen CORS no permitido'), false);
+      callback(null, false);
     },
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

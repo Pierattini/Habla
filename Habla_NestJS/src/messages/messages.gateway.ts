@@ -7,12 +7,23 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
+const configuredSocketOrigins =
+  process.env.CORS_ORIGINS?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean) ||
+  (process.env.PUBLIC_FRONTEND_URL
+    ? [process.env.PUBLIC_FRONTEND_URL]
+    : ['http://localhost:4200', 'http://localhost:8100']);
+
 @WebSocketGateway({
   cors: {
-    origin:
-      process.env.CORS_ORIGINS?.split(',').map((origin) => origin.trim()) ||
-      process.env.PUBLIC_FRONTEND_URL ||
-      ['http://localhost:4200', 'http://localhost:8100'],
+    origin: [
+      ...new Set([
+        ...configuredSocketOrigins,
+        'capacitor://localhost',
+        'https://localhost',
+      ]),
+    ],
   },
 })
 export class MessagesGateway {
