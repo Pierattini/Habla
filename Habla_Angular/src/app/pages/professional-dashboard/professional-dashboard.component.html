@@ -749,7 +749,7 @@
         </ion-input>
       </ion-item>
 
-      <ion-item class="profile-field profile-field-textarea" lines="none">
+      <ion-item class="profile-field profile-field-textarea description-field" lines="none">
         <ion-label position="stacked">
           Descripción
         </ion-label>
@@ -1138,107 +1138,24 @@
       </div>
 
       <ng-container *ngIf="!$any(profile).documentAutomationEnabled; else companyTaxFields">
-        <div class="tax-profile-grid">
-          <ion-item class="profile-field" lines="none">
-            <ion-label position="stacked">
-              Nombre o razón social
-            </ion-label>
-
-            <ion-input
-              maxlength="120"
-              placeholder="Ej: Carolina Rodríguez"
-              [ngModel]="$any(profile).taxName"
-              (ngModelChange)="$any(profile).taxName = $event">
-            </ion-input>
-          </ion-item>
-
-          <ion-item class="profile-field" lines="none">
-            <ion-label position="stacked">
-              RUT
-            </ion-label>
-
-            <ion-input
-              maxlength="20"
-              placeholder="Ej: 12.345.678-9"
-              [ngModel]="$any(profile).taxId"
-              (ngModelChange)="$any(profile).taxId = $event">
-            </ion-input>
-          </ion-item>
-
-          <ion-item class="profile-field" lines="none">
-            <ion-label position="stacked">
-              Correo tributario
-            </ion-label>
-
-            <ion-input
-              type="email"
-              maxlength="120"
-              placeholder="facturación@correo.com"
-              [ngModel]="$any(profile).taxEmail"
-              (ngModelChange)="$any(profile).taxEmail = $event">
-            </ion-input>
-          </ion-item>
-
-          <ion-item class="profile-field" lines="none">
-            <ion-label position="stacked">
-              Ciudad
-            </ion-label>
-
-            <ion-input
-              maxlength="80"
-              placeholder="Ej: Santiago"
-              [ngModel]="$any(profile).taxCity"
-              (ngModelChange)="$any(profile).taxCity = $event">
-            </ion-input>
-          </ion-item>
-
-          <ion-item class="profile-field" lines="none">
-            <ion-label position="stacked">
-              País
-            </ion-label>
-
-            <ion-input
-              maxlength="80"
-              placeholder="Ej: Chile"
-              [ngModel]="$any(profile).taxCountry"
-              (ngModelChange)="$any(profile).taxCountry = $event">
-            </ion-input>
-          </ion-item>
-
-          <ion-item class="profile-field profile-field-textarea" lines="none">
-            <ion-label position="stacked">
-              Dirección tributaria
-            </ion-label>
-
-            <ion-textarea
-              rows="3"
-              maxlength="160"
-              [counter]="true"
-              placeholder="Dirección que usarás al emitir la boleta en SII"
-              [ngModel]="$any(profile).taxAddress"
-              (ngModelChange)="$any(profile).taxAddress = $event">
-            </ion-textarea>
-          </ion-item>
-
-          <ion-item class="profile-field profile-field-textarea" lines="none">
-            <ion-label position="stacked">
-              Comentario interno
-            </ion-label>
-
-            <ion-textarea
-              rows="3"
-              maxlength="180"
-              [counter]="true"
-              placeholder="Ej: Emitire la Boleta de Honorarios manualmente en SII."
-              [ngModel]="$any(profile).taxDocumentNote"
-              (ngModelChange)="$any(profile).taxDocumentNote = $event">
-            </ion-textarea>
-          </ion-item>
+        <div class="manual-tax-notice" role="note">
+          <span class="manual-tax-notice-icon" aria-hidden="true">i</span>
+          <div>
+            <h3>Emisión manual de Boleta de Honorarios</h3>
+            <p>
+              El profesional es responsable de emitir la boleta directamente en el portal del
+              SII y entregarla al paciente.
+            </p>
+            <p>
+              Cuando el paciente solicite boleta, Conecta recopilará sus datos tributarios y un
+              comentario opcional con la información que necesite incluir.
+            </p>
+          </div>
         </div>
       </ng-container>
 
       <ng-template #companyTaxFields>
-        <div class="tax-profile-grid">
+        <div class="tax-profile-grid company-tax-fields">
           <ion-item class="profile-field" lines="none">
             <ion-label position="stacked">
               RUT empresa
@@ -1309,9 +1226,9 @@
             <div class="document-main">
               <div>
                 <h3>Comprar certificado digital</h3>
-                <p>Revisa opciones economicas para obtener tu certificado digital.</p>
+                <p>Revisa opciones económicas para obtener tu certificado digital.</p>
               </div>
-              <span class="document-badge">i</span>
+              <span class="document-badge" aria-hidden="true">i</span>
             </div>
           </a>
 
@@ -1320,9 +1237,9 @@
               <div class="document-main">
                 <div>
                   <h3>Obtener folios SII</h3>
-                  <p>Guia para descargar el XML autorizado desde SII.</p>
+                  <p>Guía para descargar el XML autorizado desde SII.</p>
                 </div>
-                <span class="document-badge">i</span>
+                <span class="document-badge" aria-hidden="true">i</span>
               </div>
             </summary>
 

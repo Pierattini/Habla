@@ -56,7 +56,7 @@ export interface ProfessionalProfileResponse {
   professional?: Partial<ProfessionalProfile>;
 }
 
-export type ProfessionalProfileUpdatePayload = Omit<ProfessionalProfile, 'interval'>;
+export type ProfessionalProfileUpdatePayload = Partial<Omit<ProfessionalProfile, 'interval'>>;
 
 export interface AvailabilityResponse {
   day: string;

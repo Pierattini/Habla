@@ -474,12 +474,12 @@ export class ProfessionalDashboardComponent {
         accountNumber: this.profile.accountNumber,
         accountHolder: this.profile.accountHolder,
         accountRut: this.profile.accountRut,
-        accountEmail: this.profile.accountEmail,
+        accountEmail: this.profile.accountEmail?.trim() || undefined,
         documentAutomationEnabled: this.profile.documentAutomationEnabled,
         manualDocumentMode: !this.profile.documentAutomationEnabled,
         taxId: this.profile.taxId,
         taxName: this.profile.taxName,
-        taxEmail: this.profile.taxEmail,
+        taxEmail: this.profile.taxEmail?.trim() || undefined,
         taxAddress: this.profile.taxAddress,
         taxCountry: this.profile.taxCountry,
         taxCity: this.profile.taxCity,
@@ -504,10 +504,36 @@ export class ProfessionalDashboardComponent {
         console.error(err);
         const message = err?.name === 'TimeoutError'
           ? 'El servidor tardó demasiado. Revisa tu conexión e inténtalo nuevamente.'
-          : err?.error?.message || 'Error actualizando perfil';
+          : this.getProfileSaveError(err);
         this.showProfileFeedback(message, 'error', 4000);
       }
     });
+  }
+
+  private getProfileSaveError(error: any): string {
+    const responseMessage = error?.error?.message;
+    const messages = Array.isArray(responseMessage) ? responseMessage : [responseMessage];
+    const technicalMessage = messages.filter(Boolean).join(' ').toLowerCase();
+
+    if (technicalMessage.includes('taxemail') || technicalMessage.includes('tax email')) {
+      return 'Ingresa un correo tributario válido o deja ese campo vacío.';
+    }
+
+    if (technicalMessage.includes('accountemail') || technicalMessage.includes('account email')) {
+      return 'Ingresa un correo válido para la cuenta bancaria o deja ese campo vacío.';
+    }
+
+    if (technicalMessage.includes('price')) {
+      return 'Revisa el precio de la consulta.';
+    }
+
+    if (technicalMessage.includes('duration')) {
+      return 'Revisa la duración de la consulta.';
+    }
+
+    return typeof responseMessage === 'string'
+      ? responseMessage
+      : 'No pudimos guardar el perfil. Revisa los campos e inténtalo nuevamente.';
   }
 
   private showProfileFeedback(
