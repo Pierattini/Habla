@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
-import { finalize, forkJoin, Observable } from 'rxjs';
+import { concat, finalize, forkJoin, Observable, timeout, toArray } from 'rxjs';
 import {
   DashboardTaxDocument,
   TaxDocument,
@@ -425,6 +425,10 @@ export class ProfessionalDashboardComponent {
   }
 
   saveProfile() {
+    if (this.isSaving) {
+      return;
+    }
+
     const validationErrors = this.validateAgenda();
 
     if (validationErrors.length > 0) {
@@ -444,7 +448,7 @@ export class ProfessionalDashboardComponent {
       );
     });
 
-    forkJoin([
+    concat(
       this.professionalProfileService.updateProfile({
         name: this.profile.name,
         image: this.profile.image,
@@ -480,10 +484,15 @@ export class ProfessionalDashboardComponent {
         taxDocumentNote: this.profile.taxDocumentNote,
       }),
       ...availabilityRequests,
-    ])
-    .pipe(finalize(() => {
-      this.isSaving = false;
-    }))
+    )
+    .pipe(
+      timeout({ each: 20_000 }),
+      toArray(),
+      finalize(() => {
+        this.isSaving = false;
+        this.cdr.detectChanges();
+      }),
+    )
     .subscribe({
       next: () => {
         this.showProfileFeedback('Perfil y agenda actualizados', 'success');
@@ -491,7 +500,10 @@ export class ProfessionalDashboardComponent {
       },
       error: (err) => {
         console.error(err);
-        this.showProfileFeedback(err?.error?.message || 'Error actualizando perfil', 'error', 2200);
+        const message = err?.name === 'TimeoutError'
+          ? 'El servidor tardó demasiado. Revisa tu conexión e inténtalo nuevamente.'
+          : err?.error?.message || 'Error actualizando perfil';
+        this.showProfileFeedback(message, 'error', 4000);
       }
     });
   }
