@@ -1285,20 +1285,21 @@
           </span>
         </div>
 
-        <ion-item class="profile-field" lines="none">
-          <ion-label position="stacked">
+        <div class="certificate-password-field">
+          <label for="company-certificate-password">
             Clave del certificado
-          </ion-label>
+          </label>
 
-          <ion-input
+          <input
+            id="company-certificate-password"
             type="password"
             maxlength="200"
-            autocomplete="off"
+            autocomplete="new-password"
             placeholder="Clave del archivo .pfx/.p12"
             [ngModel]="$any(this).taxProviderCertificatePassword"
-            (ngModelChange)="$any(this).taxProviderCertificatePassword = $event">
-          </ion-input>
-        </ion-item>
+            (ngModelChange)="$any(this).taxProviderCertificatePassword = $event"
+          />
+        </div>
 
         <p class="field-rule">
           Estado: {{ $any(this).taxProviderCredential?.configured ? 'certificado guardado de forma segura' : 'sin certificado configurado' }}.
