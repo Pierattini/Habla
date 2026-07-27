@@ -1121,6 +1121,10 @@ async openPayment(appt: any) {
       professionalUser.name ||
       professionalProfile.name ||
       '',
+    accountRut:
+      professionalProfile.accountRut ||
+      professionalUser.accountRut ||
+      '',
     accountEmail:
       professionalProfile.accountEmail ||
       professionalUser.accountEmail ||

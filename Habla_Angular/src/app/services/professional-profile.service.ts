@@ -36,6 +36,7 @@ export interface ProfessionalProfile {
   accountType: string;
   accountNumber: string;
   accountHolder: string;
+  accountRut: string;
   accountEmail: string;
   documentAutomationEnabled: boolean;
   manualDocumentMode: boolean;

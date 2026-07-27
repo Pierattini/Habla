@@ -1828,6 +1828,19 @@
 
       <ion-item class="profile-field" lines="none">
         <ion-label position="stacked">
+          RUT del titular
+        </ion-label>
+
+        <ion-input
+          maxlength="20"
+          inputmode="text"
+          placeholder="Ej: 12.345.678-9"
+          [(ngModel)]="profile.accountRut">
+        </ion-input>
+      </ion-item>
+
+      <ion-item class="profile-field" lines="none">
+        <ion-label position="stacked">
           Correo asociado
         </ion-label>
 

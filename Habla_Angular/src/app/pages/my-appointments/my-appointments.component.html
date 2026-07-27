@@ -817,6 +817,19 @@
       </div>
 
       <div class="payment-data-row">
+        <span>RUT</span>
+        <strong>{{ $any(this).paymentModalData?.accountRut || 'No informado' }}</strong>
+        <button
+          type="button"
+          class="payment-copy"
+          aria-label="Copiar RUT"
+          (click)="$any(this).copyPaymentData($any(this).paymentModalData?.accountRut, 'RUT')"
+        >
+          ⧉
+        </button>
+      </div>
+
+      <div class="payment-data-row">
         <span>Banco</span>
         <strong>{{ $any(this).paymentModalData?.bankName || 'No informado' }}</strong>
         <button
