@@ -46,6 +46,8 @@ type AdminProfessionalUpdate = {
   isActive?: boolean;
 };
 
+export type AdminProfessionalActivationMode = 'THIRTY_DAYS' | 'INDEFINITE';
+
 @Injectable()
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
@@ -356,14 +358,109 @@ export class AdminService {
     });
   }
 
-  async activateProfessional(id: string) {
-    return this.prisma.professional.update({
+  async activateProfessional(
+    id: string,
+    mode: AdminProfessionalActivationMode = 'THIRTY_DAYS',
+  ) {
+    if (!['THIRTY_DAYS', 'INDEFINITE'].includes(mode)) {
+      throw new BadRequestException('Invalid activation mode');
+    }
+
+    const professional = await this.prisma.professional.findUnique({
       where: { id },
-      data: {
-        planStatus: ProfessionalPlanStatus.FREE,
-        user: { update: { isActive: true } },
+      select: {
+        id: true,
+        userId: true,
+        subscription: {
+          select: {
+            currentPeriodEnd: true,
+          },
+        },
       },
     });
+
+    if (!professional) {
+      throw new BadRequestException('Professional not found');
+    }
+
+    const now = new Date();
+    let currentPeriodEnd: Date | null = null;
+
+    if (mode === 'THIRTY_DAYS') {
+      const existingEnd = professional.subscription?.currentPeriodEnd;
+      const periodBase =
+        existingEnd && existingEnd.getTime() > now.getTime()
+          ? new Date(existingEnd)
+          : new Date(now);
+      periodBase.setDate(periodBase.getDate() + 30);
+      currentPeriodEnd = periodBase;
+    }
+
+    const updatedProfessional = await this.prisma.$transaction(async (tx) => {
+      await tx.professionalSubscription.upsert({
+        where: { professionalId: id },
+        create: {
+          professionalId: id,
+          status: ProfessionalSubscriptionStatus.ACTIVE,
+          provider: 'MANUAL',
+          currentPeriodStart: now,
+          currentPeriodEnd,
+          autoRenew: false,
+        },
+        update: {
+          status: ProfessionalSubscriptionStatus.ACTIVE,
+          provider: 'MANUAL',
+          currentPeriodStart: now,
+          currentPeriodEnd,
+          cancelledAt: null,
+          autoRenew: false,
+        },
+      });
+
+      const result = await tx.professional.update({
+        where: { id },
+        data: {
+          planStatus: ProfessionalPlanStatus.ACTIVE,
+          subscriptionStartAt: now,
+          subscriptionEndAt: currentPeriodEnd,
+          user: { update: { isActive: true } },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              isActive: true,
+              country: true,
+            },
+          },
+          profession: { select: { name: true } },
+          subscription: {
+            select: {
+              status: true,
+              currentPeriodEnd: true,
+              lastPaymentAt: true,
+            },
+          },
+        },
+      });
+
+      await tx.appointmentRequest.updateMany({
+        where: {
+          professionalId: professional.userId,
+          status: 'LOCKED_PENDING_SUBSCRIPTION',
+        },
+        data: {
+          status: 'PENDING',
+          unlockedAt: now,
+        },
+      });
+
+      return result;
+    });
+
+    return updatedProfessional;
   }
 
   private getPage(value?: string): number {

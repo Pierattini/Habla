@@ -4,6 +4,16 @@
   grid-template-columns: minmax(230px, 1fr) 140px 150px 160px 210px 130px;
 }
 
+.activation-control {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 180px;
+}
+
+.activation-control select {
+  width: 100%;
+}
+
 @media (max-width: 1100px) {
   .professionals-filters {
     grid-template-columns: 1fr 1fr;

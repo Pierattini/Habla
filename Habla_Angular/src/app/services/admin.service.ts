@@ -4,6 +4,7 @@ import { API_URL } from '../core/config/api.config';
 
 export type AdminRole = 'CUSTOMER' | 'PROFESSIONAL' | 'ADMIN';
 export type AdminAttentionMode = 'ONLINE' | 'PRESENTIAL' | 'BOTH';
+export type AdminActivationMode = 'THIRTY_DAYS' | 'INDEFINITE';
 
 export interface AdminPage<T> {
   data: T[];
@@ -129,8 +130,8 @@ export class AdminService {
     });
   }
 
-  activateProfessional(id: string) {
-    return this.http.patch<AdminProfessional>(`${this.api}/professionals/${id}/activate`, {}, {
+  activateProfessional(id: string, mode: AdminActivationMode) {
+    return this.http.patch<AdminProfessional>(`${this.api}/professionals/${id}/activate`, { mode }, {
       headers: this.headers(),
     });
   }

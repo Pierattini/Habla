@@ -13,7 +13,10 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import type { AuthRequest } from '../auth/auth-request.interface';
-import { AdminService } from './admin.service';
+import {
+  AdminProfessionalActivationMode,
+  AdminService,
+} from './admin.service';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -66,7 +69,10 @@ export class AdminController {
   }
 
   @Patch('professionals/:id/activate')
-  activateProfessional(@Param('id') id: string) {
-    return this.adminService.activateProfessional(id);
+  activateProfessional(
+    @Param('id') id: string,
+    @Body() body: { mode?: AdminProfessionalActivationMode },
+  ) {
+    return this.adminService.activateProfessional(id, body.mode);
   }
 }

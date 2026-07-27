@@ -102,7 +102,29 @@
             <button *ngIf="editingId === professional.id" type="button" (click)="save(professional)">Guardar</button>
             <button *ngIf="editingId === professional.id" type="button" class="ghost" (click)="cancelEdit()">Cancelar</button>
             <button *ngIf="professional.user.isActive" type="button" class="ghost" (click)="suspend(professional)">Suspender</button>
-            <button *ngIf="!professional.user.isActive" type="button" class="ghost" (click)="activate(professional)">Activar</button>
+            <div class="activation-control">
+              <select
+                [ngModel]="getActivationMode(professional.id)"
+                (ngModelChange)="setActivationMode(professional.id, $event)"
+                [disabled]="activationRunningId === professional.id"
+                aria-label="Duración de la activación"
+              >
+                <option value="THIRTY_DAYS">30 días</option>
+                <option value="INDEFINITE">Gratis indefinidamente</option>
+              </select>
+              <button
+                type="button"
+                class="ghost"
+                (click)="activate(professional)"
+                [disabled]="!!activationRunningId"
+              >
+                {{ activationRunningId === professional.id
+                  ? 'Activando...'
+                  : professional.subscription?.status === 'ACTIVE'
+                    ? 'Renovar plan'
+                    : 'Activar plan' }}
+              </button>
+            </div>
           </td>
         </tr>
       </tbody>

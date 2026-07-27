@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
+  AdminActivationMode,
   AdminAttentionMode,
   AdminProfessional,
   AdminService,
@@ -38,6 +39,8 @@ export class AdminProfessionalsComponent {
   total = 0;
   totalPages = 1;
   editingId = '';
+  activationModes: Record<string, AdminActivationMode> = {};
+  activationRunningId = '';
   draft: ProfessionalAdminDraft = this.emptyDraft();
 
   readonly modes: Array<AdminAttentionMode | ''> = ['', 'ONLINE', 'PRESENTIAL', 'BOTH'];
@@ -121,12 +124,32 @@ export class AdminProfessionalsComponent {
   }
 
   activate(professional: AdminProfessional): void {
-    this.adminService.activateProfessional(professional.id).subscribe({
-      next: () => this.load(),
+    if (this.activationRunningId) {
+      return;
+    }
+
+    const mode = this.activationModes[professional.id] || 'THIRTY_DAYS';
+    this.activationRunningId = professional.id;
+    this.errorMessage = '';
+
+    this.adminService.activateProfessional(professional.id, mode).subscribe({
+      next: () => {
+        this.activationRunningId = '';
+        this.load();
+      },
       error: (err) => {
+        this.activationRunningId = '';
         this.errorMessage = err?.error?.message || 'No se pudo activar el profesional.';
       },
     });
+  }
+
+  getActivationMode(professionalId: string): AdminActivationMode {
+    return this.activationModes[professionalId] || 'THIRTY_DAYS';
+  }
+
+  setActivationMode(professionalId: string, mode: AdminActivationMode): void {
+    this.activationModes[professionalId] = mode;
   }
 
   getSpecialty(professional: AdminProfessional): string {
