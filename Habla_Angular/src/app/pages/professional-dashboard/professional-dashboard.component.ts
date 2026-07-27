@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
-import { concat, finalize, forkJoin, Observable, timeout, toArray } from 'rxjs';
+import { finalize, forkJoin, Observable, timeout } from 'rxjs';
 import {
   DashboardTaxDocument,
   TaxDocument,
@@ -449,7 +449,7 @@ export class ProfessionalDashboardComponent {
       );
     });
 
-    concat(
+    forkJoin([
       this.professionalProfileService.updateProfile({
         name: this.profile.name,
         image: this.profile.image,
@@ -486,10 +486,9 @@ export class ProfessionalDashboardComponent {
         taxDocumentNote: this.profile.taxDocumentNote,
       }),
       ...availabilityRequests,
-    )
+    ])
     .pipe(
-      timeout({ each: 20_000 }),
-      toArray(),
+      timeout(75_000),
       finalize(() => {
         this.isSaving = false;
         this.cdr.detectChanges();
