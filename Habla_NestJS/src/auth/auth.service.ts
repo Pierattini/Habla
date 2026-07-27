@@ -502,6 +502,7 @@ export class AuthService {
             accountType: null,
             accountNumber: null,
             accountHolder: null,
+            accountRut: null,
             accountEmail: null,
             documentAutomationEnabled: false,
             manualDocumentMode: true,

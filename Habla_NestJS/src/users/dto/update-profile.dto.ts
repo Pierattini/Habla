@@ -159,6 +159,10 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
+  accountRut?: string;
+
+  @IsOptional()
+  @IsString()
   accountEmail?: string;
 
   @IsOptional()

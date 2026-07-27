@@ -278,6 +278,10 @@ export class UsersService {
         accountHolder: dto.accountHolder,
       }),
 
+      ...(dto.accountRut !== undefined && {
+        accountRut: dto.accountRut,
+      }),
+
       ...(dto.accountEmail !== undefined && {
         accountEmail: dto.accountEmail,
       }),
@@ -1102,6 +1106,7 @@ export class UsersService {
             accountType: true,
             accountNumber: true,
             accountHolder: true,
+            accountRut: true,
             accountEmail: true,
             documentAutomationEnabled: true,
             manualDocumentMode: true,

@@ -233,6 +233,7 @@ model Professional {
   accountType   String?
   accountNumber String?
   accountHolder String?
+  accountRut    String?
   accountEmail  String?
 
   documentAutomationEnabled Boolean      @default(false)

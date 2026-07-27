@@ -1,0 +1,2 @@
+ALTER TABLE "Professional"
+ADD COLUMN IF NOT EXISTS "accountRut" TEXT;
