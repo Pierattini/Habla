@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { finalize, Subscription, timeout } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { ProfessionCategory, ProfessionItem, ProfessionService } from '../../services/profession.service';
+import { formatClpPrice } from '../../utils/clp-price.util';
 
 import {
   IonContent,
@@ -39,6 +40,7 @@ type SearchSuggestion = {
   ]
 })
 export class HomePage implements OnInit, OnDestroy {
+  readonly formatClpPrice = formatClpPrice;
 
 
   search = '';

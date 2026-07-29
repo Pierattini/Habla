@@ -8,6 +8,7 @@ import { isZonedDateTimeInPast, zonedDateTimeToIso } from '../../utils/timezone.
 import { AlertController } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
 import { ConectaMessageType } from '../../shared/conecta-message/conecta-message.component';
+import { formatClpPrice } from '../../utils/clp-price.util';
 //import { IonicModule } from '@ionic/angular';
 
 
@@ -64,6 +65,7 @@ import {
   schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA]
 })
 export class ProfessionalDetailComponent {
+  readonly formatClpPrice = formatClpPrice;
 
   id: string | null = null;
   slug: string | null = null;
