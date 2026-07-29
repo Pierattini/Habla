@@ -104,6 +104,32 @@ export class ProfessionalDetailComponent {
   private router: Router,
   private alertCtrl: AlertController ) {}
 
+  getCompactProfessionalName(): string {
+    if (!this.professional) return 'Perfil profesional';
+
+    const firstName = String(this.professional.firstName || '').trim();
+    const lastInitial = String(this.professional.lastInitial || '')
+      .trim()
+      .charAt(0)
+      .toUpperCase();
+
+    if (firstName) {
+      return lastInitial ? `${firstName} ${lastInitial}.` : firstName;
+    }
+
+    const nameParts = String(this.professional.name || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (!nameParts.length) return 'Perfil profesional';
+
+    const fallbackInitial =
+      nameParts.length > 1 ? nameParts[nameParts.length - 1].charAt(0).toUpperCase() : '';
+
+    return fallbackInitial ? `${nameParts[0]} ${fallbackInitial}.` : nameParts[0];
+  }
+
   private addMonths(date: Date, months: number): Date {
     const next = new Date(date);
     next.setMonth(next.getMonth() + months);

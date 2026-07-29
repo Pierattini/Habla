@@ -243,6 +243,7 @@ export class LoginComponent implements OnInit {
       .catch(() => {
         this.errorMessage = 'No pudimos verificar tu solicitud. Inténtalo nuevamente.';
         this.isSubmitting = false;
+        this.cdr.detectChanges();
       });
   }
 
