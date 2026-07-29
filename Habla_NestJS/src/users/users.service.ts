@@ -503,7 +503,7 @@ export class UsersService {
         return {
         id: p.userId,
         slug: p.slug,
-        name: this.getProtectedProfessionalName(p.name || p.user.name),
+        name: this.getProfessionalDisplayName(p.name || p.user.name),
         firstName: this.getFirstName(p.name || p.user.name),
         lastInitial: this.getLastInitial(p.name || p.user.name),
         specialty: p.profession?.name || p.specialty,
@@ -601,7 +601,7 @@ export class UsersService {
     return {
       id: professional.userId,
       slug: professional.slug,
-      name: this.getProtectedProfessionalName(professional.name || professional.user.name),
+      name: this.getProfessionalDisplayName(professional.name || professional.user.name),
       firstName: this.getFirstName(professional.name || professional.user.name),
       lastInitial: this.getLastInitial(professional.name || professional.user.name),
       specialty: professional.profession?.name || professional.specialty || 'Profesional',
@@ -806,7 +806,7 @@ export class UsersService {
       type: 'professional' as const,
       id: professional.userId,
       slug: professional.slug,
-      label: this.getProtectedProfessionalName(professional.name || professional.user.name),
+      label: this.getProfessionalDisplayName(professional.name || professional.user.name),
       specialty: professional.profession?.name || professional.customProfession || professional.specialty || 'Profesional',
       categoryName: professional.profession?.category?.name || null,
       categorySlug: professional.profession?.category?.slug || null,
@@ -936,11 +936,12 @@ export class UsersService {
     return currentSlug.startsWith(`${cleanSlug}-`) && /^[a-z0-9]{6,}$/.test(suffix);
   }
 
-  private getProtectedProfessionalName(name?: string | null): string {
-    const firstName = this.getFirstName(name);
-    const lastInitial = this.getLastInitial(name);
-
-    return lastInitial ? `${firstName} ${lastInitial}.` : firstName;
+  private getProfessionalDisplayName(name?: string | null): string {
+    return (
+      String(name || '')
+        .trim()
+        .replace(/\s+/g, ' ') || 'Profesional'
+    );
   }
 
   private getFirstName(name?: string | null): string {
