@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -43,6 +44,8 @@ type GoogleLoginInput = {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -54,22 +57,30 @@ export class AuthService {
   // ðŸ” LOGIN
   async login(email: string, password: string, recaptchaToken?: string) {
     await this.recaptchaService.verify(recaptchaToken, 'login');
+    const normalizedEmail = this.normalizeEmail(email);
+    const loginIdentifier = createHash('sha256')
+      .update(normalizedEmail)
+      .digest('hex')
+      .slice(0, 12);
 
     const user = await this.prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {
+      this.logger.warn(`LOGIN_USER_NOT_FOUND id=${loginIdentifier}`);
       throw new UnauthorizedException('Invalid credentials');
     }
 
     if (!user.isActive) {
+      this.logger.warn(`LOGIN_USER_INACTIVE id=${loginIdentifier}`);
       throw new UnauthorizedException('User inactive');
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
+      this.logger.warn(`LOGIN_PASSWORD_MISMATCH id=${loginIdentifier}`);
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -78,6 +89,7 @@ export class AuthService {
       data: { lastLoginAt: new Date() },
     });
 
+    this.logger.log(`LOGIN_SUCCESS id=${loginIdentifier} role=${user.role}`);
     return this.createLoginResponse(user);
   }
 
