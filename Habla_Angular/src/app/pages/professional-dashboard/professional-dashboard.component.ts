@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
 import { finalize, forkJoin, Observable, timeout } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import {
   DashboardTaxDocument,
   TaxDocument,
@@ -30,7 +31,6 @@ import {
   TaxProviderService,
 } from '../../services/tax-provider.service';
 import { API_URL } from '../../core/config/api.config';
-import { environment } from '../../../environments/environment';
 
 import {
   IonContent,
@@ -2078,7 +2078,9 @@ private prepareProfileImage(file: File): Promise<string> {
   private buildPublicProfileUrl(slug: string): string {
     if (!slug) return '';
 
-    return `https://conecta.app/profesional/${this.getReadablePublicSlug(slug)}`;
+    const publicAppUrl = environment.publicAppUrl.replace(/\/$/, '');
+
+    return `${publicAppUrl}/profesional/${this.getReadablePublicSlug(slug)}`;
   }
 
   private getReadablePublicSlug(slug: string): string {

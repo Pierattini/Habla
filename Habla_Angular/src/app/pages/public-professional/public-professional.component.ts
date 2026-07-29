@@ -17,6 +17,7 @@ import {
   IonText,
 } from '@ionic/angular/standalone';
 import { API_URL } from '../../core/config/api.config';
+import { environment } from '../../../environments/environment';
 import { isZonedDateTimeInPast, zonedDateTimeToIso } from '../../utils/timezone.util';
 import {
   PublicProfessional,
@@ -70,7 +71,8 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.slug = this.route.snapshot.paramMap.get('slug') || '';
-    this.publicUrl = `${window.location.origin}/profesional/${this.slug}`;
+    const publicAppUrl = environment.publicAppUrl.replace(/\/$/, '');
+    this.publicUrl = `${publicAppUrl}/profesional/${this.slug}`;
     this.loadProfile();
   }
 
