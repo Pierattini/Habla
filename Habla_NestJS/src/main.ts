@@ -26,6 +26,7 @@ async function bootstrap() {
   const capacitorOrigins = ['capacitor://localhost', 'https://localhost'];
   const configuredWebOrigins = (
     process.env.CORS_ORIGINS ||
+    process.env.PUBLIC_APP_URL ||
     process.env.PUBLIC_FRONTEND_URL ||
     (!isProduction ? developmentOrigins.join(',') : '')
   )

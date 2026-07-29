@@ -11,8 +11,8 @@ const configuredSocketOrigins =
   process.env.CORS_ORIGINS?.split(',')
     .map((origin) => origin.trim())
     .filter(Boolean) ||
-  (process.env.PUBLIC_FRONTEND_URL
-    ? [process.env.PUBLIC_FRONTEND_URL]
+  (process.env.PUBLIC_APP_URL || process.env.PUBLIC_FRONTEND_URL
+    ? [process.env.PUBLIC_APP_URL || process.env.PUBLIC_FRONTEND_URL!]
     : ['http://localhost:4200', 'http://localhost:8100']);
 
 @WebSocketGateway({

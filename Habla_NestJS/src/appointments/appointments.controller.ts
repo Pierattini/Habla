@@ -192,9 +192,10 @@ export class AppointmentsController {
   }
 
   private getFrontendUrl() {
-    return (process.env.PUBLIC_FRONTEND_URL || 'http://localhost:4200').replace(
-      /\/$/,
-      '',
-    );
+    return (
+      process.env.PUBLIC_APP_URL ||
+      process.env.PUBLIC_FRONTEND_URL ||
+      'http://localhost:4200'
+    ).replace(/\/$/, '');
   }
 }

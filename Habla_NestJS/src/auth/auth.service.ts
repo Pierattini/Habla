@@ -752,10 +752,11 @@ export class AuthService {
   }
 
   private getFrontendUrl(): string {
-    return (process.env.PUBLIC_FRONTEND_URL || 'http://localhost:4200').replace(
-      /\/$/,
-      '',
-    );
+    return (
+      process.env.PUBLIC_APP_URL ||
+      process.env.PUBLIC_FRONTEND_URL ||
+      'http://localhost:4200'
+    ).replace(/\/$/, '');
   }
 
   private async sendRegistrationNotification(user: {

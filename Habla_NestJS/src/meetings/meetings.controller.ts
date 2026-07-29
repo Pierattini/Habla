@@ -148,6 +148,7 @@ export class MeetingsController {
 
   private getFrontendUrl(): string {
     return (
+      process.env.PUBLIC_APP_URL ||
       process.env.PUBLIC_FRONTEND_URL ||
       process.env.FRONTEND_URL ||
       'http://localhost:4200'
