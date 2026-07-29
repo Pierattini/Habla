@@ -40,6 +40,113 @@ ion-content {
   color: var(--app-muted);
 }
 
+.empty-state {
+  padding: 24px 0;
+}
+
+.empty-state-card {
+  width: min(100%, 620px);
+  padding: clamp(28px, 7vw, 52px);
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: var(--app-radius-xl);
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--app-primary-light) 17%, transparent), transparent 42%),
+    var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.empty-state-illustration {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  margin: 0 auto 22px;
+  border-radius: 36px;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--app-primary) 13%, var(--app-surface)),
+    color-mix(in srgb, var(--app-primary-light) 22%, var(--app-surface))
+  );
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--app-primary) 18%, transparent);
+}
+
+.document-shape {
+  position: absolute;
+  inset: 24px 31px 22px;
+  border: 3px solid color-mix(in srgb, var(--app-primary) 65%, var(--app-text));
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--app-surface) 92%, transparent);
+}
+
+.document-shape::before,
+.document-shape::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  height: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-primary) 24%, transparent);
+}
+
+.document-shape::before {
+  top: 17px;
+}
+
+.document-shape::after {
+  top: 29px;
+}
+
+.search-symbol {
+  position: absolute;
+  right: 8px;
+  bottom: 5px;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 4px solid var(--app-surface);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  font-size: 22px;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--app-primary) 24%, transparent);
+}
+
+.empty-state-eyebrow {
+  margin-bottom: 8px !important;
+  color: var(--app-primary) !important;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.empty-state h1 {
+  font-size: clamp(26px, 6vw, 38px);
+}
+
+.empty-state-copy {
+  display: grid;
+  gap: 12px;
+  max-width: 510px;
+  margin: 20px auto 0;
+}
+
+.empty-state-copy p {
+  line-height: 1.6;
+}
+
+.empty-state-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  max-width: 470px;
+  margin: 28px auto 0;
+}
+
+.empty-state-actions ion-button {
+  min-height: 50px;
+  margin: 0;
+}
+
 .hero {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -276,5 +383,18 @@ ion-button {
     width: 100%;
     min-width: 0;
     grid-template-columns: 1fr 1fr;
+  }
+
+  .empty-state {
+    min-height: 72vh;
+    padding: 8px 0;
+  }
+
+  .empty-state-card {
+    padding: 30px 20px;
+  }
+
+  .empty-state-actions {
+    grid-template-columns: 1fr;
   }
 }

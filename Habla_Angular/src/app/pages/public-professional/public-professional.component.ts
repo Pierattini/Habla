@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -58,6 +58,7 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
   loadingHours = false;
   isBooking = false;
   statusMessage = '';
+  readonly profileUnavailable = signal(false);
   private viewRecorded = false;
 
   constructor(
@@ -100,15 +101,22 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
   }
 
   loadProfile(): void {
-    if (!this.slug) {
+    if (!this.isValidSlug(this.slug)) {
       this.loading = false;
+      this.showProfileUnavailable();
       return;
     }
 
     this.loading = true;
+    this.profileUnavailable.set(false);
 
     this.publicProfessionalService.getBySlug(this.slug).subscribe({
       next: (professional) => {
+        if (!professional?.id) {
+          this.showProfileUnavailable();
+          return;
+        }
+
         this.professional = professional;
         this.selectedAttentionMode =
           professional.attentionMode === 'PRESENTIAL' ? 'PRESENTIAL' : 'ONLINE';
@@ -118,8 +126,7 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
         this.loadAvailability();
       },
       error: () => {
-        this.statusMessage = 'No encontramos este perfil profesional.';
-        this.loading = false;
+        this.showProfileUnavailable();
       },
     });
   }
@@ -244,6 +251,23 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
     this.router.navigate(['/login']);
   }
 
+  goToHome(): void {
+    this.router.navigate(['/login']);
+  }
+
+  contactSupport(): void {
+    const supportUrl = environment.supportUrl?.trim();
+
+    if (supportUrl) {
+      window.open(supportUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    this.router.navigate(['/login'], {
+      queryParams: { redirect: '/tabs/support' },
+    });
+  }
+
   onAttentionModeChange(mode: 'ONLINE' | 'PRESENTIAL'): void {
     if (!this.professional) return;
 
@@ -294,6 +318,23 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
 
     this.title.setTitle(title);
     this.meta.updateTag({ name: 'description', content: description });
+  }
+
+  private isValidSlug(slug: string): boolean {
+    return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug);
+  }
+
+  private showProfileUnavailable(): void {
+    this.professional = null;
+    this.loading = false;
+    this.loadingHours = false;
+    this.statusMessage = '';
+    this.profileUnavailable.set(true);
+    this.title.setTitle('Perfil no disponible | Conecta');
+    this.meta.updateTag({
+      name: 'description',
+      content: 'No pudimos encontrar el perfil que intentas abrir.',
+    });
   }
 
   private recordEvent(type: 'VIEW' | 'COPY_LINK' | 'SHARE'): void {

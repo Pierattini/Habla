@@ -5,13 +5,35 @@
       <p>Cargando perfil...</p>
     </section>
 
-    <section class="empty-state" *ngIf="!loading && !professional">
-      <h1>Perfil no disponible</h1>
-      <p>{{ statusMessage || 'No encontramos este perfil profesional.' }}</p>
-      <ion-button (click)="goToLogin()">Ir a Conecta</ion-button>
+    <section class="empty-state" *ngIf="profileUnavailable()">
+      <div class="empty-state-card">
+        <div class="empty-state-illustration" aria-hidden="true">
+          <span class="document-shape"></span>
+          <span class="search-symbol">🔎</span>
+        </div>
+
+        <p class="empty-state-eyebrow">Estamos aquí para ayudarte</p>
+        <h1>🔎 Perfil no disponible</h1>
+
+        <div class="empty-state-copy">
+          <p>No pudimos encontrar el perfil que intentas abrir.</p>
+          <p>Es posible que el enlace haya cambiado, ya no esté disponible o no sea válido.</p>
+          <p>
+            Si el problema continúa, por favor ponte en contacto con nuestro equipo de soporte
+            para que podamos ayudarte.
+          </p>
+        </div>
+
+        <div class="empty-state-actions">
+          <ion-button expand="block" (click)="goToHome()">Volver al inicio</ion-button>
+          <ion-button expand="block" fill="outline" (click)="contactSupport()">
+            Contactar soporte
+          </ion-button>
+        </div>
+      </div>
     </section>
 
-    <ng-container *ngIf="!loading && professional">
+    <ng-container *ngIf="!loading && !profileUnavailable() && professional">
       <section class="hero">
         <ion-avatar class="avatar">
           <img
