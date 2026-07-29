@@ -195,6 +195,12 @@ export class AdminService {
     response: AdminPageWireResponse<T>,
     requested: Record<string, string | number | boolean | undefined>,
   ): AdminPage<T> {
+    console.log('[AdminProfessionals] Respuesta API antes de normalizar', {
+      dataEsArreglo: Array.isArray(response.data),
+      cantidadData: Array.isArray(response.data) ? response.data.length : undefined,
+      total: 'total' in response ? response.total : undefined,
+    });
+
     const outer = response as Exclude<
       AdminPageWireResponse<T>,
       AdminPage<T>
@@ -230,12 +236,21 @@ export class AdminService {
         Math.max(1, Math.ceil(total / Math.max(1, limit))),
     );
 
-    return {
+    const normalized = {
       data,
       total,
       page,
       limit,
       totalPages,
     };
+
+    console.log('[AdminProfessionals] Respuesta después de normalizar', {
+      profesionales: normalized.data.length,
+      total: normalized.total,
+      page: normalized.page,
+      totalPages: normalized.totalPages,
+    });
+
+    return normalized;
   }
 }

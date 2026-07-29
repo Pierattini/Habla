@@ -2044,6 +2044,7 @@ private prepareProfileImage(file: File): Promise<string> {
   async copyPublicProfileLink(): Promise<void> {
     if (!this.publicProfileUrl || !this.profile.slug) return;
 
+    console.log('[PublicProfile] URL final copiada', this.publicProfileUrl);
     await this.copyToClipboard(this.publicProfileUrl);
     this.publicProfileMessage = 'Enlace copiado correctamente';
     this.recordProfileEvent('COPY_LINK');
@@ -2057,6 +2058,8 @@ private prepareProfileImage(file: File): Promise<string> {
       text: 'Reserva una cita conmigo en Conecta.',
       url: this.publicProfileUrl,
     };
+
+    console.log('[PublicProfile] URL final compartida', shareData.url);
 
     try {
       if (navigator.share) {
@@ -2078,31 +2081,20 @@ private prepareProfileImage(file: File): Promise<string> {
   private buildPublicProfileUrl(slug: string): string {
     if (!slug) return '';
 
-    const publicAppUrl = environment.publicAppUrl.replace(/\/$/, '');
+    const browserOrigin =
+      typeof window !== 'undefined' && /^https?:\/\//i.test(window.location.origin)
+        ? window.location.origin
+        : '';
+    const publicAppUrl = (browserOrigin || environment.publicAppUrl).replace(/\/$/, '');
+    const publicUrl = `${publicAppUrl}/profesional/${encodeURIComponent(slug)}`;
 
-    return `${publicAppUrl}/profesional/${this.getReadablePublicSlug(slug)}`;
-  }
+    console.log('[PublicProfile] URL generada', {
+      origin: publicAppUrl,
+      slug,
+      url: publicUrl,
+    });
 
-  private getReadablePublicSlug(slug: string): string {
-    const cleanNameSlug = this.toPublicSlug(this.profile.name || '');
-
-    if (!cleanNameSlug || !slug.startsWith(`${cleanNameSlug}-`)) {
-      return slug;
-    }
-
-    const suffix = slug.replace(`${cleanNameSlug}-`, '');
-
-    return /^[a-z0-9]{6,}$/.test(suffix) ? cleanNameSlug : slug;
-  }
-
-  private toPublicSlug(value: string): string {
-    return String(value || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-      .slice(0, 70);
+    return publicUrl;
   }
 
   private async copyToClipboard(value: string): Promise<void> {

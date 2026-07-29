@@ -71,8 +71,17 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.slug = this.route.snapshot.paramMap.get('slug') || '';
-    const publicAppUrl = environment.publicAppUrl.replace(/\/$/, '');
-    this.publicUrl = `${publicAppUrl}/profesional/${this.slug}`;
+    const browserOrigin =
+      typeof window !== 'undefined' && /^https?:\/\//i.test(window.location.origin)
+        ? window.location.origin
+        : '';
+    const publicAppUrl = (browserOrigin || environment.publicAppUrl).replace(/\/$/, '');
+    this.publicUrl = `${publicAppUrl}/profesional/${encodeURIComponent(this.slug)}`;
+    console.log('[PublicProfile] URL generada desde perfil público', {
+      origin: publicAppUrl,
+      slug: this.slug,
+      url: this.publicUrl,
+    });
     this.loadProfile();
   }
 
@@ -169,6 +178,8 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
       url: this.publicUrl,
     };
 
+    console.log('[PublicProfile] URL final compartida', shareData.url);
+
     try {
       if (navigator.share) {
         await navigator.share(shareData);
@@ -184,6 +195,7 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
 
   async copyProfileLink(): Promise<void> {
     try {
+      console.log('[PublicProfile] URL final copiada', this.publicUrl);
       await navigator.clipboard.writeText(this.publicUrl);
       this.statusMessage = 'Enlace copiado correctamente';
       this.recordEvent('COPY_LINK');

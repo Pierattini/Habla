@@ -185,6 +185,12 @@ export const routes: Routes = [
         .then(m => m.PublicProfessionalComponent),
   },
   {
+    path: 'professional/:slug',
+    loadComponent: () =>
+      import('./pages/public-professional/public-professional.component')
+        .then(m => m.PublicProfessionalComponent),
+  },
+  {
     path: 'meeting/:appointmentId/:token',
     loadComponent: () =>
       import('./pages/meeting/meeting.component')

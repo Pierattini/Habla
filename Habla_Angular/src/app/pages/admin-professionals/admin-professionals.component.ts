@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   AdminActivationMode,
@@ -47,7 +47,10 @@ export class AdminProfessionalsComponent {
   readonly planStatuses = ['', 'FREE', 'ACTIVE', 'SUSPENDED', 'CANCELLED'];
   readonly subscriptionStatuses = ['', 'TRIAL', 'ACTIVE', 'PAST_DUE', 'CANCELLED', 'EXPIRED'];
 
-  constructor(private adminService: AdminService) {}
+  constructor(
+    private adminService: AdminService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     this.load();
@@ -69,14 +72,30 @@ export class AdminProfessionalsComponent {
       isActive: this.isActive,
     }).subscribe({
       next: (res) => {
+        console.log('[AdminProfessionals] Antes de asignar', {
+          profesionalesActuales: this.professionals.length,
+          totalActual: this.total,
+          profesionalesRecibidos: Array.isArray(res.data) ? res.data.length : 0,
+          totalRecibido: res.total,
+        });
+
         this.professionals = res.data;
         this.total = res.total;
         this.totalPages = res.totalPages;
         this.loading = false;
+
+        console.log('[AdminProfessionals] Después de asignar', {
+          profesionales: this.professionals.length,
+          total: this.total,
+          totalPages: this.totalPages,
+        });
+
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.errorMessage = err?.error?.message || 'No se pudieron cargar los profesionales.';
         this.loading = false;
+        this.cdr.detectChanges();
       },
     });
   }
