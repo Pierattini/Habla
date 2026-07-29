@@ -64,6 +64,12 @@ export interface AdminSummary {
   newUsersThisMonth: number;
 }
 
+type AdminSummaryWireResponse =
+  | AdminSummary
+  | {
+      data: AdminSummary;
+    };
+
 export interface AdminUser {
   id: string;
   name: string | null;
@@ -121,9 +127,18 @@ export class AdminService {
   constructor(private http: HttpClient) {}
 
   getSummary() {
-    return this.http.get<AdminSummary>(`${this.api}/summary`, {
-      headers: this.headers(),
-    });
+    return this.http
+      .get<AdminSummaryWireResponse>(`${this.api}/summary`, {
+        headers: this.headers(),
+      })
+      .pipe(
+        map((response) => {
+          console.log('[AdminDashboard] Respuesta HTTP', response);
+          const summary = 'data' in response ? response.data : response;
+          console.log('[AdminDashboard] Valor después del servicio', summary);
+          return summary;
+        }),
+      );
   }
 
   getUsers(params: Record<string, string | number | boolean | undefined>) {

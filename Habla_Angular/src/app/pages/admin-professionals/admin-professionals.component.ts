@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   AdminActivationMode,
@@ -25,9 +25,9 @@ interface ProfessionalAdminDraft {
   styleUrls: ['./admin-professionals.component.scss'],
 })
 export class AdminProfessionalsComponent {
-  professionals: AdminProfessional[] = [];
-  loading = true;
-  errorMessage = '';
+  readonly professionals = signal<AdminProfessional[]>([]);
+  readonly loading = signal(true);
+  readonly errorMessage = signal('');
   search = '';
   country = '';
   attentionMode = '';
@@ -36,8 +36,8 @@ export class AdminProfessionalsComponent {
   isActive = '';
   page = 1;
   limit = 12;
-  total = 0;
-  totalPages = 1;
+  readonly total = signal(0);
+  readonly totalPages = signal(1);
   editingId = '';
   activationModes: Record<string, AdminActivationMode> = {};
   activationRunningId = '';
@@ -47,10 +47,7 @@ export class AdminProfessionalsComponent {
   readonly planStatuses = ['', 'FREE', 'ACTIVE', 'SUSPENDED', 'CANCELLED'];
   readonly subscriptionStatuses = ['', 'TRIAL', 'ACTIVE', 'PAST_DUE', 'CANCELLED', 'EXPIRED'];
 
-  constructor(
-    private adminService: AdminService,
-    private cdr: ChangeDetectorRef,
-  ) {}
+  constructor(private adminService: AdminService) {}
 
   ngOnInit(): void {
     this.load();
@@ -58,8 +55,8 @@ export class AdminProfessionalsComponent {
 
   load(page = this.page): void {
     this.page = page;
-    this.loading = true;
-    this.errorMessage = '';
+    this.loading.set(true);
+    this.errorMessage.set('');
 
     this.adminService.getProfessionals({
       page: this.page,
@@ -73,29 +70,26 @@ export class AdminProfessionalsComponent {
     }).subscribe({
       next: (res) => {
         console.log('[AdminProfessionals] Antes de asignar', {
-          profesionalesActuales: this.professionals.length,
-          totalActual: this.total,
+          profesionalesActuales: this.professionals().length,
+          totalActual: this.total(),
           profesionalesRecibidos: Array.isArray(res.data) ? res.data.length : 0,
           totalRecibido: res.total,
         });
 
-        this.professionals = res.data;
-        this.total = res.total;
-        this.totalPages = res.totalPages;
-        this.loading = false;
+        this.professionals.set(res.data);
+        this.total.set(res.total);
+        this.totalPages.set(res.totalPages);
+        this.loading.set(false);
 
         console.log('[AdminProfessionals] Después de asignar', {
-          profesionales: this.professionals.length,
-          total: this.total,
-          totalPages: this.totalPages,
+          profesionales: this.professionals().length,
+          total: this.total(),
+          totalPages: this.totalPages(),
         });
-
-        this.cdr.detectChanges();
       },
       error: (err) => {
-        this.errorMessage = err?.error?.message || 'No se pudieron cargar los profesionales.';
-        this.loading = false;
-        this.cdr.detectChanges();
+        this.errorMessage.set(err?.error?.message || 'No se pudieron cargar los profesionales.');
+        this.loading.set(false);
       },
     });
   }
@@ -128,7 +122,7 @@ export class AdminProfessionalsComponent {
         this.load();
       },
       error: (err) => {
-        this.errorMessage = err?.error?.message || 'No se pudo actualizar el profesional.';
+        this.errorMessage.set(err?.error?.message || 'No se pudo actualizar el profesional.');
       },
     });
   }
@@ -137,7 +131,7 @@ export class AdminProfessionalsComponent {
     this.adminService.suspendProfessional(professional.id).subscribe({
       next: () => this.load(),
       error: (err) => {
-        this.errorMessage = err?.error?.message || 'No se pudo suspender el profesional.';
+        this.errorMessage.set(err?.error?.message || 'No se pudo suspender el profesional.');
       },
     });
   }
@@ -149,7 +143,7 @@ export class AdminProfessionalsComponent {
 
     const mode = this.activationModes[professional.id] || 'THIRTY_DAYS';
     this.activationRunningId = professional.id;
-    this.errorMessage = '';
+    this.errorMessage.set('');
 
     this.adminService.activateProfessional(professional.id, mode).subscribe({
       next: () => {
@@ -158,7 +152,7 @@ export class AdminProfessionalsComponent {
       },
       error: (err) => {
         this.activationRunningId = '';
-        this.errorMessage = err?.error?.message || 'No se pudo activar el profesional.';
+        this.errorMessage.set(err?.error?.message || 'No se pudo activar el profesional.');
       },
     });
   }
@@ -191,7 +185,7 @@ export class AdminProfessionalsComponent {
   getPages(): number[] {
     const pages: number[] = [];
     const start = Math.max(1, this.page - 2);
-    const end = Math.min(this.totalPages, start + 4);
+    const end = Math.min(this.totalPages(), start + 4);
 
     for (let current = start; current <= end; current++) {
       pages.push(current);

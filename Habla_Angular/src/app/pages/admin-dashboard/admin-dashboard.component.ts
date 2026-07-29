@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AdminService, AdminSummary } from '../../services/admin.service';
 
@@ -17,9 +17,9 @@ interface AdminMetric {
   styleUrls: ['./admin-dashboard.component.scss'],
 })
 export class AdminDashboardComponent {
-  metrics: AdminMetric[] = this.buildMetrics();
-  loading = true;
-  errorMessage = '';
+  readonly metrics = signal<AdminMetric[]>(this.buildMetrics());
+  readonly loading = signal(true);
+  readonly errorMessage = signal('');
 
   readonly modules = [
     'Usuarios',
@@ -38,12 +38,14 @@ export class AdminDashboardComponent {
   ngOnInit(): void {
     this.adminService.getSummary().subscribe({
       next: (summary) => {
-        this.metrics = this.buildMetrics(summary);
-        this.loading = false;
+        console.log('[AdminDashboard] Respuesta recibida por el componente', summary);
+        this.metrics.set(this.buildMetrics(summary));
+        this.loading.set(false);
+        console.log('[AdminDashboard] Estado antes del template', this.metrics());
       },
       error: () => {
-        this.errorMessage = 'No se pudieron cargar las metricas administrativas.';
-        this.loading = false;
+        this.errorMessage.set('No se pudieron cargar las metricas administrativas.');
+        this.loading.set(false);
       },
     });
   }

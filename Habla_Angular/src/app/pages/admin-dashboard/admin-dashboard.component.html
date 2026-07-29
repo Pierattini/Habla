@@ -17,10 +17,10 @@
 </section>
 
 <section class="metrics-grid" aria-label="Indicadores administrativos">
-  <p class="dashboard-message" *ngIf="loading">Cargando metricas...</p>
-  <p class="dashboard-message error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  <p class="dashboard-message" *ngIf="loading()">Cargando metricas...</p>
+  <p class="dashboard-message error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
 
-  <article *ngFor="let metric of metrics" class="metric-card">
+  <article *ngFor="let metric of metrics()" class="metric-card">
     <span>{{ metric.label }}</span>
     <strong>{{ metric.value }}</strong>
     <small>{{ metric.note }}</small>
