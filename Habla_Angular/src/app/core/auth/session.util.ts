@@ -20,7 +20,11 @@ export function isTokenExpired(token: string | null): boolean {
       return true;
     }
 
-    const decoded = JSON.parse(atob(payload));
+    const base64 = payload
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+      .padEnd(Math.ceil(payload.length / 4) * 4, '=');
+    const decoded = JSON.parse(atob(base64));
     const expiresAt = Number(decoded.exp || 0) * 1000;
 
     return !expiresAt || Date.now() >= expiresAt;

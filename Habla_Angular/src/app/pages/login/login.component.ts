@@ -229,11 +229,7 @@ export class LoginComponent implements OnInit {
           )
           .subscribe({
             next: (res: any) => {
-              this.saveSession(res);
-              void this.pushNotifications.registerDevice();
-              void this.router.navigateByUrl(
-                res?.user?.role === 'ADMIN' ? '/admin/dashboard' : '/tabs/home',
-              );
+              void this.completeLogin(res);
             },
             error: (error) => {
               const apiMessage = Array.isArray(error?.error?.message)
@@ -825,20 +821,51 @@ export class LoginComponent implements OnInit {
 
   private saveSession(res: any): void {
     localStorage.setItem('token', res.access_token);
-    localStorage.setItem('role', res.user.role);
+    localStorage.setItem('role', String(res.user.role || '').trim().toUpperCase());
     localStorage.setItem('email', res.user.email);
     localStorage.setItem('name', res.user.name || 'Usuario');
   }
 
-  private navigateAfterLogin(res: any): void {
-    const role = res?.user?.role || localStorage.getItem('role');
-    this.router.navigateByUrl(
-      role === 'ADMIN'
-        ? '/admin/dashboard'
-        : role === 'PROFESSIONAL'
-          ? '/tabs/professional-dashboard'
-          : '/tabs/home',
-    );
+  private async completeLogin(res: any): Promise<void> {
+    try {
+      this.saveSession(res);
+      void this.pushNotifications.registerDevice();
+      await this.navigateAfterLogin(res);
+    } catch (error) {
+      console.error('[Auth][Post-login navigation]', error);
+      this.errorMessage =
+        'La sesión se inició, pero no pudimos abrir la página correspondiente.';
+      this.cdr.detectChanges();
+    }
+  }
+
+  private async navigateAfterLogin(res: any): Promise<void> {
+    const role = String(
+      res?.user?.role || localStorage.getItem('role') || '',
+    )
+      .trim()
+      .toUpperCase();
+    let destination: string;
+
+    switch (role) {
+      case 'ADMIN':
+        destination = '/admin/dashboard';
+        break;
+      case 'PROFESSIONAL':
+        destination = '/tabs/professional-dashboard';
+        break;
+      case 'CUSTOMER':
+        destination = '/tabs/home';
+        break;
+      default:
+        throw new Error(`Unsupported user role: ${role || 'missing'}`);
+    }
+
+    const navigated = await this.router.navigateByUrl(destination);
+    if (!navigated) {
+      throw new Error(`Angular Router rejected navigation to ${destination}`);
+    }
+
     this.isSubmitting = false;
   }
 
