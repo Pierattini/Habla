@@ -1,5 +1,6 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { map } from 'rxjs';
 import { API_URL } from '../core/config/api.config';
 
 export type AdminRole = 'CUSTOMER' | 'PROFESSIONAL' | 'ADMIN';
@@ -13,6 +14,40 @@ export interface AdminPage<T> {
   limit: number;
   totalPages: number;
 }
+
+type AdminPageWireResponse<T> =
+  | AdminPage<T>
+  | {
+      data?: T[] | AdminPage<T>;
+      items?: T[];
+      results?: T[];
+      total?: number;
+      page?: number;
+      limit?: number;
+      totalPages?: number;
+      meta?: {
+        total?: number;
+        page?: number;
+        limit?: number;
+        totalPages?: number;
+      };
+    };
+
+type AdminPagePayload<T> = {
+  data?: T[];
+  items?: T[];
+  results?: T[];
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+  meta?: {
+    total?: number;
+    page?: number;
+    limit?: number;
+    totalPages?: number;
+  };
+};
 
 export interface AdminSummary {
   totalUsers: number;
@@ -112,10 +147,12 @@ export class AdminService {
   }
 
   getProfessionals(params: Record<string, string | number | boolean | undefined>) {
-    return this.http.get<AdminPage<AdminProfessional>>(`${this.api}/professionals`, {
-      headers: this.headers(),
-      params: this.params(params),
-    });
+    return this.http
+      .get<AdminPageWireResponse<AdminProfessional>>(`${this.api}/professionals`, {
+        headers: this.headers(),
+        params: this.params(params),
+      })
+      .pipe(map((response) => this.normalizePage(response, params)));
   }
 
   updateProfessional(id: string, payload: Record<string, unknown>) {
@@ -152,5 +189,53 @@ export class AdminService {
     });
 
     return params;
+  }
+
+  private normalizePage<T>(
+    response: AdminPageWireResponse<T>,
+    requested: Record<string, string | number | boolean | undefined>,
+  ): AdminPage<T> {
+    const outer = response as Exclude<
+      AdminPageWireResponse<T>,
+      AdminPage<T>
+    >;
+    const payload = (
+      outer.data && !Array.isArray(outer.data)
+        ? outer.data
+        : outer
+    ) as AdminPagePayload<T>;
+    const data = Array.isArray(payload.data)
+      ? payload.data
+      : Array.isArray(payload.items)
+        ? payload.items
+        : Array.isArray(payload.results)
+          ? payload.results
+          : [];
+    const meta = 'meta' in payload ? payload.meta : undefined;
+    const totalValue = payload.total ?? meta?.total;
+    const page = Number(payload.page ?? meta?.page ?? requested['page'] ?? 1);
+    const limit = Number(
+      payload.limit ??
+        meta?.limit ??
+        requested['limit'] ??
+        (data.length || 1),
+    );
+    const total =
+      typeof totalValue === 'number' && totalValue >= data.length
+        ? totalValue
+        : data.length;
+    const totalPages = Number(
+      payload.totalPages ??
+        meta?.totalPages ??
+        Math.max(1, Math.ceil(total / Math.max(1, limit))),
+    );
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
   }
 }
