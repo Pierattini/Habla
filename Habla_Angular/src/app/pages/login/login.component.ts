@@ -4,7 +4,10 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { ProfessionItem, ProfessionService } from '../../services/profession.service';
-import { RecaptchaService } from '../../services/recaptcha.service';
+import {
+  RecaptchaClientError,
+  RecaptchaService,
+} from '../../services/recaptcha.service';
 import { GoogleAuthService, GoogleSignInCancelledError } from '../../services/google-auth.service';
 import { finalize, timeout } from 'rxjs';
 
@@ -233,15 +236,37 @@ export class LoginComponent implements OnInit {
               );
             },
             error: (error) => {
-              this.errorMessage =
-                error?.name === 'TimeoutError'
-                  ? 'El servidor tardó demasiado. Inténtalo nuevamente.'
+              const apiMessage = Array.isArray(error?.error?.message)
+                ? error.error.message.join(' ')
+                : error?.error?.message;
+
+              console.error('[Auth][Login API]', {
+                status: error?.status,
+                message: apiMessage || error?.message || 'Unknown API error',
+              });
+
+              this.errorMessage = error?.name === 'TimeoutError'
+                ? 'El servidor tardó demasiado. Inténtalo nuevamente.'
+                : typeof apiMessage === 'string' && apiMessage.trim()
+                  ? apiMessage
                   : 'No pudimos iniciar sesión con esos datos.';
             },
           });
       })
-      .catch(() => {
-        this.errorMessage = 'No pudimos verificar tu solicitud. Inténtalo nuevamente.';
+      .catch((error: unknown) => {
+        const recaptchaError =
+          error instanceof RecaptchaClientError ? error : null;
+
+        console.error('[Auth][reCAPTCHA]', {
+          code: recaptchaError?.code || 'UNKNOWN',
+          message:
+            recaptchaError?.message ||
+            (error instanceof Error ? error.message : String(error)),
+        });
+
+        this.errorMessage = recaptchaError
+          ? `${recaptchaError.message} Inténtalo nuevamente.`
+          : 'No pudimos verificar tu solicitud. Inténtalo nuevamente.';
         this.isSubmitting = false;
         this.cdr.detectChanges();
       });
