@@ -6,7 +6,7 @@ import { PushNotificationService } from '../../services/push-notification.servic
 import { ProfessionItem, ProfessionService } from '../../services/profession.service';
 import { RecaptchaService } from '../../services/recaptcha.service';
 import { GoogleAuthService, GoogleSignInCancelledError } from '../../services/google-auth.service';
-import { timeout } from 'rxjs';
+import { finalize, timeout } from 'rxjs';
 
 type OnboardingMode = 'intro' | 'login' | 'register' | 'forgot' | 'reset';
 type AccountRole = 'CUSTOMER' | 'PROFESSIONAL';
@@ -215,19 +215,30 @@ export class LoginComponent implements OnInit {
     this.recaptchaService
       .execute('login')
       .then((recaptchaToken) => {
-        this.auth.login(this.email, this.password, recaptchaToken).subscribe({
-          next: (res: any) => {
-            this.saveSession(res);
-            void this.pushNotifications.registerDevice();
-            this.router.navigateByUrl(
-              res?.user?.role === 'ADMIN' ? '/admin/dashboard' : '/tabs/home',
-            );
-          },
-          error: () => {
-            this.errorMessage = 'No pudimos iniciar sesión con esos datos.';
-            this.isSubmitting = false;
-          },
-        });
+        this.auth
+          .login(this.email, this.password, recaptchaToken)
+          .pipe(
+            timeout(30000),
+            finalize(() => {
+              this.isSubmitting = false;
+              this.cdr.detectChanges();
+            }),
+          )
+          .subscribe({
+            next: (res: any) => {
+              this.saveSession(res);
+              void this.pushNotifications.registerDevice();
+              void this.router.navigateByUrl(
+                res?.user?.role === 'ADMIN' ? '/admin/dashboard' : '/tabs/home',
+              );
+            },
+            error: (error) => {
+              this.errorMessage =
+                error?.name === 'TimeoutError'
+                  ? 'El servidor tardó demasiado. Inténtalo nuevamente.'
+                  : 'No pudimos iniciar sesión con esos datos.';
+            },
+          });
       })
       .catch(() => {
         this.errorMessage = 'No pudimos verificar tu solicitud. Inténtalo nuevamente.';
@@ -376,17 +387,27 @@ export class LoginComponent implements OnInit {
     this.recaptchaService
       .execute('password_reset_request')
       .then((recaptchaToken) => {
-        this.auth.requestPasswordReset(this.resetEmail.trim(), recaptchaToken).subscribe({
-          next: () => {
-            this.successMessage =
-              'Si el email existe, enviaremos un enlace para restablecer tu contraseña.';
-            this.isSubmitting = false;
-          },
-          error: () => {
-            this.errorMessage = 'No pudimos procesar la solicitud. Intenta nuevamente.';
-            this.isSubmitting = false;
-          },
-        });
+        this.auth
+          .requestPasswordReset(this.resetEmail.trim(), recaptchaToken)
+          .pipe(
+            timeout(30000),
+            finalize(() => {
+              this.isSubmitting = false;
+              this.cdr.detectChanges();
+            }),
+          )
+          .subscribe({
+            next: () => {
+              this.successMessage =
+                'Si el email existe, enviaremos un enlace para restablecer tu contraseña.';
+            },
+            error: (error) => {
+              this.errorMessage =
+                error?.name === 'TimeoutError'
+                  ? 'El servidor tardó demasiado. Inténtalo nuevamente.'
+                  : 'No pudimos procesar la solicitud. Intenta nuevamente.';
+            },
+          });
       })
       .catch(() => {
         this.errorMessage = 'No pudimos verificar tu solicitud. Inténtalo nuevamente.';
