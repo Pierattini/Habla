@@ -107,8 +107,8 @@ model Appointment {
   paymentConfirmTokenUsedAt    DateTime?
 
   // 🔥 REEMBOLSO
-  refundAccount String?
-  refundBank    String?
+  refundAccount            String?
+  refundBank               String?
   refundDoneTokenHash      String?
   refundDoneTokenExpiresAt DateTime?
   refundDoneTokenUsedAt    DateTime?
@@ -207,7 +207,7 @@ model Professional {
   slug   String? @unique
 
   professionId        String?
-  profession          Profession?       @relation(fields: [professionId], references: [id])
+  profession          Profession?             @relation(fields: [professionId], references: [id])
   customProfession    String?
   specialty           String?
   description         String?
@@ -215,9 +215,9 @@ model Professional {
   name                String?
   price               Int?
   duration            Int?
-  isOnline            Boolean?          @default(true)
+  isOnline            Boolean?                @default(true)
   image               String?
-  attentionMode       AttentionModality @default(ONLINE)
+  attentionMode       AttentionModality       @default(ONLINE)
   officeAddress       String?
   officeCity          String?
   officeRegion        String?
@@ -225,8 +225,9 @@ model Professional {
   officeLatitude      Float?
   officeLongitude     Float?
   arrivalInstructions String?
-  videoProvider       VideoProvider     @default(CONNECTA_AUTO)
+  videoProvider       VideoProvider           @default(CONNECTA_AUTO)
   customVideoUrl      String?
+  serviceMode         ProfessionalServiceMode @default(SINGLE_PRICE)
 
   // Datos Bancarios
   bankName      String?
@@ -256,9 +257,37 @@ model Professional {
   profileEvents        ProfessionalProfileEvent[]
   subscription         ProfessionalSubscription?
   subscriptionPayments ProfessionalSubscriptionPayment[]
+  services             ProfessionalService[]
 
   @@index([professionId])
   @@index([attentionMode])
+}
+
+model ProfessionalService {
+  id              String                       @id @default(uuid())
+  professionalId  String
+  name            String
+  description     String?
+  durationMinutes Int
+  priceType       ProfessionalServicePriceType
+  priceAmount     Int?
+  currency        String                       @default("CLP")
+  status          ProfessionalServiceStatus    @default(ACTIVE)
+  sortOrder       Int                          @default(0)
+  icon            String?
+  imageUrl        String?
+  color           String?
+  showInProfile   Boolean                      @default(true)
+  allowBooking    Boolean                      @default(true)
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+  deletedAt       DateTime?
+  professional    Professional                 @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([professionalId])
+  @@index([professionalId, status])
+  @@index([professionalId, sortOrder])
+  @@index([professionalId, showInProfile])
 }
 
 model ProfessionalSubscription {
@@ -615,7 +644,7 @@ model ProfessionalTaxProviderCredential {
 }
 
 model ProfessionalTaxFolioRange {
-  id              String   @id @default(uuid())
+  id              String      @id @default(uuid())
   professionalId  String
   provider        TaxProvider @default(SII)
   dteCode         Int
@@ -625,10 +654,10 @@ model ProfessionalTaxFolioRange {
   encryptedCafXml String
   cafFileName     String?
   cafFingerprint  String?
-  status          String   @default("ACTIVE")
-  uploadedAt      DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  status          String      @default("ACTIVE")
+  uploadedAt      DateTime    @default(now())
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   professional User @relation("ProfessionalTaxFolioRanges", fields: [professionalId], references: [id], onDelete: Cascade)
 
@@ -673,6 +702,23 @@ enum AttentionModality {
   ONLINE
   PRESENTIAL
   BOTH
+}
+
+enum ProfessionalServiceMode {
+  SINGLE_PRICE
+  SERVICE_CATALOG
+}
+
+enum ProfessionalServicePriceType {
+  FIXED
+  FROM
+  CONSULT
+  FREE
+}
+
+enum ProfessionalServiceStatus {
+  ACTIVE
+  INACTIVE
 }
 
 enum VideoProvider {
