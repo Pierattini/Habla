@@ -68,16 +68,39 @@ export class AuthService {
     });
 
     if (!user) {
+      this.logger.warn(
+        `LOGIN_DIAGNOSTIC id=${loginIdentifier} userFound=false role=unknown active=unknown passwordHashPresent=false`,
+      );
       this.logger.warn(`LOGIN_USER_NOT_FOUND id=${loginIdentifier}`);
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    const passwordHashPresent =
+      typeof user.password === 'string' && user.password.length > 0;
+    const bcryptHashFormat =
+      passwordHashPresent &&
+      /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(user.password);
+
+    this.logger.log(
+      `LOGIN_DIAGNOSTIC id=${loginIdentifier} userFound=true role=${user.role} active=${user.isActive} passwordHashPresent=${passwordHashPresent} bcryptHashFormat=${bcryptHashFormat}`,
+    );
 
     if (!user.isActive) {
       this.logger.warn(`LOGIN_USER_INACTIVE id=${loginIdentifier}`);
       throw new UnauthorizedException('User inactive');
     }
 
+    if (!bcryptHashFormat) {
+      this.logger.error(
+        `LOGIN_PASSWORD_HASH_INVALID id=${loginIdentifier}`,
+      );
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
+    this.logger.log(
+      `LOGIN_PASSWORD_COMPARE id=${loginIdentifier} result=${isMatch}`,
+    );
 
     if (!isMatch) {
       this.logger.warn(`LOGIN_PASSWORD_MISMATCH id=${loginIdentifier}`);
