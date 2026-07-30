@@ -31,6 +31,7 @@ import {
   TaxProviderService,
 } from '../../services/tax-provider.service';
 import { API_URL } from '../../core/config/api.config';
+import { ProfessionalServicesManagerComponent } from '../../features/professional-services/components/professional-services-manager/professional-services-manager.component';
 
 import {
   IonContent,
@@ -97,7 +98,8 @@ type TeamsConnectionState = {
     IonInput,
     IonTextarea,
     IonItem,
-    IonLabel
+    IonLabel,
+    ProfessionalServicesManagerComponent
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA]
 })

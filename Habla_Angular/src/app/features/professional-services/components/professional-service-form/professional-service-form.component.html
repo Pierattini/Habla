@@ -1,0 +1,140 @@
+<form class="service-form" (ngSubmit)="submit()" novalidate>
+  <div class="form-heading">
+    <div>
+      <p class="eyebrow">{{ service ? 'Editar servicio' : 'Nuevo servicio' }}</p>
+      <h3>{{ service ? service.name : 'Crea una opción para tus clientes' }}</h3>
+    </div>
+    <button type="button" class="close-button" [disabled]="saving" (click)="cancelled.emit()">
+      Cerrar
+    </button>
+  </div>
+
+  <div class="form-grid">
+    <label class="full-field">
+      <span>Nombre</span>
+      <input
+        name="serviceName"
+        [(ngModel)]="draft.name"
+        maxlength="120"
+        [attr.aria-invalid]="!!errors['name']"
+        aria-describedby="service-name-error"
+        placeholder="Ej. Evaluación inicial"
+      />
+      <small id="service-name-error" class="field-error" *ngIf="errors['name']">
+        {{ errors['name'] }}
+      </small>
+    </label>
+
+    <label class="full-field">
+      <span>Descripción</span>
+      <textarea
+        name="serviceDescription"
+        [(ngModel)]="draft.description"
+        maxlength="2000"
+        rows="4"
+        placeholder="Explica brevemente qué incluye este servicio."
+      ></textarea>
+    </label>
+
+    <label>
+      <span>Duración en minutos</span>
+      <input
+        type="number"
+        name="serviceDuration"
+        [(ngModel)]="draft.durationMinutes"
+        min="5"
+        max="480"
+        list="common-service-durations"
+        [attr.aria-invalid]="!!errors['durationMinutes']"
+        aria-describedby="service-duration-error"
+      />
+      <datalist id="common-service-durations">
+        <option *ngFor="let duration of commonDurations" [value]="duration"></option>
+      </datalist>
+      <small id="service-duration-error" class="field-error" *ngIf="errors['durationMinutes']">
+        {{ errors['durationMinutes'] }}
+      </small>
+    </label>
+
+    <label>
+      <span>Tipo de precio</span>
+      <select
+        name="servicePriceType"
+        [(ngModel)]="draft.priceType"
+        (ngModelChange)="onPriceTypeChange()"
+      >
+        <option *ngFor="let type of priceTypes" [value]="type.value">
+          {{ type.label }}
+        </option>
+      </select>
+    </label>
+
+    <label *ngIf="requiresPrice()">
+      <span>Precio</span>
+      <input
+        type="number"
+        name="servicePrice"
+        [(ngModel)]="draft.priceAmount"
+        min="0"
+        step="1"
+        [attr.aria-invalid]="!!errors['priceAmount']"
+        aria-describedby="service-price-error"
+      />
+      <small id="service-price-error" class="field-error" *ngIf="errors['priceAmount']">
+        {{ errors['priceAmount'] }}
+      </small>
+    </label>
+
+    <label>
+      <span>Moneda</span>
+      <select
+        name="serviceCurrency"
+        [(ngModel)]="draft.currency"
+        [attr.aria-invalid]="!!errors['currency']"
+      >
+        <option *ngFor="let currency of currencies" [value]="currency">
+          {{ currency }}
+        </option>
+      </select>
+      <small class="field-error" *ngIf="errors['currency']">{{ errors['currency'] }}</small>
+    </label>
+
+    <label>
+      <span>Estado</span>
+      <select name="serviceStatus" [(ngModel)]="draft.status">
+        <option value="ACTIVE">Activo</option>
+        <option value="INACTIVE">Inactivo</option>
+      </select>
+    </label>
+
+    <label>
+      <span>Icono opcional</span>
+      <input name="serviceIcon" [(ngModel)]="draft.icon" maxlength="80" placeholder="Ej. ✨" />
+    </label>
+
+    <label>
+      <span>Color opcional</span>
+      <input type="color" name="serviceColor" [(ngModel)]="draft.color" />
+    </label>
+  </div>
+
+  <div class="toggle-grid">
+    <label class="toggle-field">
+      <input type="checkbox" name="showInProfile" [(ngModel)]="draft.showInProfile" />
+      <span>Mostrar en el perfil público</span>
+    </label>
+    <label class="toggle-field">
+      <input type="checkbox" name="allowBooking" [(ngModel)]="draft.allowBooking" />
+      <span>Permitir solicitar cita</span>
+    </label>
+  </div>
+
+  <div class="form-actions">
+    <button type="button" class="secondary-button" [disabled]="saving" (click)="cancelled.emit()">
+      Cancelar
+    </button>
+    <button type="submit" class="primary-button" [disabled]="saving">
+      {{ saving ? 'Guardando...' : 'Guardar servicio' }}
+    </button>
+  </div>
+</form>

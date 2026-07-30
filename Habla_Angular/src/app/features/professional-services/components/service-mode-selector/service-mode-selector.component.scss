@@ -1,0 +1,78 @@
+.mode-selector {
+  display: grid;
+  gap: 18px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+h3 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.helper {
+  margin: 6px 0 0;
+  color: var(--app-muted);
+  line-height: 1.5;
+}
+
+.mode-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mode-options button {
+  min-height: 96px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 15%, transparent);
+  border-radius: var(--app-radius-lg);
+  background: color-mix(in srgb, var(--app-primary) 4%, var(--app-surface));
+  color: var(--app-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mode-options button.active {
+  border-color: var(--app-primary);
+  background: color-mix(in srgb, var(--app-primary) 10%, var(--app-surface));
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--app-primary) 12%, transparent);
+}
+
+.mode-options button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-primary) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.mode-options button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.mode-options span,
+.mode-options small {
+  display: block;
+}
+
+.mode-options span {
+  font-weight: 900;
+}
+
+.mode-options small {
+  margin-top: 6px;
+  color: var(--app-muted);
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .mode-options {
+    grid-template-columns: 1fr;
+  }
+}

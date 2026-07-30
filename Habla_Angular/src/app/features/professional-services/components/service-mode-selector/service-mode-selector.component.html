@@ -1,0 +1,35 @@
+<section class="mode-selector" aria-labelledby="service-mode-title">
+  <div>
+    <p class="eyebrow">Configuración</p>
+    <h3 id="service-mode-title">Modalidad de servicios</h3>
+    <p class="helper">
+      Elige cómo quieres presentar tus precios. Podrás cambiar esta opción sin perder información.
+    </p>
+  </div>
+
+  <div class="mode-options" role="radiogroup" aria-label="Modalidad de servicios">
+    <button
+      type="button"
+      role="radio"
+      [attr.aria-checked]="mode === 'SINGLE_PRICE'"
+      [class.active]="mode === 'SINGLE_PRICE'"
+      [disabled]="saving"
+      (click)="requestMode('SINGLE_PRICE')"
+    >
+      <span>Precio único</span>
+      <small>Mantiene tu tarifa y flujo actuales.</small>
+    </button>
+
+    <button
+      type="button"
+      role="radio"
+      [attr.aria-checked]="mode === 'SERVICE_CATALOG'"
+      [class.active]="mode === 'SERVICE_CATALOG'"
+      [disabled]="saving"
+      (click)="requestMode('SERVICE_CATALOG')"
+    >
+      <span>Catálogo de servicios</span>
+      <small>Publica varios servicios, precios y duraciones.</small>
+    </button>
+  </div>
+</section>

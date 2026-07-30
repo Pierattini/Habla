@@ -1,0 +1,163 @@
+.service-form {
+  display: grid;
+  gap: 22px;
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 16%, transparent);
+  border-radius: var(--app-radius-xl);
+  background: color-mix(in srgb, var(--app-primary) 4%, var(--app-surface));
+}
+
+.form-heading,
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+h3 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.full-field {
+  grid-column: 1 / -1;
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  color: var(--app-text);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 16%, transparent);
+  border-radius: var(--app-radius-md);
+  outline: none;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font: inherit;
+  font-weight: 700;
+}
+
+textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
+input[type='color'] {
+  padding: 6px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--app-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 14%, transparent);
+}
+
+[aria-invalid='true'] {
+  border-color: #dc2626;
+}
+
+.field-error {
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.toggle-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 22px;
+}
+
+.toggle-field {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 9px;
+}
+
+.toggle-field input {
+  width: 18px;
+  min-height: 18px;
+  accent-color: var(--app-primary);
+}
+
+button {
+  min-height: 44px;
+  padding: 10px 17px;
+  border-radius: var(--app-radius-md);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-primary) 35%, transparent);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.close-button,
+.secondary-button {
+  border: 1px solid color-mix(in srgb, var(--app-primary) 20%, transparent);
+  background: var(--app-surface);
+  color: var(--app-primary);
+}
+
+.close-button {
+  min-height: 38px;
+  padding: 7px 12px;
+}
+
+.primary-button {
+  border: 0;
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .service-form {
+    padding: 18px 14px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .full-field {
+    grid-column: auto;
+  }
+
+  .form-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}

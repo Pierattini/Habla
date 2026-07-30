@@ -1,0 +1,156 @@
+.services-manager {
+  display: grid;
+  gap: 24px;
+  padding: 24px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.catalog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-top: 22px;
+  border-top: 1px solid color-mix(in srgb, var(--app-primary) 10%, transparent);
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+h3,
+h4 {
+  margin: 0;
+  color: var(--app-text);
+  font-weight: 900;
+}
+
+h3 {
+  font-size: 22px;
+}
+
+.catalog-header p:not(.eyebrow),
+.empty-state p {
+  margin: 7px 0 0;
+  color: var(--app-muted);
+  line-height: 1.5;
+}
+
+.primary-button {
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: var(--app-radius-md);
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.primary-button:focus-visible,
+.catalog-message button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-primary) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.catalog-message {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--app-radius-md);
+  font-weight: 800;
+}
+
+.catalog-message.error {
+  background: color-mix(in srgb, #dc2626 8%, var(--app-surface));
+  color: #b91c1c;
+}
+
+.catalog-message.success {
+  background: color-mix(in srgb, #16a34a 9%, var(--app-surface));
+  color: #15803d;
+}
+
+.catalog-message button {
+  margin-left: 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-weight: 900;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.catalog-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--app-muted);
+  font-weight: 800;
+}
+
+.loading-dot {
+  width: 12px;
+  height: 12px;
+  border: 2px solid color-mix(in srgb, var(--app-primary) 25%, transparent);
+  border-top-color: var(--app-primary);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+.services-list {
+  display: grid;
+  gap: 12px;
+}
+
+.empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 36px 18px;
+  border: 1px dashed color-mix(in srgb, var(--app-primary) 22%, transparent);
+  border-radius: var(--app-radius-lg);
+  background: color-mix(in srgb, var(--app-primary) 3%, var(--app-surface));
+  text-align: center;
+}
+
+.empty-icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--app-primary) 10%, var(--app-surface));
+  color: var(--app-primary);
+  font-size: 23px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .services-manager {
+    padding: 20px 14px;
+  }
+
+  .catalog-header {
+    display: grid;
+  }
+
+  .catalog-header .primary-button {
+    width: 100%;
+  }
+}

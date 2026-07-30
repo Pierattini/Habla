@@ -1,0 +1,67 @@
+<article class="service-card" [class.inactive]="service.status === 'INACTIVE'">
+  <div class="service-icon" [style.background]="service.color || null" aria-hidden="true">
+    {{ service.icon || '✦' }}
+  </div>
+
+  <div class="service-content">
+    <div class="service-heading">
+      <div>
+        <h4>{{ service.name }}</h4>
+        <div class="service-meta">
+          <app-professional-service-duration
+            [minutes]="service.durationMinutes"
+          ></app-professional-service-duration>
+          <span aria-hidden="true">•</span>
+          <app-professional-service-price [service]="service"></app-professional-service-price>
+        </div>
+      </div>
+
+      <div class="badges">
+        <span [class.off]="service.status === 'INACTIVE'">
+          {{ service.status === 'ACTIVE' ? 'Activo' : 'Inactivo' }}
+        </span>
+        <span [class.off]="!service.showInProfile">
+          {{ service.showInProfile ? 'Visible' : 'Oculto' }}
+        </span>
+      </div>
+    </div>
+
+    <p *ngIf="service.description">{{ service.description }}</p>
+
+    <div class="service-actions">
+      <button type="button" [disabled]="busy" (click)="editRequested.emit(service)">Editar</button>
+      <button type="button" [disabled]="busy" (click)="statusRequested.emit(service)">
+        {{ service.status === 'ACTIVE' ? 'Desactivar' : 'Activar' }}
+      </button>
+      <button type="button" [disabled]="busy" (click)="visibilityRequested.emit(service)">
+        {{ service.showInProfile ? 'Ocultar' : 'Mostrar' }}
+      </button>
+      <button
+        type="button"
+        class="order-button"
+        [disabled]="busy || first"
+        [attr.aria-label]="'Subir ' + service.name"
+        (click)="moveUpRequested.emit(service)"
+      >
+        ↑
+      </button>
+      <button
+        type="button"
+        class="order-button"
+        [disabled]="busy || last"
+        [attr.aria-label]="'Bajar ' + service.name"
+        (click)="moveDownRequested.emit(service)"
+      >
+        ↓
+      </button>
+      <button
+        type="button"
+        class="archive-button"
+        [disabled]="busy"
+        (click)="archiveRequested.emit(service)"
+      >
+        Archivar
+      </button>
+    </div>
+  </div>
+</article>
