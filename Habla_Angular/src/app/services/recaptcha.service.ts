@@ -38,6 +38,16 @@ export class RecaptchaService {
   private scriptPromise: Promise<void> | null = null;
   private readonly timeoutMs = 12000;
 
+  preload(): Promise<void> {
+    const siteKey = environment.recaptchaSiteKey;
+
+    if (!siteKey || siteKey.startsWith('REPLACE_WITH_')) {
+      return Promise.resolve();
+    }
+
+    return this.loadScript(siteKey);
+  }
+
   async execute(action: string): Promise<string> {
     const siteKey = environment.recaptchaSiteKey;
 

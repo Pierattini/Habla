@@ -4,6 +4,7 @@ import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import {
   GoogleAuthProvider,
+  Auth,
   browserLocalPersistence,
   getAuth,
   setPersistence,
@@ -15,6 +16,13 @@ export class GoogleSignInCancelledError extends Error {}
 
 @Injectable({ providedIn: 'root' })
 export class GoogleAuthService {
+  private webAuthPromise: Promise<Auth> | null = null;
+
+  preload(): Promise<void> {
+    if (Capacitor.isNativePlatform()) return Promise.resolve();
+    return this.getWebAuth().then(() => undefined);
+  }
+
   async signIn(): Promise<string> {
     try {
       if (Capacitor.isNativePlatform()) {
@@ -30,20 +38,7 @@ export class GoogleAuthService {
         return token;
       }
 
-      const config = environment.firebase;
-      if (!config.apiKey || !config.authDomain || !config.projectId) {
-        throw new Error('Firebase Web no esta configurado.');
-      }
-
-      const firebaseConfig = {
-        apiKey: config.apiKey,
-        authDomain: config.authDomain,
-        projectId: config.projectId,
-        ...(config.appId ? { appId: config.appId } : {}),
-      };
-      const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      await setPersistence(auth, browserLocalPersistence);
+      const auth = await this.getWebAuth();
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       const credential = await signInWithPopup(auth, provider);
@@ -65,5 +60,32 @@ export class GoogleAuthService {
 
       throw error;
     }
+  }
+
+  private getWebAuth(): Promise<Auth> {
+    if (this.webAuthPromise) return this.webAuthPromise;
+
+    this.webAuthPromise = (async () => {
+      const config = environment.firebase;
+      if (!config.apiKey || !config.authDomain || !config.projectId) {
+        throw new Error('Firebase Web no esta configurado.');
+      }
+
+      const firebaseConfig = {
+        apiKey: config.apiKey,
+        authDomain: config.authDomain,
+        projectId: config.projectId,
+        ...(config.appId ? { appId: config.appId } : {}),
+      };
+      const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      await setPersistence(auth, browserLocalPersistence);
+      return auth;
+    })().catch((error) => {
+      this.webAuthPromise = null;
+      throw error;
+    });
+
+    return this.webAuthPromise;
   }
 }

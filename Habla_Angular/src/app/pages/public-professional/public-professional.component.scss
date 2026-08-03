@@ -356,6 +356,69 @@ ion-button {
   font-weight: 900;
 }
 
+.registration-prompt-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(6px);
+}
+
+.registration-prompt {
+  width: min(100%, 430px);
+  padding: 28px 24px 22px;
+  border: 1px solid rgba(168, 85, 247, 0.18);
+  border-radius: 28px;
+  background: var(--app-surface);
+  box-shadow: 0 28px 70px rgba(31, 41, 55, 0.24);
+  text-align: center;
+}
+
+.registration-prompt-icon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 12px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--app-primary-light) 18%, white);
+  font-size: 30px;
+}
+
+.registration-prompt-eyebrow {
+  margin: 0 0 6px;
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.registration-prompt h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.registration-prompt > p:not(.registration-prompt-eyebrow) {
+  margin: 12px 0 20px;
+  color: var(--app-muted);
+  line-height: 1.5;
+}
+
+.registration-prompt-later {
+  margin-top: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--app-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .request-button {
   height: 54px;
   --background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));

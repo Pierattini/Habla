@@ -1,4 +1,17 @@
 <ion-content [fullscreen]="true">
+  <div class="registration-prompt-backdrop" *ngIf="showRegistrationPrompt">
+    <section class="registration-prompt" role="dialog" aria-modal="true" aria-labelledby="registration-title">
+      <div class="registration-prompt-icon" aria-hidden="true">&#128075;</div>
+      <p class="registration-prompt-eyebrow">Bienvenido a Conecta</p>
+      <h2 id="registration-title">Agenda con este profesional</h2>
+      <p>Crea tu cuenta para reservar una cita y volver directamente a este perfil al terminar.</p>
+      <ion-button expand="block" (click)="goToRegistration()">Crear cuenta</ion-button>
+      <ion-button expand="block" fill="outline" (click)="goToLogin()">Ya tengo una cuenta</ion-button>
+      <button type="button" class="registration-prompt-later" (click)="dismissRegistrationPrompt()">
+        Seguir viendo el perfil
+      </button>
+    </section>
+  </div>
   <main class="public-profile">
     <section class="loading-state" *ngIf="loading">
       <ion-spinner name="crescent"></ion-spinner>

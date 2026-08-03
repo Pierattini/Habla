@@ -2083,11 +2083,7 @@ private prepareProfileImage(file: File): Promise<string> {
   private buildPublicProfileUrl(slug: string): string {
     if (!slug) return '';
 
-    const browserOrigin =
-      typeof window !== 'undefined' && /^https?:\/\//i.test(window.location.origin)
-        ? window.location.origin
-        : '';
-    const publicAppUrl = (browserOrigin || environment.publicAppUrl).replace(/\/$/, '');
+    const publicAppUrl = environment.publicAppUrl.replace(/\/$/, '');
     const publicUrl = `${publicAppUrl}/profesional/${encodeURIComponent(slug)}`;
 
     console.log('[PublicProfile] URL generada', {

@@ -78,6 +78,7 @@ export class LoginComponent implements OnInit {
   private professionSearchTimer: ReturnType<typeof setTimeout> | null = null;
   private emailCheckTimer: ReturnType<typeof setTimeout> | null = null;
   private errorMessageTimer: ReturnType<typeof setTimeout> | null = null;
+  private redirectAfterAuth = '';
 
   public countries = [
     { label: 'Chile', value: 'CL', timezone: 'America/Santiago' },
@@ -99,7 +100,26 @@ export class LoginComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    void this.recaptchaService.preload().catch((error: unknown) => {
+      console.warn('[Auth][reCAPTCHA preload]', {
+        message: error instanceof Error ? error.message : String(error),
+      });
+    });
+    void this.googleAuth.preload().catch((error: unknown) => {
+      console.warn('[Auth][Google preload]', {
+        message: error instanceof Error ? error.message : String(error),
+      });
+    });
+
     const resetToken = this.route.snapshot.queryParamMap.get('resetToken');
+    this.redirectAfterAuth = this.getSafeRedirect(
+      this.route.snapshot.queryParamMap.get('redirect'),
+    );
+    const requestedMode = this.route.snapshot.queryParamMap.get('mode');
+
+    if (requestedMode === 'login' || requestedMode === 'register') {
+      this.mode = requestedMode;
+    }
 
     if (resetToken) {
       this.resetToken = resetToken;
@@ -847,18 +867,22 @@ export class LoginComponent implements OnInit {
       .toUpperCase();
     let destination: string;
 
-    switch (role) {
-      case 'ADMIN':
-        destination = '/admin/dashboard';
-        break;
-      case 'PROFESSIONAL':
-        destination = '/tabs/professional-dashboard';
-        break;
-      case 'CUSTOMER':
-        destination = '/tabs/home';
-        break;
-      default:
-        throw new Error(`Unsupported user role: ${role || 'missing'}`);
+    if (role === 'CUSTOMER' && this.redirectAfterAuth) {
+      destination = this.redirectAfterAuth;
+    } else {
+      switch (role) {
+        case 'ADMIN':
+          destination = '/admin/dashboard';
+          break;
+        case 'PROFESSIONAL':
+          destination = '/tabs/professional-dashboard';
+          break;
+        case 'CUSTOMER':
+          destination = '/tabs/home';
+          break;
+        default:
+          throw new Error(`Unsupported user role: ${role || 'missing'}`);
+      }
     }
 
     const navigated = await this.router.navigateByUrl(destination);
@@ -867,6 +891,15 @@ export class LoginComponent implements OnInit {
     }
 
     this.isSubmitting = false;
+  }
+
+  private getSafeRedirect(value: string | null): string {
+    const redirect = String(value || '').trim();
+
+    if (!redirect.startsWith('/') || redirect.startsWith('//')) return '';
+    if (!redirect.startsWith('/profesional/')) return '';
+
+    return redirect;
   }
 
   private showTemporaryError(message: string): void {

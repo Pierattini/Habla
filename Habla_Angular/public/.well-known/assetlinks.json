@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.conecta.mobileapp",
+      "sha256_cert_fingerprints": [
+        "19:D8:5D:92:3C:FA:6E:F2:2A:6B:DA:0B:33:5B:1A:61:42:96:C0:0F:D4:04:58:9C:D9:49:59:FA:A5:46:1A:CA"
+      ]
+    }
+  }
+]

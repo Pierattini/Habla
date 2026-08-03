@@ -59,6 +59,7 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
   isBooking = false;
   statusMessage = '';
   readonly profileUnavailable = signal(false);
+  showRegistrationPrompt = false;
   private viewRecorded = false;
 
   constructor(
@@ -72,11 +73,7 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.slug = this.route.snapshot.paramMap.get('slug') || '';
-    const browserOrigin =
-      typeof window !== 'undefined' && /^https?:\/\//i.test(window.location.origin)
-        ? window.location.origin
-        : '';
-    const publicAppUrl = (browserOrigin || environment.publicAppUrl).replace(/\/$/, '');
+    const publicAppUrl = environment.publicAppUrl.replace(/\/$/, '');
     this.publicUrl = `${publicAppUrl}/profesional/${encodeURIComponent(this.slug)}`;
     console.log('[PublicProfile] URL generada desde perfil público', {
       origin: publicAppUrl,
@@ -118,6 +115,7 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
         }
 
         this.professional = professional;
+        this.showRegistrationPrompt = !localStorage.getItem('token');
         this.selectedAttentionMode =
           professional.attentionMode === 'PRESENTIAL' ? 'PRESENTIAL' : 'ONLINE';
         this.updateSeo();
@@ -248,7 +246,15 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
   }
 
   goToLogin(): void {
-    this.router.navigate(['/login']);
+    this.navigateToAuthentication('login');
+  }
+
+  goToRegistration(): void {
+    this.navigateToAuthentication('register');
+  }
+
+  dismissRegistrationPrompt(): void {
+    this.showRegistrationPrompt = false;
   }
 
   goToHome(): void {
@@ -265,6 +271,15 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
 
     this.router.navigate(['/login'], {
       queryParams: { redirect: '/tabs/support' },
+    });
+  }
+
+  private navigateToAuthentication(mode: 'login' | 'register'): void {
+    this.router.navigate(['/login'], {
+      queryParams: {
+        mode,
+        redirect: `/profesional/${this.slug}`,
+      },
     });
   }
 
