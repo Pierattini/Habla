@@ -143,7 +143,13 @@
 
     <div
       class="action-row action-row-extra"
-      *ngIf="!$any(this).isTerminalAppointment(appt) && ($any(this).canShowVideoCallButton(appt) || $any(this).canAddToCalendar(appt) || $any(this).canReviewAppointment(appt) || $any(this).canCompleteAppointment(appt))"
+      *ngIf="
+        (!$any(this).isTerminalAppointment(appt) &&
+          ($any(this).canShowVideoCallButton(appt) ||
+            $any(this).canAddToCalendar(appt) ||
+            $any(this).canCompleteAppointment(appt))) ||
+        $any(this).canReviewAppointment(appt)
+      "
     >
 
       <ion-button
