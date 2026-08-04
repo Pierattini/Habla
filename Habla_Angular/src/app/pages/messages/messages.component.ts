@@ -59,7 +59,8 @@ export class MessagesComponent {
               { replaceUrl: true }
             );
           } else {
-            this.conversationNotFound = true;
+            this.openProfessionalConversation(professionalId);
+            return;
           }
         } else {
           this.conversationNotFound = false;
@@ -77,6 +78,25 @@ export class MessagesComponent {
         this.loaded = true;
         this.cdr.detectChanges();
       }
+    });
+  }
+
+  private openProfessionalConversation(professionalId: string): void {
+    this.messagesService.getOrCreateProfessionalConversation(professionalId).subscribe({
+      next: ({ conversationId }) => {
+        this.loading = false;
+        this.loaded = true;
+        this.router.navigate(['/tabs/messages', conversationId], {
+          replaceUrl: true,
+        });
+      },
+      error: (err) => {
+        console.error('[Messages] No se pudo abrir la conversación', err);
+        this.conversationNotFound = true;
+        this.loading = false;
+        this.loaded = true;
+        this.cdr.detectChanges();
+      },
     });
   }
 

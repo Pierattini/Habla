@@ -18,6 +18,13 @@ export class MessagesService {
     );
   }
 
+  getOrCreateProfessionalConversation(professionalId: string): Observable<{ conversationId: string }> {
+    return this.http.post<{ conversationId: string }>(
+      `${this.apiUrl}/conversations/professional/${encodeURIComponent(professionalId)}`,
+      {}
+    );
+  }
+
   getOrCreateSupportConversation(): Observable<any> {
     return this.http.post(
       `${this.apiUrl}/support/conversation`,
