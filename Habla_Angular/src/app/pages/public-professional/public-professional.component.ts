@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { Meta, Title } from '@angular/platform-browser';
+import { timeout } from 'rxjs';
 import {
   IonAvatar,
   IonButton,
@@ -69,6 +70,7 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
     private publicProfessionalService: PublicProfessionalService,
     private title: Title,
     private meta: Meta,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -107,7 +109,10 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.profileUnavailable.set(false);
 
-    this.publicProfessionalService.getBySlug(this.slug).subscribe({
+    this.publicProfessionalService
+      .getBySlug(this.slug)
+      .pipe(timeout(15000))
+      .subscribe({
       next: (professional) => {
         if (!professional?.id) {
           this.showProfileUnavailable();
@@ -115,18 +120,20 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
         }
 
         this.professional = professional;
-        this.showRegistrationPrompt = !localStorage.getItem('token');
+        this.showRegistrationPrompt = false;
         this.selectedAttentionMode =
           professional.attentionMode === 'PRESENTIAL' ? 'PRESENTIAL' : 'ONLINE';
+        this.loading = false;
+        this.cdr.markForCheck();
         this.updateSeo();
         this.recordEvent('VIEW');
-        this.loading = false;
         this.loadAvailability();
       },
       error: () => {
         this.showProfileUnavailable();
+        this.cdr.markForCheck();
       },
-    });
+      });
   }
 
   onDateChange(event: any): void {
@@ -142,6 +149,7 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
     if (!this.professional?.id || !this.selectedDate) {
       this.loading = false;
       this.loadingHours = false;
+      this.cdr.markForCheck();
       return;
     }
 
@@ -156,11 +164,13 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
           this.availableHours = Array.isArray(hours) ? hours : [];
           this.loading = false;
           this.loadingHours = false;
+          this.cdr.markForCheck();
         },
         error: () => {
           this.availableHours = [];
           this.loading = false;
           this.loadingHours = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -215,9 +225,8 @@ export class PublicProfessionalComponent implements OnInit, OnDestroy {
     const token = localStorage.getItem('token');
 
     if (!token) {
-      this.router.navigate(['/login'], {
-        queryParams: { redirect: `/profesional/${this.slug}` },
-      });
+      this.showRegistrationPrompt = true;
+      this.cdr.markForCheck();
       return;
     }
 

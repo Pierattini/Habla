@@ -499,7 +499,9 @@
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
                 <circle cx="12" cy="12" r="2.75" />
-                <path *ngIf="$any(this).showLoginPassword" d="m4 4 16 16" />
+                @if ($any(this).showLoginPassword) {
+                  <path d="m4 4 16 16" />
+                }
               </svg>
             </button>
           </div>
