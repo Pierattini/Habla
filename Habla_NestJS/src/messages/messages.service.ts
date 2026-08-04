@@ -345,20 +345,6 @@ export class MessagesService {
       );
     }
 
-    const appointmentExists = await this.prisma.appointment.findFirst({
-      where: {
-        customerId,
-        professionalId,
-        status: {
-          not: AppointmentStatus.CANCELLED,
-        },
-      },
-    });
-
-    if (!appointmentExists) {
-      throw new ForbiddenException('No appointment exists between these users');
-    }
-
     if (sender.role === Role.PROFESSIONAL) {
       await this.ensureProfessionalCanReplyToRequest(senderId, customerId);
     }
@@ -490,6 +476,49 @@ export class MessagesService {
         isSupport,
       };
     });
+  }
+
+  async getOrCreateProfessionalConversation(
+    customerId: string,
+    professionalId: string,
+  ) {
+    if (customerId === professionalId) {
+      throw new ForbiddenException('No puedes enviarte mensajes a ti mismo.');
+    }
+
+    const [customer, professional] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: customerId },
+        select: { role: true, isActive: true },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: professionalId },
+        select: { role: true, isActive: true },
+      }),
+    ]);
+
+    if (!customer || customer.role !== Role.CUSTOMER || !customer.isActive) {
+      throw new ForbiddenException('Solo pacientes activos pueden iniciar conversaciones.');
+    }
+
+    if (
+      !professional ||
+      professional.role !== Role.PROFESSIONAL ||
+      !professional.isActive
+    ) {
+      throw new NotFoundException('Profesional no disponible.');
+    }
+
+    const conversation = await this.prisma.conversation.upsert({
+      where: {
+        customerId_professionalId: { customerId, professionalId },
+      },
+      update: {},
+      create: { customerId, professionalId },
+      select: { id: true },
+    });
+
+    return { conversationId: conversation.id };
   }
   async getConversationMessages(conversationId: string, userId: string) {
     const conversation = await this.prisma.conversation.findUnique({

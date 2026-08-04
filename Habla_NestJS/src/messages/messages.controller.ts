@@ -88,6 +88,18 @@ export class MessagesController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('conversations/professional/:professionalId')
+  getOrCreateProfessionalConversation(
+    @Param('professionalId') professionalId: string,
+    @Request() req: { user: { id: string } },
+  ) {
+    return this.messagesService.getOrCreateProfessionalConversation(
+      req.user.id,
+      professionalId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('conversations/:id')
   getConversationMessages(
     @Param('id') id: string,
