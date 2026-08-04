@@ -481,13 +481,28 @@
 
         <label class="field">
           <span>Contraseña</span>
-          <input
-            type="password"
-            autocomplete="current-password"
-            placeholder="Contraseña"
-            [ngModel]="$any(this).password"
-            (ngModelChange)="$any(this).password = $event"
-          />
+          <div class="password-control login-password-control">
+            <input
+              [type]="$any(this).showLoginPassword ? 'text' : 'password'"
+              autocomplete="current-password"
+              placeholder="Contraseña"
+              [ngModel]="$any(this).password"
+              (ngModelChange)="$any(this).password = $event"
+            />
+            <button
+              type="button"
+              class="password-visibility-button"
+              [attr.aria-label]="$any(this).showLoginPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              [attr.aria-pressed]="$any(this).showLoginPassword"
+              (click)="$any(this).showLoginPassword = !$any(this).showLoginPassword"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                <circle cx="12" cy="12" r="2.75" />
+                <path *ngIf="$any(this).showLoginPassword" d="m4 4 16 16" />
+              </svg>
+            </button>
+          </div>
         </label>
 
         @if ($any(this).errorMessage) {

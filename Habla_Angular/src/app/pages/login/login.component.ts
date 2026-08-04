@@ -32,6 +32,7 @@ export class LoginComponent implements OnInit {
 
   public email = '';
   public password = '';
+  public showLoginPassword = false;
   public resetEmail = '';
   public resetToken = '';
   public resetPasswordValue = '';
