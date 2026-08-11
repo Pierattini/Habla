@@ -68,6 +68,13 @@ export class UsersController {
     });
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROFESSIONAL)
+  @Get('customers/search')
+  searchActiveCustomers(@Query('q') query?: string) {
+    return this.usersService.searchActiveCustomers(query);
+  }
+
   @UseGuards(OptionalJwtAuthGuard)
   @Get('search-suggestions')
   getSearchSuggestions(

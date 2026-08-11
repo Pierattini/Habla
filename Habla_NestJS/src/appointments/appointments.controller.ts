@@ -16,6 +16,7 @@ import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { Role } from '@prisma/client';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { CreateManualAppointmentDto } from './dto/create-manual-appointment.dto';
 import { Request as ExpressRequest } from 'express';
 import { Res } from '@nestjs/common';
 import type { Response } from 'express';
@@ -41,6 +42,7 @@ export class AppointmentsController {
       body.professionalId,
       new Date(body.date),
       {
+        serviceId: body.serviceId,
         documentRequested: body.documentRequested ?? false,
         documentCurrency: body.documentCurrency,
         documentMode: body.documentMode,
@@ -109,8 +111,13 @@ export class AppointmentsController {
   getAvailableSlots(
     @Query('professionalId') professionalId: string,
     @Query('date') date: string,
+    @Query('serviceId') serviceId?: string,
   ) {
-    return this.appointmentsService.getAvailableSlots(professionalId, date);
+    return this.appointmentsService.getAvailableSlots(
+      professionalId,
+      date,
+      serviceId,
+    );
   }
   @UseGuards(JwtAuthGuard)
   @Patch(':id/pay')
@@ -128,6 +135,37 @@ export class AppointmentsController {
   @Get(':id/confirm-payment-link')
   confirmFromEmailWithoutToken() {
     throw new BadRequestException('Enlace no válido o expirado.');
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROFESSIONAL)
+  @Post('manual')
+  createManual(
+    @Body() body: CreateManualAppointmentDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.appointmentsService.createManual(
+      req.user.id,
+      body.customerId,
+      new Date(body.startAt),
+      body.serviceId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROFESSIONAL)
+  @Get('manual/available-slots')
+  getOwnAvailableSlots(
+    @Query('date') date: string,
+    @Query('serviceId') serviceId: string | undefined,
+    @Request() req: AuthRequest,
+  ) {
+    return this.appointmentsService.getAvailableSlots(
+      req.user.id,
+      date,
+      serviceId,
+      'PROFESSIONAL',
+    );
   }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })

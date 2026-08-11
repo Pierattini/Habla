@@ -56,7 +56,9 @@ export class AuthService {
 
   // ðŸ” LOGIN
   async login(email: string, password: string, recaptchaToken?: string) {
+    const startedAt = performance.now();
     await this.recaptchaService.verify(recaptchaToken, 'login');
+    const recaptchaCompletedAt = performance.now();
     const normalizedEmail = this.normalizeEmail(email);
     const loginIdentifier = createHash('sha256')
       .update(normalizedEmail)
@@ -66,6 +68,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
+    const userLookupCompletedAt = performance.now();
 
     if (!user) {
       this.logger.warn(
@@ -98,6 +101,7 @@ export class AuthService {
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
+    const passwordComparedAt = performance.now();
     this.logger.log(
       `LOGIN_PASSWORD_COMPARE id=${loginIdentifier} result=${isMatch}`,
     );
@@ -111,9 +115,25 @@ export class AuthService {
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     });
+    const lastLoginUpdatedAt = performance.now();
 
     this.logger.log(`LOGIN_SUCCESS id=${loginIdentifier} role=${user.role}`);
-    return this.createLoginResponse(user);
+    const response = this.createLoginResponse(user);
+    const responseCreatedAt = performance.now();
+    this.logger.log(
+      `LOGIN_TIMING id=${loginIdentifier} recaptchaMs=${Math.round(
+        recaptchaCompletedAt - startedAt,
+      )} prismaLookupMs=${Math.round(
+        userLookupCompletedAt - recaptchaCompletedAt,
+      )} bcryptMs=${Math.round(
+        passwordComparedAt - userLookupCompletedAt,
+      )} lastLoginUpdateMs=${Math.round(
+        lastLoginUpdatedAt - passwordComparedAt,
+      )} jwtMs=${Math.round(
+        responseCreatedAt - lastLoginUpdatedAt,
+      )} totalMs=${Math.round(responseCreatedAt - startedAt)}`,
+    );
+    return response;
   }
 
   async googleLogin(data: GoogleLoginInput) {

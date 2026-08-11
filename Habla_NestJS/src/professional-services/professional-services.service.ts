@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  Prisma,
   ProfessionalServiceMode,
   ProfessionalServicePriceType,
   ProfessionalServiceStatus,
@@ -13,6 +14,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateProfessionalServiceDto } from './dto/create-professional-service.dto';
 import { ReorderProfessionalServicesDto } from './dto/reorder-professional-services.dto';
 import { UpdateProfessionalServiceDto } from './dto/update-professional-service.dto';
+
+export const MAX_PROFESSIONAL_SERVICES = 10;
 
 @Injectable()
 export class ProfessionalServicesService {
@@ -46,33 +49,46 @@ export class ProfessionalServicesService {
       dto.priceType,
       dto.priceAmount,
     );
-    const highestOrder = await this.prisma.professionalService.aggregate({
-      where: {
+
+    return this.runSerializable(async (tx) => {
+      const where = {
         professionalId: professional.id,
         deletedAt: null,
-      },
-      _max: { sortOrder: true },
-    });
+      };
+      const [serviceCount, highestOrder] = await Promise.all([
+        tx.professionalService.count({ where }),
+        tx.professionalService.aggregate({
+          where,
+          _max: { sortOrder: true },
+        }),
+      ]);
 
-    return this.prisma.professionalService.create({
-      data: {
-        professionalId: professional.id,
-        name: dto.name.trim(),
-        description: this.cleanOptionalText(dto.description),
-        durationMinutes: dto.durationMinutes,
-        priceType: dto.priceType,
-        priceAmount,
-        currency: (
-          dto.currency || this.defaultCurrency(professional.country)
-        ).toUpperCase(),
-        status: dto.status ?? ProfessionalServiceStatus.ACTIVE,
-        sortOrder: (highestOrder._max.sortOrder ?? -1) + 1,
-        icon: this.cleanOptionalText(dto.icon),
-        imageUrl: this.cleanOptionalText(dto.imageUrl),
-        color: this.cleanOptionalText(dto.color),
-        showInProfile: dto.showInProfile ?? true,
-        allowBooking: dto.allowBooking ?? true,
-      },
+      if (serviceCount >= MAX_PROFESSIONAL_SERVICES) {
+        throw new BadRequestException(
+          `Puedes registrar un máximo de ${MAX_PROFESSIONAL_SERVICES} servicios.`,
+        );
+      }
+
+      return tx.professionalService.create({
+        data: {
+          professionalId: professional.id,
+          name: dto.name.trim(),
+          description: this.cleanOptionalText(dto.description),
+          durationMinutes: dto.durationMinutes,
+          priceType: dto.priceType,
+          priceAmount,
+          currency: (
+            dto.currency || this.defaultCurrency(professional.country)
+          ).toUpperCase(),
+          status: dto.status ?? ProfessionalServiceStatus.ACTIVE,
+          sortOrder: (highestOrder._max.sortOrder ?? -1) + 1,
+          icon: this.cleanOptionalText(dto.icon),
+          imageUrl: this.cleanOptionalText(dto.imageUrl),
+          color: this.cleanOptionalText(dto.color),
+          showInProfile: dto.showInProfile ?? true,
+          allowBooking: dto.allowBooking ?? true,
+        },
+      });
     });
   }
 
@@ -375,5 +391,28 @@ export class ProfessionalServicesService {
   private cleanOptionalText(value?: string | null): string | null {
     const cleaned = String(value ?? '').trim();
     return cleaned || null;
+  }
+
+  private async runSerializable<T>(
+    operation: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    const maxAttempts = 3;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await this.prisma.$transaction(operation, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        });
+      } catch (error) {
+        const retryable =
+          typeof error === 'object' &&
+          error !== null &&
+          'code' in error &&
+          error.code === 'P2034';
+        if (!retryable || attempt === maxAttempts) throw error;
+      }
+    }
+
+    throw new Error('No fue posible completar la operación de catálogo.');
   }
 }

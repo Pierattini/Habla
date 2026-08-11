@@ -23,6 +23,21 @@ model Availability {
   @@index([professionalId, day])
 }
 
+model ProfessionalTimeBlock {
+  id             String                    @id @default(uuid())
+  professionalId String
+  startAt        DateTime
+  endAt          DateTime
+  type           ProfessionalTimeBlockType
+  reason         String?
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+  professional   User                      @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([professionalId, startAt])
+  @@index([professionalId, endAt])
+}
+
 model User {
   id                     String    @id @default(uuid())
   email                  String    @unique
@@ -56,13 +71,14 @@ model User {
   preferredCity             String?
   preferredRegion           String?
 
-  customerAppointments            Appointment[]        @relation("CustomerAppointments")
-  professionalAppointments        Appointment[]        @relation("ProfessionalAppointments")
-  customerReviews                 Review[]             @relation("CustomerReviews")
-  professionalReviews             Review[]             @relation("ProfessionalReviews")
-  customerAppointmentRequests     AppointmentRequest[] @relation("CustomerAppointmentRequests")
-  professionalAppointmentRequests AppointmentRequest[] @relation("ProfessionalAppointmentRequests")
+  customerAppointments            Appointment[]           @relation("CustomerAppointments")
+  professionalAppointments        Appointment[]           @relation("ProfessionalAppointments")
+  customerReviews                 Review[]                @relation("CustomerReviews")
+  professionalReviews             Review[]                @relation("ProfessionalReviews")
+  customerAppointmentRequests     AppointmentRequest[]    @relation("CustomerAppointmentRequests")
+  professionalAppointmentRequests AppointmentRequest[]    @relation("ProfessionalAppointmentRequests")
   availabilities                  Availability[]
+  professionalTimeBlocks          ProfessionalTimeBlock[]
   professional                    Professional?
   deviceTokens                    UserDeviceToken[]
 
@@ -78,20 +94,27 @@ model User {
 }
 
 model Appointment {
-  id                 String            @id @default(uuid())
-  date               DateTime
-  status             AppointmentStatus @default(PENDING)
-  customerId         String
-  professionalId     String
-  createdAt          DateTime          @default(now())
-  rescheduleCount    Int               @default(0)
-  paidAt             DateTime?
-  bookedEmailSentAt  DateTime?
-  sameDayEmailSentAt DateTime?
-  sameDayPushSentAt  DateTime?
-  reminder24hSentAt  DateTime?
-  reminder1hSentAt   DateTime?
-  reminder15mSentAt  DateTime?
+  id                             String                        @id @default(uuid())
+  date                           DateTime
+  status                         AppointmentStatus             @default(PENDING)
+  source                         AppointmentSource             @default(CUSTOMER)
+  customerId                     String
+  professionalId                 String
+  serviceId                      String?
+  serviceNameSnapshot            String?
+  servicePriceTypeSnapshot       ProfessionalServicePriceType?
+  servicePriceAmountSnapshot     Int?
+  serviceCurrencySnapshot        String?
+  serviceDurationMinutesSnapshot Int?
+  createdAt                      DateTime                      @default(now())
+  rescheduleCount                Int                           @default(0)
+  paidAt                         DateTime?
+  bookedEmailSentAt              DateTime?
+  sameDayEmailSentAt             DateTime?
+  sameDayPushSentAt              DateTime?
+  reminder24hSentAt              DateTime?
+  reminder1hSentAt               DateTime?
+  reminder15mSentAt              DateTime?
 
   // 🔥 PENALIZACIÓN
   penalty         Float?
@@ -138,13 +161,16 @@ model Appointment {
   documentAmount      Int?
   documentCurrency    String         @default("CLP")
 
-  customer     User @relation("CustomerAppointments", fields: [customerId], references: [id])
-  professional User @relation("ProfessionalAppointments", fields: [professionalId], references: [id])
+  customer     User                 @relation("CustomerAppointments", fields: [customerId], references: [id])
+  professional User                 @relation("ProfessionalAppointments", fields: [professionalId], references: [id])
+  service      ProfessionalService? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
 
   conversation   Conversation? @relation(fields: [conversationId], references: [id])
   conversationId String?
   taxDocument    TaxDocument?
   review         Review?
+
+  @@index([serviceId])
 }
 
 model Review {
@@ -283,6 +309,7 @@ model ProfessionalService {
   updatedAt       DateTime                     @updatedAt
   deletedAt       DateTime?
   professional    Professional                 @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  appointments    Appointment[]
 
   @@index([professionalId])
   @@index([professionalId, status])
@@ -687,6 +714,12 @@ enum ScheduleMode {
   SPECIFIC
 }
 
+enum ProfessionalTimeBlockType {
+  TIME_RANGE
+  FULL_DAY
+  DATE_RANGE
+}
+
 enum AppointmentStatus {
   PENDING
   PENDING_PAYMENT
@@ -696,6 +729,11 @@ enum AppointmentStatus {
   CANCELLED
   RESCHEDULED
   REFUNDED
+}
+
+enum AppointmentSource {
+  CUSTOMER
+  PROFESSIONAL_MANUAL
 }
 
 enum AttentionModality {

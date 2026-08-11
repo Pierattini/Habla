@@ -8,12 +8,17 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   AttentionModality,
+  AppointmentSource,
   AppointmentStatus,
   DocumentMode,
   DocumentStatus,
+  Prisma,
   ScheduleMode,
   VideoProvider,
   WeekDay,
+  Role,
+  ProfessionalServiceMode,
+  ProfessionalServiceStatus,
 } from '@prisma/client';
 import * as nodemailer from 'nodemailer';
 import {
@@ -33,6 +38,10 @@ import { MicrosoftTeamsService } from '../meetings/microsoft-teams.service';
 import { ZoomService } from '../meetings/zoom.service';
 import { ProfessionalAccessService } from '../appointment-requests/professional-access.service';
 import { TaxDocumentJobsService } from '../tax-documents/tax-document-jobs.service';
+import {
+  OCCUPYING_APPOINTMENT_STATUSES,
+  ScheduleConflictsService,
+} from '../scheduling/schedule-conflicts.service';
 import {
   buildConectaEmail,
   conectaInfoCard,
@@ -63,10 +72,9 @@ type TimeRange = {
   endMinute: number;
 };
 
-const RESERVED_APPOINTMENT_STATUSES = [
-  AppointmentStatus.CONFIRMED,
-  AppointmentStatus.RESCHEDULED,
-];
+type AppointmentDatabaseClient = PrismaService | Prisma.TransactionClient;
+
+const RESERVED_APPOINTMENT_STATUSES = [...OCCUPYING_APPOINTMENT_STATUSES];
 
 const CONECTA_EMAIL = 'app.info.conect@gmail.com';
 const CONECTA_EMAIL_FROM = `Conecta <${CONECTA_EMAIL}>`;
@@ -83,6 +91,7 @@ export class AppointmentsService {
     private microsoftTeamsService: MicrosoftTeamsService,
     private professionalAccess: ProfessionalAccessService,
     private taxDocumentJobsService: TaxDocumentJobsService,
+    private scheduleConflicts: ScheduleConflictsService,
   ) {}
 
   private getActionTokenSecret(): string {
@@ -224,6 +233,7 @@ export class AppointmentsService {
     professionalId: string,
     date: Date,
     options: {
+      serviceId?: string;
       documentRequested?: boolean;
       documentCurrency?: string;
       documentMode?: DocumentMode;
@@ -289,11 +299,12 @@ export class AppointmentsService {
       );
     }
 
-    const appointmentDurationInMinutes =
-      professional.duration ?? professional.user.sessionDuration ?? 60;
-    const endDate = new Date(
-      date.getTime() + appointmentDurationInMinutes * 60000,
+    const initialSelection = await this.resolveCustomerBookingSelection(
+      this.prisma,
+      professionalId,
+      options.serviceId,
     );
+    const appointmentDurationInMinutes = initialSelection.durationMinutes;
     this.assertDateWithinBookingWindow(date);
     // 🔎 Verificar disponibilidad del profesional
 
@@ -333,72 +344,7 @@ export class AppointmentsService {
         'Professional is not available at this time',
       );
     }
-    const overlappingAppointment = await this.prisma.appointment.findFirst({
-      where: {
-        professionalId, // ← user id
-        status: {
-          in: RESERVED_APPOINTMENT_STATUSES,
-        },
-        AND: [
-          {
-            date: {
-              lt: endDate,
-            },
-          },
-          {
-            date: {
-              gt: new Date(
-                date.getTime() - appointmentDurationInMinutes * 60000,
-              ),
-            },
-          },
-        ],
-      },
-    });
-    if (overlappingAppointment) {
-      throw new ForbiddenException(
-        'This time slot overlaps with another appointment',
-      );
-    }
-    const exists = await this.prisma.appointment.findFirst({
-      where: {
-        professionalId, // ← user id
-        date,
-        status: {
-          in: RESERVED_APPOINTMENT_STATUSES,
-        },
-      },
-    });
-
-    if (exists) {
-      throw new ForbiddenException('Horario ya reservado');
-    }
-
-    let finalPrice = professional.price || 0;
-
-    // 🔥 BUSCAR CRÉDITO DISPONIBLE
-    const creditAppointment = await this.prisma.appointment.findFirst({
-      where: {
-        customerId,
-        penaltyResolved: true,
-        penaltyOption: 'CREDIT',
-      },
-    });
-
-    if (creditAppointment) {
-      const discount = creditAppointment.penalty || 0;
-
-      finalPrice = finalPrice - discount;
-
-      // 🔥 marcar crédito como usado
-      await this.prisma.appointment.update({
-        where: { id: creditAppointment.id },
-        data: {
-          penaltyResolved: false,
-          penaltyOption: null,
-        },
-      });
-    }
+    let finalPrice = initialSelection.priceAmount;
 
     // 👇 crear cita con precio final
     const documentRequested = options.documentRequested === true;
@@ -423,11 +369,69 @@ export class AppointmentsService {
         },
       });
     }
-    const appointment = await this.prisma.appointment.create({
-      data: {
+    const appointment = await this.scheduleConflicts.runExclusive(
+      professionalId,
+      async (tx) => {
+        const selection = await this.resolveCustomerBookingSelection(
+          tx,
+          professionalId,
+          options.serviceId,
+        );
+        const lockedEndDate = new Date(
+          date.getTime() + selection.durationMinutes * 60_000,
+        );
+        const stillMatchesSchedule = await this.isDateAvailableForProfessional(
+          professionalId,
+          date,
+          selection.durationMinutes,
+          tx,
+        );
+
+        if (!stillMatchesSchedule) {
+          throw new ForbiddenException(
+            'Professional is not available at this time',
+          );
+        }
+
+        await this.scheduleConflicts.assertRangeAvailable(
+          tx,
+          { professionalId, startAt: date, endAt: lockedEndDate },
+          professional.duration ?? professional.user.sessionDuration ?? 60,
+        );
+
+        finalPrice = selection.priceAmount;
+
+        const creditAppointment = await tx.appointment.findFirst({
+          where: {
+            customerId,
+            penaltyResolved: true,
+            penaltyOption: 'CREDIT',
+          },
+        });
+
+        if (creditAppointment) {
+          const discount = creditAppointment.penalty || 0;
+          finalPrice -= discount;
+          await tx.appointment.update({
+            where: { id: creditAppointment.id },
+            data: {
+              penaltyResolved: false,
+              penaltyOption: null,
+            },
+          });
+        }
+
+        return tx.appointment.create({
+          data: {
         date,
         customerId,
         professionalId,
+        serviceId: selection.serviceId,
+        serviceNameSnapshot: selection.name,
+        servicePriceTypeSnapshot: selection.priceType,
+        servicePriceAmountSnapshot: selection.snapshotPriceAmount,
+        serviceCurrencySnapshot: selection.currency,
+        serviceDurationMinutesSnapshot: selection.snapshotDurationMinutes,
         penalty: finalPrice, // opcional (puedes usar otro campo si luego haces pricing formal)
         documentRequested,
         attentionMode,
@@ -468,9 +472,11 @@ export class AppointmentsService {
           : DocumentStatus.DOCUMENT_NOT_REQUIRED,
         documentRequestedAt: documentRequested ? new Date() : null,
         documentAmount: finalPrice,
-        documentCurrency,
+            documentCurrency,
+          },
+        });
       },
-    });
+    );
 
     if (documentRequested) {
       await this.prisma.taxDocument.upsert({
@@ -533,6 +539,135 @@ export class AppointmentsService {
       data: { bookedEmailSentAt: new Date() },
     });
 
+    return appointment;
+  }
+
+  async createManual(
+    professionalId: string,
+    customerId: string,
+    date: Date,
+    serviceId?: string,
+  ) {
+    if (Number.isNaN(date.getTime()) || date <= new Date()) {
+      throw new ForbiddenException('No puedes agendar una cita en el pasado.');
+    }
+
+    this.assertDateWithinBookingWindow(date);
+    const [professional, customer] = await Promise.all([
+      this.prisma.professional.findUnique({
+        where: { userId: professionalId },
+        include: { user: true },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: customerId },
+        select: { id: true, role: true, isActive: true, deletedAt: true },
+      }),
+    ]);
+
+    if (!professional || professional.user.role !== Role.PROFESSIONAL) {
+      throw new ForbiddenException('Solo un profesional puede crear esta cita.');
+    }
+    if (
+      !customer ||
+      customer.role !== Role.CUSTOMER ||
+      !customer.isActive ||
+      customer.deletedAt
+    ) {
+      throw new ForbiddenException('El paciente seleccionado no está disponible.');
+    }
+
+    const initialSelection = await this.resolveProfessionalManualSelection(
+      this.prisma,
+      professionalId,
+      serviceId,
+    );
+    const duration = initialSelection.durationMinutes;
+    const matchesSchedule = await this.isDateAvailableForProfessional(
+      professionalId,
+      date,
+      duration,
+    );
+    if (!matchesSchedule) {
+      throw new ForbiddenException('Profesional no disponible en ese horario.');
+    }
+
+    const appointment = await this.scheduleConflicts.runExclusive(
+      professionalId,
+      async (tx) => {
+        const selection = await this.resolveProfessionalManualSelection(
+          tx,
+          professionalId,
+          serviceId,
+        );
+        const [lockedCustomer, stillMatchesSchedule] = await Promise.all([
+          tx.user.findUnique({
+            where: { id: customerId },
+            select: { role: true, isActive: true, deletedAt: true },
+          }),
+          this.isDateAvailableForProfessional(
+            professionalId,
+            date,
+            selection.durationMinutes,
+            tx,
+          ),
+        ]);
+
+        if (
+          !lockedCustomer ||
+          lockedCustomer.role !== Role.CUSTOMER ||
+          !lockedCustomer.isActive ||
+          lockedCustomer.deletedAt
+        ) {
+          throw new ForbiddenException('El paciente seleccionado no está disponible.');
+        }
+        if (!stillMatchesSchedule) {
+          throw new ForbiddenException('Profesional no disponible en ese horario.');
+        }
+
+        await this.scheduleConflicts.assertRangeAvailable(
+          tx,
+          {
+            professionalId,
+            startAt: date,
+            endAt: new Date(
+              date.getTime() + selection.durationMinutes * 60_000,
+            ),
+          },
+          professional.duration ?? professional.user.sessionDuration ?? 60,
+        );
+
+        return tx.appointment.create({
+          data: {
+            date,
+            customerId,
+            professionalId,
+            serviceId: selection.serviceId,
+            serviceNameSnapshot: selection.name,
+            servicePriceTypeSnapshot: selection.priceType,
+            servicePriceAmountSnapshot: selection.snapshotPriceAmount,
+            serviceCurrencySnapshot: selection.currency,
+            serviceDurationMinutesSnapshot: selection.snapshotDurationMinutes,
+            status: AppointmentStatus.CONFIRMED,
+            source: AppointmentSource.PROFESSIONAL_MANUAL,
+            penalty: 0,
+            creditUsed: null,
+            remainingToPay: 0,
+            documentRequested: false,
+            documentStatus: DocumentStatus.DOCUMENT_NOT_REQUIRED,
+            attentionMode:
+              professional.attentionMode === AttentionModality.PRESENTIAL
+                ? AttentionModality.PRESENTIAL
+                : AttentionModality.ONLINE,
+          },
+        });
+      },
+    );
+
+    await this.sendAppointmentNotificationById(
+      appointment.id,
+      'APPOINTMENT_MANUAL_CREATED',
+      ['EMAIL', 'PUSH'],
+    );
     return appointment;
   }
 
@@ -674,10 +809,12 @@ export class AppointmentsService {
       throw new BadRequestException('Solo se pueden finalizar citas confirmadas');
     }
 
-    const duration =
+    const duration = this.scheduleConflicts.resolveAppointmentDuration(
+      appointment.serviceDurationMinutesSnapshot,
       appointment.professional.professional?.duration ??
-      appointment.professional.sessionDuration ??
-      60;
+        appointment.professional.sessionDuration ??
+        60,
+    );
     const endsAt = new Date(appointment.date.getTime() + duration * 60000);
 
     if (endsAt > new Date()) {
@@ -722,6 +859,19 @@ export class AppointmentsService {
       appointment.professionalId !== userId
     ) {
       throw new ForbiddenException('No puedes cancelar esta cita');
+    }
+
+    if (appointment.source === AppointmentSource.PROFESSIONAL_MANUAL) {
+      const updated = await this.prisma.appointment.update({
+        where: { id },
+        data: { status: AppointmentStatus.CANCELLED, penalty: 0 },
+      });
+      await this.sendAppointmentNotificationById(
+        updated.id,
+        'APPOINTMENT_CANCELLATION',
+      );
+      await this.deleteExternalMeetingIfNeeded(appointment);
+      return { ...updated, requiresPenaltyResolution: false };
     }
 
     const now = new Date();
@@ -805,7 +955,12 @@ export class AppointmentsService {
 
     return updated;
   }
-  async getAvailableSlots(professionalId: string, date: string) {
+  async getAvailableSlots(
+    professionalId: string,
+    date: string,
+    serviceId?: string,
+    bookingActor: 'CUSTOMER' | 'PROFESSIONAL' = 'CUSTOMER',
+  ) {
     const dateKey = this.normalizeBookingDateKey(date);
     const bookingDay = this.zonedDateTimeToUtc(dateKey, 12 * 60);
     this.assertDateWithinBookingWindow(bookingDay);
@@ -819,8 +974,19 @@ export class AppointmentsService {
       throw new NotFoundException('Professional not found');
     }
 
-    const duration =
-      professional.duration ?? professional.user.sessionDuration ?? 60;
+    const selection =
+      bookingActor === 'PROFESSIONAL'
+        ? await this.resolveProfessionalManualSelection(
+            this.prisma,
+            professionalId,
+            serviceId,
+          )
+        : await this.resolveCustomerBookingSelection(
+            this.prisma,
+            professionalId,
+            serviceId,
+          );
+    const duration = selection.durationMinutes;
 
     const cleanDate = bookingDay;
 
@@ -843,11 +1009,14 @@ export class AppointmentsService {
       0,
     );
 
+    const earliestRelevantAppointment = new Date(
+      startOfDay.getTime() - Math.max(duration, 480) * 60_000,
+    );
     const appointments = await this.prisma.appointment.findMany({
       where: {
         professionalId,
         date: {
-          gte: startOfDay,
+          gte: earliestRelevantAppointment,
           lt: endOfDay,
         },
         status: {
@@ -855,6 +1024,13 @@ export class AppointmentsService {
         },
       },
     });
+
+    const timeBlocks = await this.scheduleConflicts.findTimeBlocks(
+      this.prisma,
+      professionalId,
+      startOfDay,
+      endOfDay,
+    );
 
     const now = new Date();
     const slots = new Set<string>();
@@ -871,9 +1047,25 @@ export class AppointmentsService {
         if (slotDate <= now) continue;
 
         const slotEnd = new Date(slotDate.getTime() + duration * 60000);
+        const isManuallyBlocked = timeBlocks.some((timeBlock) =>
+          this.scheduleConflicts.rangesOverlap(
+            slotDate,
+            slotEnd,
+            timeBlock.startAt,
+            timeBlock.endAt,
+          ),
+        );
+
+        if (isManuallyBlocked) continue;
+
         const isBooked = appointments.some((appt) => {
+          const existingDuration =
+            this.scheduleConflicts.resolveAppointmentDuration(
+              appt.serviceDurationMinutesSnapshot,
+              duration,
+            );
           const appointmentEnd = new Date(
-            appt.date.getTime() + duration * 60000,
+            appt.date.getTime() + existingDuration * 60000,
           );
 
           return this.rangesOverlap(
@@ -892,13 +1084,184 @@ export class AppointmentsService {
 
     return [...slots].sort();
   }
+
+  private async resolveCustomerBookingSelection(
+    client: AppointmentDatabaseClient,
+    professionalId: string,
+    serviceId?: string,
+  ) {
+    const professional = await client.professional.findUnique({
+      where: { userId: professionalId },
+      select: {
+        id: true,
+        serviceMode: true,
+        price: true,
+        duration: true,
+        user: { select: { sessionDuration: true } },
+      },
+    });
+
+    if (!professional) {
+      throw new NotFoundException('Professional not found');
+    }
+
+    const legacyDuration =
+      professional.duration ?? professional.user.sessionDuration ?? 60;
+    const serviceMode =
+      professional.serviceMode ?? ProfessionalServiceMode.SINGLE_PRICE;
+
+    if (serviceMode === ProfessionalServiceMode.SINGLE_PRICE) {
+      if (serviceId) {
+        throw new BadRequestException(
+          'Este profesional utiliza modalidad de precio único.',
+        );
+      }
+
+      return {
+        serviceId: null,
+        name: null,
+        priceType: null,
+        snapshotPriceAmount: null,
+        currency: null,
+        snapshotDurationMinutes: null,
+        priceAmount: professional.price ?? 0,
+        durationMinutes: legacyDuration,
+      };
+    }
+
+    if (!serviceId) {
+      throw new BadRequestException(
+        'Debes seleccionar un servicio para reservar con este profesional.',
+      );
+    }
+
+    const service = await client.professionalService.findFirst({
+      where: {
+        id: serviceId,
+        professionalId: professional.id,
+        status: ProfessionalServiceStatus.ACTIVE,
+        showInProfile: true,
+        allowBooking: true,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        name: true,
+        priceType: true,
+        priceAmount: true,
+        currency: true,
+        durationMinutes: true,
+      },
+    });
+
+    if (!service) {
+      throw new BadRequestException(
+        'El servicio seleccionado no está disponible para reservar.',
+      );
+    }
+
+    return {
+      serviceId: service.id,
+      name: service.name,
+      priceType: service.priceType,
+      snapshotPriceAmount: service.priceAmount,
+      currency: service.currency,
+      snapshotDurationMinutes: service.durationMinutes,
+      priceAmount: service.priceAmount ?? 0,
+      durationMinutes: service.durationMinutes,
+    };
+  }
+
+  private async resolveProfessionalManualSelection(
+    client: AppointmentDatabaseClient,
+    professionalId: string,
+    serviceId?: string,
+  ) {
+    const professional = await client.professional.findUnique({
+      where: { userId: professionalId },
+      select: {
+        id: true,
+        serviceMode: true,
+        price: true,
+        duration: true,
+        user: { select: { sessionDuration: true } },
+      },
+    });
+
+    if (!professional) {
+      throw new NotFoundException('Perfil profesional no encontrado.');
+    }
+
+    const legacyDuration =
+      professional.duration ?? professional.user.sessionDuration ?? 60;
+    if (
+      (professional.serviceMode ?? ProfessionalServiceMode.SINGLE_PRICE) ===
+      ProfessionalServiceMode.SINGLE_PRICE
+    ) {
+      if (serviceId) {
+        throw new BadRequestException(
+          'Tu perfil utiliza modalidad de precio único.',
+        );
+      }
+      return {
+        serviceId: null,
+        name: null,
+        priceType: null,
+        snapshotPriceAmount: null,
+        currency: null,
+        snapshotDurationMinutes: null,
+        durationMinutes: legacyDuration,
+      };
+    }
+
+    if (!serviceId) {
+      throw new BadRequestException(
+        'Debes seleccionar un servicio para crear la cita.',
+      );
+    }
+
+    const service = await client.professionalService.findFirst({
+      where: {
+        id: serviceId,
+        professionalId: professional.id,
+        status: ProfessionalServiceStatus.ACTIVE,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        name: true,
+        priceType: true,
+        priceAmount: true,
+        currency: true,
+        durationMinutes: true,
+      },
+    });
+
+    if (!service) {
+      throw new BadRequestException(
+        'El servicio seleccionado no está disponible.',
+      );
+    }
+
+    return {
+      serviceId: service.id,
+      name: service.name,
+      priceType: service.priceType,
+      snapshotPriceAmount: service.priceAmount,
+      currency: service.currency,
+      snapshotDurationMinutes: service.durationMinutes,
+      durationMinutes: service.durationMinutes,
+    };
+  }
+
   private async isDateAvailableForProfessional(
     professionalId: string,
     date: Date,
     duration: number,
+    client: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     const minute = this.getMinutesInBookingTimezone(date);
-    const availability = await this.prisma.availability.findMany({
+    const availability = await client.availability.findMany({
       where: {
         professionalId,
         day: this.getWeekDayInBookingTimezone(date),
@@ -1200,8 +1563,10 @@ export class AppointmentsService {
       throw new NotFoundException('Professional not found');
     }
 
-    const duration =
-      professional.duration ?? professional.user.sessionDuration ?? 60;
+    const duration = this.scheduleConflicts.resolveAppointmentDuration(
+      appointment.serviceDurationMinutesSnapshot,
+      professional.duration ?? professional.user.sessionDuration ?? 60,
+    );
 
     const startDate = newDate;
     const endDate = new Date(newDate.getTime() + duration * 60000);
@@ -1242,82 +1607,76 @@ export class AppointmentsService {
       throw new ForbiddenException('Profesional no disponible');
     }
 
-    // 🔎 EVITAR SOLAPAMIENTO
-    const overlapping = await this.prisma.appointment.findFirst({
-      where: {
-        professionalId: appointment.professionalId,
-        id: { not: id },
-        status: {
-          in: RESERVED_APPOINTMENT_STATUSES,
-        },
-        AND: [
-          { date: { lt: endDate } },
+    const updated = await this.scheduleConflicts.runExclusive(
+      appointment.professionalId,
+      async (tx) => {
+        const stillMatchesSchedule = await this.isDateAvailableForProfessional(
+          appointment.professionalId,
+          newDate,
+          duration,
+          tx,
+        );
+
+        if (!stillMatchesSchedule) {
+          throw new ForbiddenException('Profesional no disponible');
+        }
+
+        await this.scheduleConflicts.assertRangeAvailable(
+          tx,
           {
-            date: {
-              gt: new Date(startDate.getTime() - duration * 60000),
-            },
+            professionalId: appointment.professionalId,
+            startAt: startDate,
+            endAt: endDate,
+            excludeAppointmentId: id,
           },
-        ],
+          duration,
+        );
+
+        // Se conserva íntegramente la regla comercial de penalización existente.
+        const alreadyPenalized =
+          (appointment.penalty ?? 0) > 0 &&
+          appointment.status === AppointmentStatus.PENDING_PAYMENT;
+        const isConfirmedReschedule =
+          appointment.status === AppointmentStatus.CONFIRMED ||
+          appointment.status === AppointmentStatus.RESCHEDULED;
+        const isProfessionalActor = appointment.professionalId === userId;
+        const oldDate = new Date(appointment.date);
+        const diffHours =
+          (oldDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+        if (
+          !isProfessionalActor &&
+          isConfirmedReschedule &&
+          !alreadyPenalized &&
+          diffHours < 48
+        ) {
+          const price = professional.price || 0;
+          const penalty = price * 0.5;
+
+          return tx.appointment.update({
+            where: { id },
+            data: {
+              date: newDate,
+              status: AppointmentStatus.PENDING_PAYMENT,
+              penalty,
+            },
+          });
+        }
+
+        const nextStatus = isConfirmedReschedule
+          ? AppointmentStatus.RESCHEDULED
+          : appointment.status;
+
+        return tx.appointment.update({
+          where: { id },
+          data: {
+            date: newDate,
+            status: nextStatus,
+            penalty: isConfirmedReschedule ? 0 : appointment.penalty ?? 0,
+          },
+        });
       },
-    });
-
-    if (overlapping) {
-      throw new ForbiddenException('Horario ocupado');
-    }
-
-    // ⚠️ PENALIZACIÓN
-    // 🔥 SOLO aplicar penalización si NUNCA se ha reagendado antes
-    const alreadyPenalized =
-      (appointment.penalty ?? 0) > 0 &&
-      appointment.status === AppointmentStatus.PENDING_PAYMENT;
-    const isConfirmedReschedule =
-      appointment.status === AppointmentStatus.CONFIRMED ||
-      appointment.status === AppointmentStatus.RESCHEDULED;
-    const isProfessionalActor = appointment.professionalId === userId;
-    const oldDate = new Date(appointment.date);
-
-    const diffHours = (oldDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    if (
-      !isProfessionalActor &&
-      isConfirmedReschedule &&
-      !alreadyPenalized &&
-      diffHours < 48
-    ) {
-      const price = professional.price || 0;
-      const penalty = price * 0.5;
-
-      const updated = await this.prisma.appointment.update({
-        where: { id },
-        data: {
-          date: newDate,
-          status: AppointmentStatus.PENDING_PAYMENT,
-          penalty,
-        },
-      });
-
-      await this.sendAppointmentNotificationById(
-        updated.id,
-        'APPOINTMENT_RESCHEDULE',
-      );
-      await this.syncExternalMeetingRescheduleIfNeeded(updated.id);
-
-      return updated;
-    }
-
-    // 🔥 CASO >48h → GRATIS
-    const nextStatus = isConfirmedReschedule
-      ? AppointmentStatus.RESCHEDULED
-      : appointment.status;
-
-    const updated = await this.prisma.appointment.update({
-      where: { id },
-      data: {
-        date: newDate,
-        status: nextStatus,
-        penalty: isConfirmedReschedule ? 0 : appointment.penalty ?? 0,
-      },
-    });
+    );
 
     await this.sendAppointmentNotificationById(
       updated.id,

@@ -68,6 +68,15 @@ export function buildNotificationTemplate(
       appointmentDetails,
       isEnglish,
     ),
+    APPOINTMENT_MANUAL_CREATED: appointmentTemplate(
+      isEnglish
+        ? `${shared.professionalName} scheduled an appointment with you`
+        : `${shared.professionalName} ha agendado una cita contigo`,
+      isEnglish ? 'Appointment scheduled by your professional' : 'Tu profesional agendó una cita',
+      shared,
+      appointmentDetails,
+      isEnglish,
+    ),
     APPOINTMENT_CONFIRMATION: appointmentTemplate(
       isEnglish ? 'Your appointment was confirmed' : 'Tu cita fue confirmada',
       isEnglish ? 'Appointment confirmed' : 'Cita confirmada',

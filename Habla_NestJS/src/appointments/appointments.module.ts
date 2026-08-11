@@ -6,6 +6,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { MeetingsModule } from '../meetings/meetings.module';
 import { AppointmentRequestsModule } from '../appointment-requests/appointment-requests.module';
 import { TaxDocumentsModule } from '../tax-documents/tax-documents.module';
+import { SchedulingModule } from '../scheduling/scheduling.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { TaxDocumentsModule } from '../tax-documents/tax-documents.module';
     MeetingsModule,
     AppointmentRequestsModule,
     TaxDocumentsModule,
+    SchedulingModule,
   ],
   controllers: [AppointmentsController],
   providers: [AppointmentsService],

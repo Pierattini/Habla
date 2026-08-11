@@ -22,6 +22,7 @@ describe('ProfessionalServicesService', () => {
     },
     professionalService: {
       aggregate: jest.fn(),
+      count: jest.fn(),
       create: jest.fn(),
       findFirst: jest.fn(),
       findMany: jest.fn(),
@@ -45,6 +46,12 @@ describe('ProfessionalServicesService', () => {
     jest.clearAllMocks();
     service = new ProfessionalServicesService(prisma as never);
     prisma.user.findUnique.mockResolvedValue(ownProfessional);
+    prisma.professionalService.count.mockResolvedValue(0);
+    prisma.$transaction.mockImplementation((operation: unknown) =>
+      typeof operation === 'function'
+        ? (operation as (tx: typeof prisma) => Promise<unknown>)(prisma)
+        : Promise.resolve(operation),
+    );
   });
 
   it('uses SINGLE_PRICE without creating or deleting services', async () => {
@@ -111,6 +118,46 @@ describe('ProfessionalServicesService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
 
     expect(prisma.professionalService.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects creation when the professional already has ten active catalog records', async () => {
+    prisma.professionalService.count.mockResolvedValue(10);
+    prisma.professionalService.aggregate.mockResolvedValue({
+      _max: { sortOrder: 9 },
+    });
+
+    await expect(
+      service.createService('user-1', {
+        name: 'Servicio once',
+        durationMinutes: 60,
+        priceType: ProfessionalServicePriceType.CONSULT,
+      }),
+    ).rejects.toThrow('Puedes registrar un máximo de 10 servicios.');
+
+    expect(prisma.professionalService.count).toHaveBeenCalledWith({
+      where: { professionalId: 'professional-1', deletedAt: null },
+    });
+    expect(prisma.professionalService.create).not.toHaveBeenCalled();
+  });
+
+  it('retries a serializable transaction after a Prisma write conflict', async () => {
+    prisma.professionalService.aggregate.mockResolvedValue({
+      _max: { sortOrder: null },
+    });
+    prisma.professionalService.create.mockResolvedValue({ id: 'service-1' });
+    prisma.$transaction
+      .mockRejectedValueOnce({ code: 'P2034' })
+      .mockImplementationOnce((operation: (tx: typeof prisma) => Promise<unknown>) =>
+        operation(prisma),
+      );
+
+    await service.createService('user-1', {
+      name: 'Diagnóstico',
+      durationMinutes: 30,
+      priceType: ProfessionalServicePriceType.CONSULT,
+    });
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
   });
 
   it('normalizes CONSULT to a null amount', async () => {

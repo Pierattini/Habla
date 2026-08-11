@@ -4,9 +4,10 @@ import { AppointmentRequestsController } from './appointment-requests.controller
 import { AppointmentRequestsService } from './appointment-requests.service';
 import { ProfessionalAccessService } from './professional-access.service';
 import { ProfessionalsAccessController } from './professionals-access.controller';
+import { SchedulingModule } from '../scheduling/scheduling.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, SchedulingModule],
   controllers: [
     AppointmentRequestsController,
     ProfessionalsAccessController,

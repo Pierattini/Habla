@@ -15,6 +15,10 @@ export class CreateAppointmentDto {
   @IsUUID()
   professionalId: string;
 
+  @IsOptional()
+  @IsUUID()
+  serviceId?: string;
+
   @IsDateString()
   date: string;
 

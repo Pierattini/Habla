@@ -6,6 +6,7 @@ import {
 import { AppointmentStatus, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProfessionalAccessService } from './professional-access.service';
+import { ScheduleConflictsService } from '../scheduling/schedule-conflicts.service';
 
 type CreateAppointmentRequestBody = {
   professionalId: string;
@@ -19,6 +20,7 @@ export class AppointmentRequestsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly professionalAccess: ProfessionalAccessService,
+    private readonly scheduleConflicts: ScheduleConflictsService,
   ) {}
 
   async create(customerId: string, body: CreateAppointmentRequestBody) {
@@ -149,32 +151,74 @@ export class AppointmentRequestsService {
 
     if (!request) throw new NotFoundException('Appointment request not found');
 
-    let convertedAppointmentId = request.convertedAppointmentId;
-
-    if (request.requestedDate && !convertedAppointmentId) {
-      const appointment = await this.prisma.appointment.create({
+    const updateRequest = async (client: any, convertedAppointmentId?: string | null) =>
+      client.appointmentRequest.update({
+        where: { id },
         data: {
-          customerId: request.customerId,
-          professionalId: request.professionalId,
-          date: request.requestedDate,
-          status: AppointmentStatus.PENDING,
-          attentionMode: request.requestedMode || 'ONLINE',
-          conversationId: request.conversationId,
+          status: 'ACCEPTED',
+          unlockedAt: request.unlockedAt || new Date(),
+          convertedAppointmentId,
         },
+        include: this.fullInclude(),
       });
 
-      convertedAppointmentId = appointment.id;
-    }
+    let updated: any;
 
-    const updated = await (this.prisma as any).appointmentRequest.update({
-      where: { id },
-      data: {
-        status: 'ACCEPTED',
-        unlockedAt: request.unlockedAt || new Date(),
-        convertedAppointmentId,
-      },
-      include: this.fullInclude(),
-    });
+    if (request.requestedDate && !request.convertedAppointmentId) {
+      updated = await this.scheduleConflicts.runExclusive(
+        professionalId,
+        async (tx) => {
+          const lockedRequest = await (tx as any).appointmentRequest.findUnique({
+            where: { id },
+            include: this.fullInclude(),
+          });
+
+          if (!lockedRequest) {
+            throw new NotFoundException('Appointment request not found');
+          }
+
+          if (lockedRequest.convertedAppointmentId) {
+            return updateRequest(tx, lockedRequest.convertedAppointmentId);
+          }
+
+          const duration = await this.scheduleConflicts.getProfessionalDuration(
+            tx,
+            professionalId,
+          );
+          const endAt = new Date(
+            lockedRequest.requestedDate.getTime() + duration * 60_000,
+          );
+
+          await this.scheduleConflicts.assertRangeAvailable(
+            tx,
+            {
+              professionalId,
+              startAt: lockedRequest.requestedDate,
+              endAt,
+            },
+            duration,
+          );
+
+          const appointment = await tx.appointment.create({
+            data: {
+              customerId: lockedRequest.customerId,
+              professionalId: lockedRequest.professionalId,
+              date: lockedRequest.requestedDate,
+              status: AppointmentStatus.PENDING,
+              attentionMode: lockedRequest.requestedMode || 'ONLINE',
+              conversationId: lockedRequest.conversationId,
+            },
+          });
+
+          return updateRequest(tx, appointment.id);
+        },
+      );
+    } else {
+      updated = await updateRequest(
+        this.prisma as any,
+        request.convertedAppointmentId,
+      );
+    }
 
     return this.toProfessionalView(updated, true);
   }

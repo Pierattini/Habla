@@ -50,6 +50,26 @@ export class UsersService {
     });
   }
 
+  searchActiveCustomers(query?: string) {
+    const term = query?.trim();
+    if (!term || term.length < 2) return [];
+
+    return this.prisma.user.findMany({
+      where: {
+        role: Role.CUSTOMER,
+        isActive: true,
+        deletedAt: null,
+        OR: [
+          { name: { contains: term, mode: 'insensitive' } },
+          { email: { contains: term, mode: 'insensitive' } },
+        ],
+      },
+      select: { id: true, name: true, email: true },
+      orderBy: [{ name: 'asc' }, { email: 'asc' }],
+      take: 10,
+    });
+  }
+
   async create(data: CreateUserDto) {
     try {
       const hashedPassword = await bcrypt.hash(data.password, 10);

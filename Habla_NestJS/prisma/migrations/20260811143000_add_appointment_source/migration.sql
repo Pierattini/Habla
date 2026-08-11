@@ -1,0 +1,5 @@
+CREATE TYPE "AppointmentSource" AS ENUM ('CUSTOMER', 'PROFESSIONAL_MANUAL');
+
+ALTER TABLE "Appointment"
+ADD COLUMN "source" "AppointmentSource" NOT NULL DEFAULT 'CUSTOMER';
+

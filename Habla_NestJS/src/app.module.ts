@@ -17,6 +17,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProfessionalSubscriptionsModule } from './professional-subscriptions/professional-subscriptions.module';
 import { ProfessionalServicesModule } from './professional-services/professional-services.module';
+import { ProfessionalTimeBlocksModule } from './professional-time-blocks/professional-time-blocks.module';
 import { ProfessionsModule } from './professions/professions.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { TaxDocumentsModule } from './tax-documents/tax-documents.module';
@@ -49,6 +50,7 @@ import { UsersModule } from './users/users.module';
     AppointmentRequestsModule,
     ProfessionalSubscriptionsModule,
     ProfessionalServicesModule,
+    ProfessionalTimeBlocksModule,
     NotificationsModule,
     MeetingsModule,
     ReviewsModule,
