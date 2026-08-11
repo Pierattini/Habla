@@ -1,0 +1,13 @@
+<section aria-labelledby="upcoming-blocks-title">
+  <h3 id="upcoming-blocks-title">Próximos bloqueos</h3>
+  <p *ngIf="blocks.length === 0" class="empty-state">No tienes bloqueos puntuales próximos.</p>
+  <div class="block-list">
+    <app-time-block-card
+      *ngFor="let block of blocks"
+      [block]="block"
+      [deleting]="store.deleting() === block.id"
+      (unblock)="confirmDelete($event)"
+    />
+  </div>
+</section>
+

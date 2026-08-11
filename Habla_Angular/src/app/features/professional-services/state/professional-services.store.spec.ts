@@ -132,4 +132,32 @@ describe('ProfessionalServicesStore', () => {
     expect(store.services()).toEqual([]);
     expect(store.hasVisiblePublicServices()).toBe(true);
   });
+
+  it('prevents an eleventh service before calling the API', async () => {
+    api.getOwnCatalog.mockReturnValue(
+      of({
+        serviceMode: 'SERVICE_CATALOG',
+        data: Array.from({ length: 10 }, (_, index) => ({
+          ...serviceFixture,
+          id: `service-${index + 1}`,
+          sortOrder: index,
+        })),
+      }),
+    );
+
+    await firstValueFrom(store.loadServices());
+
+    expect(store.canCreateService()).toBe(false);
+    expect(store.remainingServiceSlots()).toBe(0);
+    await expect(
+      firstValueFrom(
+        store.createService({
+          name: 'Servicio once',
+          durationMinutes: 60,
+          priceType: 'CONSULT',
+        }),
+      ),
+    ).rejects.toThrow('Puedes registrar un máximo de 10 servicios.');
+    expect(api.create).not.toHaveBeenCalled();
+  });
 });

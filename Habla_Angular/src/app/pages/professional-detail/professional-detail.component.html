@@ -50,7 +50,7 @@
           {{ professional.professionName || professional.specialty || 'Profesional' }}
         </p>
 
-        <div class="meta-grid">
+        <div class="meta-grid" *ngIf="!$any(this).isCatalogMode()">
           <div class="meta-pill">
             <span>Precio</span>
             <strong>${{ formatClpPrice(professional.price || 30000) }} CLP</strong>
@@ -84,7 +84,35 @@
       </ion-card-content>
     </ion-card>
 
-    <ion-card>
+    <ion-card *ngIf="$any(this).professionalServicesStore.publicLoading()">
+      <ion-card-content class="empty-hours">Cargando servicios disponibles...</ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="$any(this).professionalServicesStore.publicError()">
+      <ion-card-content class="empty-hours">
+        No pudimos cargar los servicios de este profesional. Inténtalo nuevamente.
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="$any(this).catalogReady() && $any(this).isCatalogMode()">
+      <ion-card-content>
+        <app-public-services-accordion
+          [services]="$any(this).professionalServicesStore.orderedPublicServices()"
+          [selectedServiceId]="$any(this).selectedServiceId()"
+          (serviceSelected)="$any(this).selectService($event)"
+        ></app-public-services-accordion>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card
+      *ngIf="$any(this).catalogReady() && $any(this).isCatalogMode() && $any(this).professionalServicesStore.orderedPublicServices().length === 0"
+    >
+      <ion-card-content class="empty-hours">
+        Este profesional aún no tiene servicios disponibles para reservar.
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="$any(this).canShowBookingSteps()">
       <ion-card-header>
         <ion-card-title>Modalidad de atención</ion-card-title>
       </ion-card-header>
@@ -152,7 +180,7 @@
       </ion-card-content>
     </ion-card>
 
-    <ion-card>
+    <ion-card *ngIf="$any(this).canShowBookingSteps()">
       <ion-card-header>
         <ion-card-title>Selecciona una fecha</ion-card-title>
       </ion-card-header>
@@ -168,7 +196,7 @@
       </ion-card-content>
     </ion-card>
 
-    <ion-card *ngIf="availableHours.length > 0">
+    <ion-card *ngIf="$any(this).canShowBookingSteps() && availableHours.length > 0">
       <ion-card-header>
         <ion-card-title>Horarios disponibles</ion-card-title>
       </ion-card-header>
@@ -190,13 +218,13 @@
       </ion-card-content>
     </ion-card>
 
-    <ion-card *ngIf="$any(this).loaded && $any(this).availableHours.length === 0">
+    <ion-card *ngIf="$any(this).canShowBookingSteps() && $any(this).loaded && $any(this).availableHours.length === 0">
       <ion-card-content class="empty-hours">
         No hay horarios disponibles para la fecha seleccionada
       </ion-card-content>
     </ion-card>
 
-    <ion-card>
+    <ion-card *ngIf="$any(this).canShowBookingSteps()">
       <ion-card-header>
         <ion-card-title>Documento tributario</ion-card-title>
       </ion-card-header>
@@ -318,6 +346,7 @@
     </ion-card>
 
     <ion-button
+      *ngIf="$any(this).canShowBookingSteps()"
       expand="block"
       class="confirm-btn"
       [disabled]="!selectedHour || isBooking || !$any(this).canSubmitBooking()"

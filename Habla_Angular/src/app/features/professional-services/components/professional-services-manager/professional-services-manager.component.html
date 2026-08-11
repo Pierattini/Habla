@@ -24,6 +24,7 @@
       <div>
         <p class="eyebrow">Catálogo</p>
         <h3 id="professional-services-title">Servicios</h3>
+        <p>{{ store.orderedServices().length }} de 10 servicios</p>
         <p>
           Crea opciones con precios y duraciones independientes. Esto no cambia tu agenda ni tus
           reservas actuales.
@@ -32,12 +33,16 @@
       <button
         type="button"
         class="primary-button"
-        [disabled]="store.saving() || store.deleting() || formOpen()"
+        [disabled]="store.saving() || store.deleting() || formOpen() || !store.canCreateService()"
         (click)="openCreateForm()"
       >
         Nuevo servicio
       </button>
     </header>
+
+    <p class="catalog-message" *ngIf="!store.canCreateService()">
+      Alcanzaste el máximo de 10 servicios. Puedes editar o archivar uno para crear otro.
+    </p>
 
     <app-professional-service-form
       *ngIf="formOpen()"

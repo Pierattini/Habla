@@ -1,0 +1,53 @@
+<form class="block-form" (ngSubmit)="submit()" novalidate>
+  <fieldset [disabled]="saving">
+    <legend>Nuevo bloqueo puntual</legend>
+
+    <label for="block-type">Tipo de bloqueo</label>
+    <select id="block-type" name="blockType" [(ngModel)]="type" (ngModelChange)="validationError = ''">
+      <option value="TIME_RANGE">Una hora o rango horario</option>
+      <option value="FULL_DAY">Día completo</option>
+      <option value="DATE_RANGE">Rango de fechas</option>
+    </select>
+
+    <div *ngIf="type === 'TIME_RANGE' || type === 'FULL_DAY'" class="field">
+      <label for="block-date">Fecha</label>
+      <input id="block-date" name="blockDate" type="date" [min]="minDate" [(ngModel)]="date" required />
+    </div>
+
+    <div *ngIf="type === 'TIME_RANGE'" class="field-grid">
+      <div class="field">
+        <label for="start-time">Hora inicio</label>
+        <input id="start-time" name="startTime" type="time" [(ngModel)]="startTime" required />
+      </div>
+      <div class="field">
+        <label for="end-time">Hora término</label>
+        <input id="end-time" name="endTime" type="time" [(ngModel)]="endTime" required />
+      </div>
+    </div>
+
+    <div *ngIf="type === 'DATE_RANGE'" class="field-grid">
+      <div class="field">
+        <label for="start-date">Fecha inicio</label>
+        <input id="start-date" name="startDate" type="date" [min]="minDate" [(ngModel)]="startDate" required />
+      </div>
+      <div class="field">
+        <label for="end-date">Fecha término</label>
+        <input id="end-date" name="endDate" type="date" [min]="startDate || minDate" [(ngModel)]="endDate" required />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="block-reason">Motivo privado <span>(opcional)</span></label>
+      <textarea id="block-reason" name="reason" rows="3" maxlength="500" [(ngModel)]="reason"></textarea>
+      <small>Este motivo es privado y solo será visible para ti.</small>
+    </div>
+
+    <p *ngIf="validationError" id="block-validation-error" class="form-error" role="alert">
+      {{ validationError }}
+    </p>
+    <button type="submit" class="primary-button" [disabled]="saving" [attr.aria-describedby]="validationError ? 'block-validation-error' : null">
+      {{ saving ? 'Guardando…' : 'Bloquear horario' }}
+    </button>
+  </fieldset>
+</form>
+

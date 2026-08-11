@@ -1,0 +1,17 @@
+.agenda-manager { margin:18px 10px; padding:22px; border-radius:22px; background:linear-gradient(145deg,#faf5ff,#fff); border:1px solid #eadcff; box-shadow:0 12px 30px rgba(103,61,140,.08); }
+header { margin-bottom:18px; }
+.eyebrow { color:#a13be2; font-size:.8rem; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
+h2 { margin:4px 0 6px; color:#20293a; }
+header p { margin:0; color:#697184; line-height:1.5; max-width:760px; }
+.manager-grid { display:grid; grid-template-columns:minmax(280px, .9fr) minmax(320px, 1.1fr); gap:18px; align-items:start; }
+.manual-action { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:14px; padding:14px; border-radius:16px; background:#f5eaff; }
+.manual-action div { display:grid; gap:3px; color:#20293a; }
+.manual-action span { color:#697184; }
+.manual-action button { border:0; border-radius:12px; padding:11px 15px; background:#8f3bd6; color:#fff; font-weight:800; cursor:pointer; }
+app-manual-appointment-form { display:block; margin-bottom:18px; }
+.list-panel { min-height:180px; }
+.loading-state { padding:30px; text-align:center; color:#6b7280; }
+.store-error { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:15px; padding:12px 14px; border:1px solid #f4b8b3; border-radius:12px; background:#fff1f0; color:#a51d14; }
+.store-error button { border:0; background:transparent; color:inherit; font-size:1.4rem; cursor:pointer; }
+@media (max-width:800px) { .manager-grid { grid-template-columns:1fr; } }
+@media (max-width:560px) { .agenda-manager { margin:14px 4px; padding:15px; border-radius:18px; } .manual-action { align-items:stretch; flex-direction:column; } }

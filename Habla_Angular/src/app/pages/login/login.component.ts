@@ -233,12 +233,26 @@ export class LoginComponent implements OnInit {
   public login(): void {
     if (!this.email || !this.password || this.isSubmitting) return;
 
+    const loginStartedAt = performance.now();
+    let requestStartedAt = 0;
     this.isSubmitting = true;
     this.errorMessage = '';
+
+    console.info('[Auth][Login timing]', {
+      event: 'T0_CLICK',
+      elapsedMs: 0,
+    });
 
     this.recaptchaService
       .execute('login')
       .then((recaptchaToken) => {
+        requestStartedAt = performance.now();
+        console.info('[Auth][Login timing]', {
+          event: 'T1_REQUEST_START',
+          recaptchaMs: Math.round(requestStartedAt - loginStartedAt),
+          elapsedMs: Math.round(requestStartedAt - loginStartedAt),
+        });
+
         this.auth
           .login(this.email, this.password, recaptchaToken)
           .pipe(
@@ -250,7 +264,13 @@ export class LoginComponent implements OnInit {
           )
           .subscribe({
             next: (res: any) => {
-              void this.completeLogin(res);
+              const responseReceivedAt = performance.now();
+              console.info('[Auth][Login timing]', {
+                event: 'T6_RESPONSE_RECEIVED',
+                httpMs: Math.round(responseReceivedAt - requestStartedAt),
+                elapsedMs: Math.round(responseReceivedAt - loginStartedAt),
+              });
+              void this.completeLogin(res, loginStartedAt, responseReceivedAt);
             },
             error: (error) => {
               const apiMessage = Array.isArray(error?.error?.message)
@@ -847,11 +867,33 @@ export class LoginComponent implements OnInit {
     localStorage.setItem('name', res.user.name || 'Usuario');
   }
 
-  private async completeLogin(res: any): Promise<void> {
+  private async completeLogin(
+    res: any,
+    loginStartedAt?: number,
+    responseReceivedAt?: number,
+  ): Promise<void> {
     try {
       this.saveSession(res);
+      const sessionSavedAt = performance.now();
+      if (loginStartedAt !== undefined) {
+        console.info('[Auth][Login timing]', {
+          event: 'T7_SESSION_SAVED',
+          storageMs:
+            responseReceivedAt === undefined
+              ? undefined
+              : Math.round(sessionSavedAt - responseReceivedAt),
+          elapsedMs: Math.round(sessionSavedAt - loginStartedAt),
+        });
+      }
       void this.pushNotifications.registerDevice();
       await this.navigateAfterLogin(res);
+      if (loginStartedAt !== undefined) {
+        console.info('[Auth][Login timing]', {
+          event: 'T9_NAVIGATION_COMPLETE',
+          navigationMs: Math.round(performance.now() - sessionSavedAt),
+          elapsedMs: Math.round(performance.now() - loginStartedAt),
+        });
+      }
     } catch (error) {
       console.error('[Auth][Post-login navigation]', error);
       this.errorMessage =

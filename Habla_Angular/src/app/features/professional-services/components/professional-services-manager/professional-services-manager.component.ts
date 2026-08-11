@@ -73,6 +73,11 @@ export class ProfessionalServicesManagerComponent implements OnInit {
   }
 
   openCreateForm(): void {
+    if (!this.store.canCreateService()) {
+      this.feedbackMessage.set('Puedes registrar un máximo de 10 servicios.');
+      return;
+    }
+
     this.store.clearError();
     this.editingService.set(null);
     this.formOpen.set(true);

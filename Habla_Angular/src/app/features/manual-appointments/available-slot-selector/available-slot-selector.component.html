@@ -1,0 +1,6 @@
+<div class="slots" [attr.aria-busy]="loading">
+  <p *ngIf="loading">Cargando horarios…</p>
+  <p *ngIf="!loading && slots.length === 0">No hay horarios disponibles para esta fecha.</p>
+  <button type="button" *ngFor="let slot of slots" [class.selected]="slot === selected" (click)="selectedChange.emit(slot)" [attr.aria-pressed]="slot === selected">{{ slot }}</button>
+</div>
+

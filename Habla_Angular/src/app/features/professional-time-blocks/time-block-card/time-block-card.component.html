@@ -1,0 +1,18 @@
+<article class="block-card">
+  <div class="block-icon" aria-hidden="true">▦</div>
+  <div class="block-details">
+    <span class="block-type">{{ typeLabel }}</span>
+    <strong *ngIf="block.type === 'TIME_RANGE'">
+      {{ block.startAt | date:'dd/MM/yyyy' }} · {{ block.startAt | date:'HH:mm' }}–{{ block.endAt | date:'HH:mm' }}
+    </strong>
+    <strong *ngIf="block.type === 'FULL_DAY'">{{ block.startAt | date:'dd/MM/yyyy' }}</strong>
+    <strong *ngIf="block.type === 'DATE_RANGE'">
+      {{ block.startAt | date:'dd/MM/yyyy' }}–{{ inclusiveEndDate | date:'dd/MM/yyyy' }}
+    </strong>
+    <p *ngIf="block.reason" class="private-reason"><span aria-hidden="true">🔒</span> {{ block.reason }}</p>
+  </div>
+  <button type="button" class="unblock-button" [disabled]="deleting" (click)="unblock.emit(block)" [attr.aria-label]="'Desbloquear ' + typeLabel">
+    {{ deleting ? 'Desbloqueando…' : 'Desbloquear' }}
+  </button>
+</article>
+

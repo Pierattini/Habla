@@ -26,7 +26,9 @@ export class GoogleAuthService {
   async signIn(): Promise<string> {
     try {
       if (Capacitor.isNativePlatform()) {
-        await FirebaseAuthentication.signInWithGoogle();
+        await FirebaseAuthentication.signInWithGoogle({
+          useCredentialManager: false,
+        });
         const { token } = await FirebaseAuthentication.getIdToken({
           forceRefresh: true,
         });

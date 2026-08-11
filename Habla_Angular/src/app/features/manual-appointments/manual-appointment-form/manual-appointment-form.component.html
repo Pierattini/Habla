@@ -1,0 +1,36 @@
+<section class="manual-form">
+  <app-customer-search [customers]="store.customers()" [searching]="store.searchingCustomers()" [selected]="store.selectedCustomer()" (search)="store.searchCustomers($event)" (selectCustomer)="store.selectCustomer($event)" />
+
+  <div class="date-field" *ngIf="requiresService">
+    <label for="manual-service">Servicio</label>
+    <select
+      id="manual-service"
+      [ngModel]="store.selectedServiceId()"
+      (ngModelChange)="store.selectService($event || null)"
+    >
+      <option [ngValue]="null">Selecciona un servicio</option>
+      <option *ngFor="let service of servicesStore.activeServices()" [ngValue]="service.id">
+        {{ service.name }} · {{ service.durationMinutes }} min
+      </option>
+    </select>
+  </div>
+
+  <div class="date-field">
+    <label for="manual-date">Fecha</label>
+    <input id="manual-date" type="date" [min]="minDate" [disabled]="requiresService && !store.selectedServiceId()" [ngModel]="store.selectedDate()" (ngModelChange)="store.loadSlots($event)" />
+  </div>
+  <app-available-slot-selector [slots]="store.availableSlots()" [loading]="store.loadingSlots()" [selected]="store.selectedSlot()" (selectedChange)="store.selectedSlot.set($event)" />
+
+  <div class="summary" *ngIf="store.selectedCustomer() && store.selectedDate() && store.selectedSlot()">
+    <h4>Resumen</h4>
+    <span><b>Paciente:</b> {{ store.selectedCustomer()?.name || store.selectedCustomer()?.email }}</span>
+    <span *ngIf="requiresService"><b>Servicio:</b> {{ selectedServiceName }}</span>
+    <span><b>Fecha:</b> {{ store.selectedDate() | date:'dd/MM/yyyy':'UTC' }}</span>
+    <span><b>Hora:</b> {{ store.selectedSlot() }}</span>
+  </div>
+  <p class="error" *ngIf="store.error()" role="alert">{{ store.error() }}</p>
+  <p class="success" *ngIf="store.success()" role="status">{{ store.success() }}</p>
+  <button class="confirm" type="button" [disabled]="!store.selectedCustomer() || !store.selectedDate() || !store.selectedSlot() || (requiresService && !store.selectedServiceId()) || store.creating()" (click)="confirm()">
+    {{ store.creating() ? 'Creando cita…' : 'Confirmar cita' }}
+  </button>
+</section>

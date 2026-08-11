@@ -11,6 +11,8 @@ import {
 } from '../models/professional-service.models';
 import { ProfessionalServicesApiService } from '../services/professional-services-api.service';
 
+export const MAX_PROFESSIONAL_SERVICES = 10;
+
 @Injectable({ providedIn: 'root' })
 export class ProfessionalServicesStore {
   private readonly servicesState = signal<ProfessionalService[]>([]);
@@ -60,6 +62,12 @@ export class ProfessionalServicesStore {
     [...this.publicServicesState()].sort((left, right) => left.sortOrder - right.sortOrder),
   );
   readonly isCatalogMode = computed(() => this.serviceModeState() === 'SERVICE_CATALOG');
+  readonly canCreateService = computed(
+    () => this.servicesState().length < MAX_PROFESSIONAL_SERVICES,
+  );
+  readonly remainingServiceSlots = computed(() =>
+    Math.max(0, MAX_PROFESSIONAL_SERVICES - this.servicesState().length),
+  );
   readonly hasVisiblePublicServices = computed(
     () =>
       this.publicServiceModeState() === 'SERVICE_CATALOG' && this.publicServicesState().length > 0,
@@ -138,6 +146,12 @@ export class ProfessionalServicesStore {
   }
 
   createService(payload: CreateProfessionalServicePayload): Observable<ProfessionalService> {
+    if (!this.canCreateService()) {
+      const message = `Puedes registrar un máximo de ${MAX_PROFESSIONAL_SERVICES} servicios.`;
+      this.errorState.set(message);
+      return throwError(() => new Error(message));
+    }
+
     this.savingState.set(true);
     this.errorState.set(null);
 
@@ -235,6 +249,15 @@ export class ProfessionalServicesStore {
   clearError(): void {
     this.errorState.set(null);
     this.publicErrorState.set(null);
+  }
+
+  clearPublicCatalog(): void {
+    this.publicServicesState.set([]);
+    this.publicServiceModeState.set('SINGLE_PRICE');
+    this.publicLoadingState.set(false);
+    this.publicErrorState.set(null);
+    this.publicInitializedSlugState.set(null);
+    this.publicCatalogRequest = undefined;
   }
 
   resetState(): void {

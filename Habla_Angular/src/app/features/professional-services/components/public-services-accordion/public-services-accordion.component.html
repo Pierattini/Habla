@@ -1,0 +1,46 @@
+<section class="public-services" aria-labelledby="public-services-title">
+  <header>
+    <p>Elige antes de seleccionar fecha y hora</p>
+    <h3 id="public-services-title">Servicios disponibles</h3>
+  </header>
+
+  <article
+    *ngFor="let service of services"
+    class="service-item"
+    [class.selected]="selectedServiceId === service.id"
+  >
+    <button
+      type="button"
+      class="service-summary"
+      [attr.aria-expanded]="expandedServiceId() === service.id"
+      (click)="toggle(service.id)"
+    >
+      <span>
+        <strong>{{ service.name }}</strong>
+        <small>
+          <app-professional-service-price [service]="service" />
+          <span aria-hidden="true"> · </span>
+          <app-professional-service-duration [minutes]="service.durationMinutes" />
+        </small>
+      </span>
+      <span class="chevron" aria-hidden="true">{{ expandedServiceId() === service.id ? '−' : '+' }}</span>
+    </button>
+
+    <div class="service-detail" *ngIf="expandedServiceId() === service.id">
+      <p *ngIf="service.description; else noDescription">{{ service.description }}</p>
+      <ng-template #noDescription><p>Consulta los detalles directamente con el profesional.</p></ng-template>
+      <div class="detail-meta">
+        <app-professional-service-price [service]="service" />
+        <app-professional-service-duration [minutes]="service.durationMinutes" />
+      </div>
+      <button
+        type="button"
+        class="select-service"
+        [disabled]="!service.allowBooking"
+        (click)="serviceSelected.emit(service)"
+      >
+        {{ !service.allowBooking ? 'No disponible para reserva' : selectedServiceId === service.id ? 'Servicio seleccionado' : 'Seleccionar servicio' }}
+      </button>
+    </div>
+  </article>
+</section>

@@ -1,6 +1,6 @@
-import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
+import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { API_URL } from '../../core/config/api.config';
@@ -9,6 +9,13 @@ import { AlertController } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
 import { ConectaMessageType } from '../../shared/conecta-message/conecta-message.component';
 import { formatClpPrice } from '../../utils/clp-price.util';
+import { PublicProfessionalService } from '../../features/professional-services/models/professional-service.models';
+import { ProfessionalServicesStore } from '../../features/professional-services/state/professional-services.store';
+import { PublicServicesAccordionComponent } from '../../features/professional-services/components/public-services-accordion/public-services-accordion.component';
+import {
+  buildServiceAvailabilityParams,
+  withSelectedProfessionalService,
+} from '../../features/professional-services/utils/booking-service-selection';
 //import { IonicModule } from '@ionic/angular';
 
 
@@ -61,6 +68,7 @@ import {
     IonCardTitle,
     IonCardContent,
     IonButtons,
+    PublicServicesAccordionComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA]
 })
@@ -79,6 +87,8 @@ export class ProfessionalDetailComponent {
   maxBookingDate: string = this.toDateInputValue(this.addMonths(new Date(), 6));
   availableHours: string[] = [];
   selectedHour: string | null = null;
+  readonly selectedServiceId = signal<string | null>(null);
+  readonly catalogReady = signal(false);
   isBooking: boolean = false;
   messageOpen = false;
   messageType: ConectaMessageType = 'info';
@@ -102,6 +112,7 @@ export class ProfessionalDetailComponent {
   private route: ActivatedRoute,
   private http: HttpClient,
   private auth: AuthService,
+  readonly professionalServicesStore: ProfessionalServicesStore,
   private cdr: ChangeDetectorRef,
   private router: Router,
   private alertCtrl: AlertController ) {}
@@ -150,6 +161,9 @@ export class ProfessionalDetailComponent {
       this.professional = null;
       this.availableHours = [];
       this.selectedHour = null;
+      this.selectedServiceId.set(null);
+      this.catalogReady.set(false);
+      this.professionalServicesStore.clearPublicCatalog();
       this.selectedDocumentMode = 'NONE';
       this.selectedAttentionMode = 'ONLINE';
       this.loaded = false;
@@ -195,7 +209,7 @@ export class ProfessionalDetailComponent {
           ? 'PRESENTIAL'
           : 'ONLINE';
       this.applyDefaultDocumentMode();
-      this.loadAvailability();
+      this.loadCatalogAndAvailability();
       return;
     }
 
@@ -219,7 +233,7 @@ export class ProfessionalDetailComponent {
             ? 'PRESENTIAL'
             : 'ONLINE';
         this.applyDefaultDocumentMode();
-        this.loadAvailability();
+        this.loadCatalogAndAvailability();
       },
       error: (err) => {
         console.error(err);
@@ -229,6 +243,54 @@ export class ProfessionalDetailComponent {
       }
     });
   }
+  private loadCatalogAndAvailability(): void {
+    const publicSlug = String(this.professional?.slug || this.slug || '').trim();
+
+    if (!publicSlug) {
+      this.catalogReady.set(true);
+      this.loadAvailability();
+      return;
+    }
+
+    this.selectedServiceId.set(null);
+    this.availableHours = [];
+    this.selectedHour = null;
+    this.catalogReady.set(false);
+
+    this.professionalServicesStore.loadPublicServices(publicSlug, true).subscribe({
+      next: () => {
+        this.catalogReady.set(true);
+        if (!this.isCatalogMode()) {
+          this.loadAvailability();
+          return;
+        }
+        this.loading = false;
+        this.loaded = true;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loading = false;
+        this.loaded = true;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  isCatalogMode(): boolean {
+    return this.professionalServicesStore.publicServiceMode() === 'SERVICE_CATALOG';
+  }
+
+  canShowBookingSteps(): boolean {
+    return this.catalogReady() && (!this.isCatalogMode() || !!this.selectedServiceId());
+  }
+
+  selectService(service: PublicProfessionalService): void {
+    if (!service.allowBooking) return;
+    this.selectedServiceId.set(service.id);
+    this.selectedHour = null;
+    this.loadAvailability();
+  }
+
   loadAvailability() {
   if (!this.professional?.id || !this.selectedDate) {
     this.loading = false;
@@ -240,13 +302,27 @@ export class ProfessionalDetailComponent {
   this.loading = true;
   this.loaded = false;
 
+  if (this.isCatalogMode() && !this.selectedServiceId()) {
+    this.availableHours = [];
+    this.loading = false;
+    this.loaded = true;
+    this.cdr.detectChanges();
+    return;
+  }
+
   // 🔥 LIMPIAR FECHA
   //const cleanDate = this.selectedDate.split('T')[0];
   //const date = new Date(cleanDate + 'T12:00:00');
 
-  this.http.get<string[]>(
-  `${API_URL}/appointments/available-slots?professionalId=${this.professional.id}&date=${this.selectedDate}`
-)
+  const params = new HttpParams({
+    fromObject: buildServiceAvailabilityParams(
+      this.professional.id,
+      this.selectedDate,
+      this.selectedServiceId(),
+    ),
+  });
+
+  this.http.get<string[]>(`${API_URL}/appointments/available-slots`, { params })
   .subscribe({
    next: (res: any[]) => {
   this.availableHours = res;
@@ -276,6 +352,11 @@ getHourColor(hour: string): string {
   
 async bookAppointment() {
   if (!this.selectedHour || this.isBooking) return;
+
+  if (this.isCatalogMode() && !this.selectedServiceId()) {
+    this.showMessage('warning', 'Selecciona un servicio', 'Elige el servicio que deseas reservar.');
+    return;
+  }
 
   const token = localStorage.getItem('token');
 
@@ -314,7 +395,7 @@ async bookAppointment() {
 
   this.isBooking = true;
 
-  const payload = {
+  const payload = withSelectedProfessionalService({
     professionalId: this.professional.id,
     date: zonedDateTimeToIso(this.selectedDate, this.selectedHour),
     documentRequested: this.selectedDocumentMode !== 'NONE',
@@ -325,7 +406,7 @@ async bookAppointment() {
     customerTaxAddress: this.customerTaxData?.taxAddress,
     customerTaxPhone: this.customerTaxData?.taxPhone,
     customerTaxComment: this.customerTaxData?.taxComment,
-  };
+  }, this.selectedServiceId());
 
 
   this.http.post(

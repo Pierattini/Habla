@@ -1,0 +1,15 @@
+<section class="customer-search">
+  <label for="customer-query">Buscar paciente registrado</label>
+  <div class="search-row">
+    <input id="customer-query" type="search" [(ngModel)]="query" (keyup.enter)="searchNow()" placeholder="Nombre o correo" />
+    <button type="button" (click)="searchNow()" [disabled]="searching || query.trim().length < 2">{{ searching ? 'Buscando…' : 'Buscar' }}</button>
+  </div>
+  <div *ngIf="selected" class="selected" role="status"><strong>{{ selected.name || 'Paciente' }}</strong><span>{{ selected.email }}</span></div>
+  <p *ngIf="!searching && query.trim().length >= 2 && customers.length === 0 && !selected" class="empty">No encontramos pacientes registrados con esa búsqueda.</p>
+  <div class="results" *ngIf="customers.length">
+    <button type="button" *ngFor="let customer of customers" (click)="selectCustomer.emit(customer)">
+      <strong>{{ customer.name || 'Paciente' }}</strong><span>{{ customer.email }}</span>
+    </button>
+  </div>
+</section>
+

@@ -1,0 +1,15 @@
+.public-services { display: grid; gap: 12px; }
+header p { margin: 0 0 4px; color: var(--app-primary); font-size: 12px; font-weight: 800; }
+header h3 { margin: 0; color: var(--app-text); font-size: 20px; }
+.service-item { overflow: hidden; border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent); border-radius: 18px; background: var(--app-surface); }
+.service-item.selected { border-color: var(--app-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-primary) 12%, transparent); }
+.service-summary { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border: 0; background: transparent; color: var(--app-text); text-align: left; }
+.service-summary > span:first-child { display: grid; gap: 6px; }
+.service-summary strong { font-size: 16px; }
+.service-summary small { color: var(--app-muted); }
+.chevron { color: var(--app-primary); font-size: 24px; font-weight: 700; }
+.service-detail { display: grid; gap: 14px; padding: 0 16px 16px; border-top: 1px solid color-mix(in srgb, var(--app-primary) 9%, transparent); }
+.service-detail p { margin: 14px 0 0; color: var(--app-muted); line-height: 1.5; }
+.detail-meta { display: flex; justify-content: space-between; gap: 12px; }
+.select-service { min-height: 46px; border: 0; border-radius: 14px; background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light)); color: white; font-weight: 900; }
+.select-service:disabled { background: var(--app-secondary); color: var(--app-muted); }

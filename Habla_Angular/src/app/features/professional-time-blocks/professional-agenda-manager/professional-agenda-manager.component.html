@@ -1,0 +1,31 @@
+<section class="agenda-manager" aria-labelledby="point-blocks-title">
+  <header>
+    <span class="eyebrow">Excepciones por fecha</span>
+    <h2 id="point-blocks-title">Bloqueos puntuales</h2>
+    <p>
+      Bloquea fechas específicas sin cambiar tu disponibilidad habitual recurrente.
+      Estos bloqueos se distinguen de tus citas y nunca muestran el motivo al paciente.
+    </p>
+  </header>
+
+  <div class="manual-action">
+    <div><strong>Agenda profesional</strong><span>Agenda a un paciente registrado en una hora disponible.</span></div>
+    <button type="button" (click)="showManualAppointment = !showManualAppointment">
+      {{ showManualAppointment ? 'Cerrar' : 'Agendar paciente' }}
+    </button>
+  </div>
+  <app-manual-appointment-form *ngIf="showManualAppointment" />
+
+  <div *ngIf="store.error()" class="store-error" role="alert">
+    <span>{{ store.error() }}</span>
+    <button type="button" (click)="store.clearError()" aria-label="Cerrar mensaje">×</button>
+  </div>
+
+  <div class="manager-grid">
+    <app-time-block-form [saving]="store.saving()" (createBlock)="create($event)" />
+    <div class="list-panel" [attr.aria-busy]="store.loading()">
+      <p *ngIf="store.loading()" class="loading-state">Cargando bloqueos…</p>
+      <app-time-block-list *ngIf="!store.loading()" [blocks]="store.upcomingBlocks()" />
+    </div>
+  </div>
+</section>
