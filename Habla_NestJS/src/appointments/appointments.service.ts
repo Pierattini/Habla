@@ -544,35 +544,45 @@ export class AppointmentsService {
 
   async createManual(
     professionalId: string,
-    customerId: string,
+    customerId: string | undefined,
     date: Date,
     serviceId?: string,
+    guestCustomerName?: string,
   ) {
     if (Number.isNaN(date.getTime()) || date <= new Date()) {
       throw new ForbiddenException('No puedes agendar una cita en el pasado.');
     }
 
     this.assertDateWithinBookingWindow(date);
+    const normalizedGuestName = String(guestCustomerName || '').trim().replace(/\s+/g, ' ');
+    if ((!customerId && !normalizedGuestName) || (customerId && normalizedGuestName)) {
+      throw new ForbiddenException(
+        'Selecciona un paciente registrado o ingresa el nombre del paciente.',
+      );
+    }
+
     const [professional, customer] = await Promise.all([
       this.prisma.professional.findUnique({
         where: { userId: professionalId },
         include: { user: true },
       }),
-      this.prisma.user.findUnique({
-        where: { id: customerId },
-        select: { id: true, role: true, isActive: true, deletedAt: true },
-      }),
+      customerId
+        ? this.prisma.user.findUnique({
+            where: { id: customerId },
+            select: { id: true, role: true, isActive: true, deletedAt: true },
+          })
+        : Promise.resolve(null),
     ]);
 
     if (!professional || professional.user.role !== Role.PROFESSIONAL) {
       throw new ForbiddenException('Solo un profesional puede crear esta cita.');
     }
-    if (
+    if (customerId && (
       !customer ||
       customer.role !== Role.CUSTOMER ||
       !customer.isActive ||
       customer.deletedAt
-    ) {
+    )) {
       throw new ForbiddenException('El paciente seleccionado no está disponible.');
     }
 
@@ -600,10 +610,12 @@ export class AppointmentsService {
           serviceId,
         );
         const [lockedCustomer, stillMatchesSchedule] = await Promise.all([
-          tx.user.findUnique({
-            where: { id: customerId },
-            select: { role: true, isActive: true, deletedAt: true },
-          }),
+          customerId
+            ? tx.user.findUnique({
+                where: { id: customerId },
+                select: { role: true, isActive: true, deletedAt: true },
+              })
+            : Promise.resolve(null),
           this.isDateAvailableForProfessional(
             professionalId,
             date,
@@ -612,12 +624,12 @@ export class AppointmentsService {
           ),
         ]);
 
-        if (
+        if (customerId && (
           !lockedCustomer ||
           lockedCustomer.role !== Role.CUSTOMER ||
           !lockedCustomer.isActive ||
           lockedCustomer.deletedAt
-        ) {
+        )) {
           throw new ForbiddenException('El paciente seleccionado no está disponible.');
         }
         if (!stillMatchesSchedule) {
@@ -640,6 +652,7 @@ export class AppointmentsService {
           data: {
             date,
             customerId,
+            guestCustomerName: customerId ? null : normalizedGuestName,
             professionalId,
             serviceId: selection.serviceId,
             serviceNameSnapshot: selection.name,
@@ -663,11 +676,13 @@ export class AppointmentsService {
       },
     );
 
-    await this.sendAppointmentNotificationById(
-      appointment.id,
-      'APPOINTMENT_MANUAL_CREATED',
-      ['EMAIL', 'PUSH'],
-    );
+    if (customerId) {
+      await this.sendAppointmentNotificationById(
+        appointment.id,
+        'APPOINTMENT_MANUAL_CREATED',
+        ['EMAIL', 'PUSH'],
+      );
+    }
     return appointment;
   }
 
@@ -765,7 +780,7 @@ export class AppointmentsService {
 
     const meetLink = updated.meetingUrl || updated.meetLink;
 
-    if (meetLink) {
+    if (meetLink && appointment.customer) {
       this.scheduleVideoConferenceEmails(
         appointment.customer.email,
         appointment.professional.email,
@@ -1850,7 +1865,7 @@ export class AppointmentsService {
 
     const meetLink = updated.meetingUrl || updated.meetLink;
     // 🔥 CALCULAR ENVÍO 10 MIN ANTES
-    if (meetLink) {
+    if (meetLink && appointment.customer) {
       this.scheduleVideoConferenceEmails(
         appointment.customer.email,
         appointment.professional.email,
@@ -2047,6 +2062,9 @@ export class AppointmentsService {
         throw new ForbiddenException('Faltan datos bancarios');
       }
       // 🔥 ENVIAR CORREO AL PROFESIONAL
+      if (!appointment.customer) {
+        throw new ForbiddenException('Esta cita no tiene pagos asociados.');
+      }
       await this.sendRefundRequestEmail(
         appointment.professional.email,
         body.bank,
@@ -2149,6 +2167,9 @@ export class AppointmentsService {
     );
 
     // 📧 enviar correo
+    if (!appointment.customer) {
+      throw new ForbiddenException('Esta cita no tiene pagos asociados.');
+    }
     await this.sendRefundConfirmedEmail(
       appointment.customer.email,
       appointment.customer.name || appointment.customer.email,
@@ -2340,22 +2361,26 @@ export class AppointmentsService {
       },
     });
 
-    if (!appointment) {
+    if (!appointment || !appointment.customer) {
       return;
     }
+    const appointmentWithCustomer = {
+      ...appointment,
+      customer: appointment.customer,
+    };
 
     if (
       appointment.meetingProvider === VideoProvider.GOOGLE_MEET &&
       appointment.calendarEventId
     ) {
       await this.googleCalendarService
-        .updateCalendarEventForAppointment(appointment)
+        .updateCalendarEventForAppointment(appointmentWithCustomer)
         .catch(() => undefined);
     }
 
     if (appointment.meetingProvider === VideoProvider.ZOOM && appointment.meetingId) {
       await this.zoomService
-        .updateMeetingForAppointment(appointment)
+        .updateMeetingForAppointment(appointmentWithCustomer)
         .catch(() => undefined);
     }
 
@@ -2364,7 +2389,7 @@ export class AppointmentsService {
       appointment.calendarEventId
     ) {
       await this.microsoftTeamsService
-        .updateTeamsEventForAppointment(appointment)
+        .updateTeamsEventForAppointment(appointmentWithCustomer)
         .catch(() => undefined);
     }
   }
@@ -2422,7 +2447,7 @@ export class AppointmentsService {
       if (!appointment) return;
 
       const timezone =
-        appointment.customer.timezone ||
+        appointment.customer?.timezone ||
         appointment.professional.timezone ||
         'America/Santiago';
       const date = new Intl.DateTimeFormat('es-CL', {
@@ -2446,7 +2471,7 @@ export class AppointmentsService {
         appointment.professional.name ||
         'Profesional Conecta';
       const customerName =
-        appointment.customer.name || appointment.customer.email || 'Paciente';
+        appointment.customer?.name || appointment.customer?.email || appointment.guestCustomerName || 'Paciente';
       const meetingUrl = appointment.meetingUrl || appointment.meetLink || null;
       const modality =
         appointment.attentionMode === AttentionModality.ONLINE
@@ -2476,8 +2501,9 @@ export class AppointmentsService {
             : null,
       };
 
-      await Promise.allSettled([
-        this.notificationService.notify({
+      const notifications: Promise<unknown>[] = [];
+      if (appointment.customer) {
+        notifications.push(this.notificationService.notify({
           type,
           recipient: {
             userId: appointment.customer.id,
@@ -2489,8 +2515,9 @@ export class AppointmentsService {
             ...data,
             name: appointment.customer.name || 'Usuario',
           },
-        }),
-        this.notificationService.notify({
+        }));
+      }
+      notifications.push(this.notificationService.notify({
           type,
           recipient: {
             userId: appointment.professional.id,
@@ -2502,8 +2529,8 @@ export class AppointmentsService {
             ...data,
             name: professionalName,
           },
-        }),
-      ]);
+        }));
+      await Promise.allSettled(notifications);
     } catch {
       // Las notificaciones no deben bloquear el flujo de citas.
     }

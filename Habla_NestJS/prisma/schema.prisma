@@ -98,7 +98,8 @@ model Appointment {
   date                           DateTime
   status                         AppointmentStatus             @default(PENDING)
   source                         AppointmentSource             @default(CUSTOMER)
-  customerId                     String
+  customerId                     String?
+  guestCustomerName              String?
   professionalId                 String
   serviceId                      String?
   serviceNameSnapshot            String?
@@ -161,7 +162,7 @@ model Appointment {
   documentAmount      Int?
   documentCurrency    String         @default("CLP")
 
-  customer     User                 @relation("CustomerAppointments", fields: [customerId], references: [id])
+  customer     User?                @relation("CustomerAppointments", fields: [customerId], references: [id])
   professional User                 @relation("ProfessionalAppointments", fields: [professionalId], references: [id])
   service      ProfessionalService? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
 

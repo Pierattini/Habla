@@ -149,6 +149,7 @@ export class AppointmentsController {
       body.customerId,
       new Date(body.startAt),
       body.serviceId,
+      body.guestCustomerName,
     );
   }
 

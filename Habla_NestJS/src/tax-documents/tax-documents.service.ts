@@ -82,6 +82,10 @@ export class TaxDocumentsService {
       throw new NotFoundException('Appointment not found');
     }
 
+    if (!appointment.customer) {
+      throw new ForbiddenException('Las citas de pacientes sin cuenta no generan documentos tributarios.');
+    }
+
     this.ensureAppointmentAccess(appointment, user.id);
 
     const taxDocument = await this.prisma.taxDocument.upsert({
@@ -1178,6 +1182,9 @@ export class TaxDocumentsService {
     }
 
     const customer = document.appointment.customer;
+    if (!customer) {
+      throw new BadRequestException('La cita no tiene un paciente registrado.');
+    }
     const customerEmail = document.customerTaxEmail || customer.email;
     const customerName =
       document.customerTaxName || customer.name || customer.email;
@@ -1331,6 +1338,9 @@ export class TaxDocumentsService {
 
     try {
       const customer = document.appointment.customer;
+      if (!customer) {
+        return document;
+      }
       const customerEmail = document.customerTaxEmail || customer.email;
       const customerName =
         document.customerTaxName || customer.name || customer.email;
@@ -1831,7 +1841,7 @@ export class TaxDocumentsService {
   }
 
   private ensureAppointmentAccess(
-    appointment: { customerId: string; professionalId: string },
+    appointment: { customerId: string | null; professionalId: string },
     userId: string,
   ) {
     if (

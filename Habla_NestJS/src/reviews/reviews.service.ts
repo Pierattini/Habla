@@ -41,7 +41,7 @@ export class ReviewsService {
       throw new ForbiddenException('Solo el paciente de la cita puede valorar.');
     }
 
-    if (appointment.customer.role !== Role.CUSTOMER) {
+    if (!appointment.customer || appointment.customer.role !== Role.CUSTOMER) {
       throw new ForbiddenException('Solo pacientes pueden dejar valoraciones.');
     }
 

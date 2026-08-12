@@ -41,6 +41,15 @@ export class MeetingService {
       throw new NotFoundException('Appointment not found');
     }
 
+    // Guest manual appointments only reserve the professional's agenda.
+    if (!appointment.customer) {
+      return appointment;
+    }
+    const appointmentWithCustomer = {
+      ...appointment,
+      customer: appointment.customer,
+    };
+
     if (appointment.attentionMode !== AttentionModality.ONLINE) {
       return appointment;
     }
@@ -81,7 +90,7 @@ export class MeetingService {
 
       const googleMeeting =
         await this.googleCalendarService.createMeetEventForAppointment(
-          appointment,
+          appointmentWithCustomer,
         );
 
       return this.prisma.appointment.update({
@@ -109,7 +118,7 @@ export class MeetingService {
       }
 
       const zoomMeeting = await this.zoomService.createMeetingForAppointment(
-        appointment,
+        appointmentWithCustomer,
       );
 
       return this.prisma.appointment.update({
@@ -138,7 +147,7 @@ export class MeetingService {
 
       const teamsMeeting =
         await this.microsoftTeamsService.createTeamsEventForAppointment(
-          appointment,
+          appointmentWithCustomer,
         );
 
       return this.prisma.appointment.update({
@@ -284,7 +293,7 @@ export class MeetingService {
         appointment.professional.name ||
         'Profesional',
       customerName:
-        appointment.customer.name || appointment.customer.email || 'Paciente',
+        appointment.customer?.name || appointment.customer?.email || appointment.guestCustomerName || 'Paciente',
       date: appointment.date,
       status: appointment.status,
       isConfirmed: appointment.status === AppointmentStatus.CONFIRMED,

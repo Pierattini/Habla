@@ -1,8 +1,15 @@
-import { IsDateString, IsOptional, IsUUID } from 'class-validator';
+import { IsDateString, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 export class CreateManualAppointmentDto {
+  @IsOptional()
   @IsUUID()
-  customerId!: string;
+  customerId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(80)
+  guestCustomerName?: string;
 
   @IsDateString()
   startAt!: string;

@@ -33,6 +33,39 @@ describe('AppointmentsService manual appointments', () => {
     expect((service as any).sendAppointmentNotificationById).toHaveBeenCalledWith('manual-1','APPOINTMENT_MANUAL_CREATED',['EMAIL','PUSH']);
   });
 
+  it('creates a guest manual appointment using only the patient name', async () => {
+    const { service, tx } = setup();
+
+    await service.createManual(
+      'professional-1',
+      undefined,
+      date,
+      undefined,
+      '  Paciente Invitado  ',
+    );
+
+    expect(tx.user.findUnique).not.toHaveBeenCalled();
+    expect(tx.appointment.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+      customerId: undefined,
+      guestCustomerName: 'Paciente Invitado',
+      status: AppointmentStatus.CONFIRMED,
+      source: AppointmentSource.PROFESSIONAL_MANUAL,
+      penalty: 0,
+      creditUsed: null,
+      remainingToPay: 0,
+      documentRequested: false,
+    }) });
+    expect((service as any).sendAppointmentNotificationById).not.toHaveBeenCalled();
+  });
+
+  it('rejects a manual appointment without registered patient or guest name', async () => {
+    const { service, tx } = setup();
+    await expect(
+      service.createManual('professional-1', undefined, date),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(tx.appointment.create).not.toHaveBeenCalled();
+  });
+
   it.each([
     [{ id:'admin-1', role:Role.ADMIN, isActive:true, deletedAt:null }],
     [{ id:'professional-2', role:Role.PROFESSIONAL, isActive:true, deletedAt:null }],
