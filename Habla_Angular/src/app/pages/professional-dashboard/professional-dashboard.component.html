@@ -1935,7 +1935,6 @@
                 type="radio"
                 value="CONTINUOUS"
                 [(ngModel)]="item.scheduleMode"
-                (click)="onScheduleModeChange(item, 'CONTINUOUS')"
                 (ngModelChange)="onScheduleModeChange(item, $event)"
               />
               Horario continuo
@@ -1946,7 +1945,6 @@
                 type="radio"
                 value="SPECIFIC"
                 [(ngModel)]="item.scheduleMode"
-                (click)="onScheduleModeChange(item, 'SPECIFIC')"
                 (ngModelChange)="onScheduleModeChange(item, $event)"
               />
               Horarios especificos
@@ -2019,10 +2017,6 @@
               + Agregar bloqueo
             </ion-button>
 
-            <app-professional-agenda-manager
-              *ngIf="continuousAgendaDayCode === item.code"
-              class="continuous-agenda-manager"
-            />
           </ng-container>
 
           <ng-container *ngIf="item.scheduleMode === 'SPECIFIC'">
@@ -2083,6 +2077,9 @@
       </div>
     </ion-card-content>
   </ion-card>
+
+  <!-- La gestión por fecha corresponde únicamente al modo continuo. -->
+  <app-professional-agenda-manager *ngIf="usesContinuousScheduleOnly" />
 
   <!-- REGLAS -->
   <ion-card>

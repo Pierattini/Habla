@@ -114,7 +114,6 @@ export class ProfessionalDashboardComponent {
   specificAppointmentKey: string | null = null;
   specificAppointmentDate = '';
   specificAppointmentTime = '';
-  continuousAgendaDayCode: string | null = null;
   loaded = false;
   professionalAvatarPickerOpen = false;
   imageVersion = Date.now();
@@ -1093,7 +1092,12 @@ private prepareProfileImage(file: File): Promise<string> {
   onScheduleModeChange(item: AgendaDay, mode: ScheduleMode): void {
     item.scheduleMode = mode;
     this.closeSpecificAppointment();
-    this.continuousAgendaDayCode = mode === 'CONTINUOUS' ? item.code : null;
+  }
+
+  get usesContinuousScheduleOnly(): boolean {
+    const enabledDays = this.availability.filter((item) => item.enabled);
+    return enabledDays.length > 0
+      && enabledDays.every((item) => item.scheduleMode === 'CONTINUOUS');
   }
 
   openSpecificAppointment(item: AgendaDay, slot: AgendaTime, index: number): void {
