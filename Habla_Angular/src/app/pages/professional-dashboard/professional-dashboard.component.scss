@@ -503,24 +503,11 @@ ion-textarea:focus-within {
     max-width: 180px;
   }
 
-  .specific-slot-book {
-    --background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
-    --color: #fff;
-    font-weight: 800;
-  }
-
   .specific-appointment-form {
     display: block;
     flex: 1 0 100%;
     width: 100%;
     margin-top: 4px;
-  }
-
-  .specific-slots-help {
-    margin: -4px 0 12px;
-    color: var(--app-muted);
-    font-size: 13px;
-    line-height: 1.4;
   }
 
   .specific-slot-row {

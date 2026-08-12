@@ -2024,10 +2024,6 @@
               Horarios especificos
             </div>
 
-            <p class="specific-slots-help">
-              Usa Agendar para tomar una hora para un paciente registrado o ingresando solo su nombre.
-            </p>
-
             <div
               *ngFor="let slot of item.specificSlots; let i = index"
               class="specific-slot-row"
@@ -2039,7 +2035,6 @@
               />
 
               <ion-button
-                class="specific-slot-book"
                 fill="solid"
                 size="small"
                 (click)="openSpecificAppointment(item, slot, i)"
