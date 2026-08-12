@@ -325,7 +325,7 @@
                     <div class="especialidad">
                       {{
                         role === 'PROFESSIONAL'
-                          ? ('Email: ' + appt.customer?.email)
+                          ? (appt.customer?.email ? ('Email: ' + appt.customer.email) : 'Paciente sin cuenta')
                           : appt.professional?.professional?.specialty
                       }}
                     </div>
@@ -530,7 +530,7 @@
               <div class="especialidad">
                 {{
                   role === 'PROFESSIONAL'
-                    ? ('Email: ' + appt.customer?.email)
+                    ? (appt.customer?.email ? ('Email: ' + appt.customer.email) : 'Paciente sin cuenta')
                     : appt.professional?.professional?.specialty
                 }}
               </div>

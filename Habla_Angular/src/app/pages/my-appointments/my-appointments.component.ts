@@ -494,6 +494,7 @@ getNombre(appt: any): string {
     return (
       appt.customer?.name ||
       appt.customer?.email?.split('@')[0] ||
+      appt.guestCustomerName ||
       'Cliente'
     );
   }

@@ -9,6 +9,8 @@ export class ManualAppointmentsStore {
   private readonly http = inject(HttpClient);
   readonly customers = signal<CustomerSearchResult[]>([]);
   readonly selectedCustomer = signal<CustomerSearchResult | null>(null);
+  readonly patientMode = signal<'REGISTERED' | 'GUEST'>('REGISTERED');
+  readonly guestCustomerName = signal('');
   readonly selectedDate = signal('');
   readonly availableSlots = signal<string[]>([]);
   readonly selectedSlot = signal('');
@@ -38,6 +40,14 @@ export class ManualAppointmentsStore {
     this.error.set(null);
   }
 
+  selectPatientMode(mode: 'REGISTERED' | 'GUEST'): void {
+    this.patientMode.set(mode);
+    this.selectedCustomer.set(null);
+    this.customers.set([]);
+    this.guestCustomerName.set('');
+    this.clearMessages();
+  }
+
   async loadSlots(date: string): Promise<void> {
     this.selectedDate.set(date); this.selectedSlot.set(''); this.availableSlots.set([]); this.error.set(null);
     if (!date) return;
@@ -56,12 +66,14 @@ export class ManualAppointmentsStore {
 
   async createAppointment(): Promise<ManualAppointment | null> {
     const customer = this.selectedCustomer(); const date = this.selectedDate(); const slot = this.selectedSlot();
-    if (!customer || !date || !slot || this.creating()) return null;
+    const guestCustomerName = this.guestCustomerName().trim().replace(/\s+/g, ' ');
+    const hasPatient = this.patientMode() === 'REGISTERED' ? Boolean(customer) : guestCustomerName.length >= 2;
+    if (!hasPatient || !date || !slot || this.creating()) return null;
     this.creating.set(true); this.error.set(null); this.success.set(null);
     try {
       const startAt = new Date(`${date}T${slot}:00`).toISOString();
       const payload = {
-        customerId: customer.id,
+        ...(customer ? { customerId: customer.id } : { guestCustomerName }),
         startAt,
         ...(this.selectedServiceId() ? { serviceId: this.selectedServiceId()! } : {}),
       };
@@ -77,7 +89,7 @@ export class ManualAppointmentsStore {
   }
 
   reset(): void {
-    this.customers.set([]); this.selectedCustomer.set(null); this.selectedDate.set('');
+    this.customers.set([]); this.selectedCustomer.set(null); this.patientMode.set('REGISTERED'); this.guestCustomerName.set(''); this.selectedDate.set('');
     this.availableSlots.set([]); this.selectedSlot.set(''); this.selectedServiceId.set(null); this.error.set(null); this.success.set(null);
   }
 

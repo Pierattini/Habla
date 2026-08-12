@@ -312,11 +312,6 @@ export class LoginComponent implements OnInit {
   public async continueWithGoogle(fromRegistration = false): Promise<void> {
     if (this.isSubmitting) return;
 
-    if (localStorage.getItem('token')) {
-      this.navigateAfterLogin({ user: { role: localStorage.getItem('role') } });
-      return;
-    }
-
     if (fromRegistration && !this.registerForm.acceptedTerms) {
       this.errorMessage = 'Debes aceptar términos y política de privacidad.';
       return;
@@ -366,6 +361,11 @@ export class LoginComponent implements OnInit {
         },
       });
     } catch (error) {
+      const googleError = error as { code?: string | number; message?: string };
+      console.error('[Auth][Google native]', {
+        code: googleError?.code || 'UNKNOWN',
+        message: googleError?.message || 'Google Sign-In failed',
+      });
       if (error instanceof GoogleSignInCancelledError) {
         this.showTemporaryError('Inicio con Google cancelado.');
       } else {

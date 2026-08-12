@@ -1,5 +1,16 @@
 <section class="manual-form">
-  <app-customer-search [customers]="store.customers()" [searching]="store.searchingCustomers()" [selected]="store.selectedCustomer()" (search)="store.searchCustomers($event)" (selectCustomer)="store.selectCustomer($event)" />
+  <div class="patient-mode" role="group" aria-label="Tipo de paciente">
+    <button type="button" [class.active]="store.patientMode() === 'REGISTERED'" (click)="store.selectPatientMode('REGISTERED')">Paciente registrado</button>
+    <button type="button" [class.active]="store.patientMode() === 'GUEST'" (click)="store.selectPatientMode('GUEST')">Solo ingresar nombre</button>
+  </div>
+
+  <app-customer-search *ngIf="store.patientMode() === 'REGISTERED'" [customers]="store.customers()" [searching]="store.searchingCustomers()" [selected]="store.selectedCustomer()" (search)="store.searchCustomers($event)" (selectCustomer)="store.selectCustomer($event)" />
+
+  <div class="date-field" *ngIf="store.patientMode() === 'GUEST'">
+    <label for="manual-guest-name">Nombre del paciente</label>
+    <input id="manual-guest-name" type="text" maxlength="80" placeholder="Nombre del paciente" [ngModel]="store.guestCustomerName()" (ngModelChange)="store.guestCustomerName.set($event)" />
+    <small>No se creará una cuenta y la cita aparecerá solo en tu agenda.</small>
+  </div>
 
   <div class="date-field" *ngIf="requiresService">
     <label for="manual-service">Servicio</label>
@@ -21,16 +32,16 @@
   </div>
   <app-available-slot-selector [slots]="store.availableSlots()" [loading]="store.loadingSlots()" [selected]="store.selectedSlot()" (selectedChange)="store.selectedSlot.set($event)" />
 
-  <div class="summary" *ngIf="store.selectedCustomer() && store.selectedDate() && store.selectedSlot()">
+  <div class="summary" *ngIf="(store.selectedCustomer() || store.guestCustomerName().trim().length >= 2) && store.selectedDate() && store.selectedSlot()">
     <h4>Resumen</h4>
-    <span><b>Paciente:</b> {{ store.selectedCustomer()?.name || store.selectedCustomer()?.email }}</span>
+    <span><b>Paciente:</b> {{ store.selectedCustomer()?.name || store.selectedCustomer()?.email || store.guestCustomerName() }}</span>
     <span *ngIf="requiresService"><b>Servicio:</b> {{ selectedServiceName }}</span>
     <span><b>Fecha:</b> {{ store.selectedDate() | date:'dd/MM/yyyy':'UTC' }}</span>
     <span><b>Hora:</b> {{ store.selectedSlot() }}</span>
   </div>
   <p class="error" *ngIf="store.error()" role="alert">{{ store.error() }}</p>
   <p class="success" *ngIf="store.success()" role="status">{{ store.success() }}</p>
-  <button class="confirm" type="button" [disabled]="!store.selectedCustomer() || !store.selectedDate() || !store.selectedSlot() || (requiresService && !store.selectedServiceId()) || store.creating()" (click)="confirm()">
+  <button class="confirm" type="button" [disabled]="(store.patientMode() === 'REGISTERED' ? !store.selectedCustomer() : store.guestCustomerName().trim().length < 2) || !store.selectedDate() || !store.selectedSlot() || (requiresService && !store.selectedServiceId()) || store.creating()" (click)="confirm()">
     {{ store.creating() ? 'Creando cita…' : 'Confirmar cita' }}
   </button>
 </section>
