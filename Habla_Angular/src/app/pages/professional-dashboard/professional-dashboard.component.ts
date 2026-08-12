@@ -32,7 +32,10 @@ import {
 } from '../../services/tax-provider.service';
 import { API_URL } from '../../core/config/api.config';
 import { ProfessionalServicesManagerComponent } from '../../features/professional-services/components/professional-services-manager/professional-services-manager.component';
+import { ProfessionalServicesStore } from '../../features/professional-services/state/professional-services.store';
 import { ProfessionalAgendaManagerComponent } from '../../features/professional-time-blocks/professional-agenda-manager/professional-agenda-manager.component';
+import { ManualAppointmentFormComponent } from '../../features/manual-appointments/manual-appointment-form/manual-appointment-form.component';
+import { ManualAppointmentsStore } from '../../features/manual-appointments/manual-appointments.store';
 
 import {
   IonContent,
@@ -101,12 +104,16 @@ type TeamsConnectionState = {
     IonItem,
     IonLabel,
     ProfessionalServicesManagerComponent,
-    ProfessionalAgendaManagerComponent
+    ProfessionalAgendaManagerComponent,
+    ManualAppointmentFormComponent
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA]
 })
 export class ProfessionalDashboardComponent {
   loading = true;
+  specificAppointmentKey: string | null = null;
+  specificAppointmentDate = '';
+  specificAppointmentTime = '';
   loaded = false;
   professionalAvatarPickerOpen = false;
   imageVersion = Date.now();
@@ -192,7 +199,9 @@ export class ProfessionalDashboardComponent {
     private http: HttpClient,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private alertCtrl: AlertController
+    private alertCtrl: AlertController,
+    readonly professionalServicesStore: ProfessionalServicesStore,
+    private readonly manualAppointmentsStore: ManualAppointmentsStore,
   ) {
     this.restoreCachedProfile();
   }
@@ -364,11 +373,11 @@ export class ProfessionalDashboardComponent {
       missing.push('Completa una descripción clara');
     }
 
-    if (!Number(this.profile.price)) {
+    if (!this.professionalServicesStore.isCatalogMode() && !Number(this.profile.price)) {
       missing.push('Define precio de sesión');
     }
 
-    if (!Number(this.profile.duration)) {
+    if (!this.professionalServicesStore.isCatalogMode() && !Number(this.profile.duration)) {
       missing.push('Define duración de sesión');
     }
 
@@ -1078,6 +1087,53 @@ private prepareProfileImage(file: File): Promise<string> {
     item.specificSlots = item.specificSlots
       .filter((slot) => slot.time)
       .sort((a, b) => this.timeToMinutes(a.time) - this.timeToMinutes(b.time));
+  }
+
+  get hasContinuousAvailability(): boolean {
+    return this.availability.some((item) => item.enabled && item.scheduleMode === 'CONTINUOUS');
+  }
+
+  openSpecificAppointment(item: AgendaDay, slot: AgendaTime, index: number): void {
+    if (!slot.time) return;
+
+    const key = `${item.code}-${index}-${slot.time}`;
+    if (this.specificAppointmentKey === key) {
+      this.specificAppointmentKey = null;
+      this.manualAppointmentsStore.reset();
+      return;
+    }
+
+    this.manualAppointmentsStore.reset();
+    this.specificAppointmentKey = key;
+    this.specificAppointmentDate = this.nextOccurrenceDate(item.code, slot.time);
+    this.specificAppointmentTime = slot.time;
+  }
+
+  closeSpecificAppointment(): void {
+    this.specificAppointmentKey = null;
+    this.manualAppointmentsStore.reset();
+  }
+
+  private nextOccurrenceDate(dayCode: string, time: string): string {
+    const dayIndexes: Record<string, number> = {
+      SUNDAY: 0,
+      MONDAY: 1,
+      TUESDAY: 2,
+      WEDNESDAY: 3,
+      THURSDAY: 4,
+      FRIDAY: 5,
+      SATURDAY: 6,
+    };
+    const now = new Date();
+    const target = dayIndexes[dayCode] ?? now.getDay();
+    let daysAhead = (target - now.getDay() + 7) % 7;
+    const [hour, minute] = time.split(':').map(Number);
+    if (daysAhead === 0 && (hour * 60 + minute) <= (now.getHours() * 60 + now.getMinutes())) {
+      daysAhead = 7;
+    }
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysAhead);
+    const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return offsetDate.toISOString().slice(0, 10);
   }
 
   toAvailabilityPayload(item: AgendaDay): AvailabilityPayload {

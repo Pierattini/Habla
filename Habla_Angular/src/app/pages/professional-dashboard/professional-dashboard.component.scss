@@ -500,8 +500,21 @@ ion-textarea:focus-within {
 }
 
 .specific-slot-row input[type="time"] {
-  max-width: 180px;
-}
+    max-width: 180px;
+  }
+
+  .specific-slot-book {
+    --background: linear-gradient(135deg, var(--app-primary), var(--app-primary-light));
+    --color: #fff;
+    font-weight: 800;
+  }
+
+  .specific-appointment-form {
+    display: block;
+    flex: 1 0 100%;
+    width: 100%;
+    margin-top: 4px;
+  }
 
 .specific-slot-row input[type="time"]:focus,
 .schedule-field input[type="time"]:focus {

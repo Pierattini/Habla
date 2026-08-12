@@ -53,23 +53,7 @@ export class ProfessionalServicesManagerComponent implements OnInit {
   }
 
   async requestMode(mode: ProfessionalServiceMode): Promise<void> {
-    const switchingToCatalog = mode === 'SERVICE_CATALOG';
-    const alert = await this.alertController.create({
-      header: switchingToCatalog ? 'Activar catálogo de servicios' : 'Volver a precio único',
-      message: switchingToCatalog
-        ? 'Podrás crear y mostrar distintos servicios. Tu precio actual no se modificará.'
-        : 'Tus servicios permanecerán guardados, pero dejarán de mostrarse públicamente.',
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Confirmar',
-          handler: () => this.applyMode(mode),
-        },
-      ],
-      cssClass: 'conecta-alert',
-    });
-
-    await alert.present();
+    this.applyMode(mode);
   }
 
   openCreateForm(): void {

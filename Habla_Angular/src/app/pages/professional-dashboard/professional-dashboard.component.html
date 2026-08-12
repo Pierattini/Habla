@@ -195,10 +195,6 @@
     </ion-card-content>
   </ion-card>
 
-  <app-professional-services-manager
-    [country]="profile.officeCountry || 'CL'"
-  ></app-professional-services-manager>
-
   <ion-card>
     <ion-card-content>
       <div class="documents-title-row">
@@ -1778,6 +1774,10 @@
 
   </ion-card>
 
+  <app-professional-services-manager
+    [country]="profile.officeCountry || 'CL'"
+  ></app-professional-services-manager>
+
   <!-- CONFIG SESIÓN -->
   <ion-card>
 
@@ -1787,7 +1787,7 @@
         Configuración de Sesión
       </h2>
 
-      <ion-item>
+      <ion-item *ngIf="!professionalServicesStore.isCatalogMode()">
         <ion-label position="stacked">
           Precio CLP
         </ion-label>
@@ -1798,7 +1798,7 @@
         </ion-input>
       </ion-item>
 
-      <ion-item>
+      <ion-item *ngIf="!professionalServicesStore.isCatalogMode()">
   <ion-label position="stacked">
     Duración de la sesión (min)
   </ion-label>
@@ -1823,9 +1823,6 @@
     </ion-card-content>
 
   </ion-card>
-
-  <!-- AGENDA PUNTUAL: citas manuales y bloqueos por fecha -->
-  <app-professional-agenda-manager />
 
   <!-- HORARIOS -->
   <ion-card *ngIf="false">
@@ -2007,6 +2004,7 @@
               >
                 Eliminar
               </ion-button>
+
             </div>
 
             <ion-button
@@ -2034,6 +2032,15 @@
               />
 
               <ion-button
+                class="specific-slot-book"
+                fill="solid"
+                size="small"
+                (click)="openSpecificAppointment(item, slot, i)"
+              >
+                {{ specificAppointmentKey === item.code + '-' + i + '-' + slot.time ? 'Cerrar' : 'Agendar' }}
+              </ion-button>
+
+              <ion-button
                 fill="outline"
                 size="small"
                 color="danger"
@@ -2041,6 +2048,14 @@
               >
                 Eliminar
               </ion-button>
+
+              <app-manual-appointment-form
+                *ngIf="specificAppointmentKey === item.code + '-' + i + '-' + slot.time"
+                class="specific-appointment-form"
+                [initialDate]="specificAppointmentDate"
+                [initialTime]="specificAppointmentTime"
+                (created)="closeSpecificAppointment()"
+              />
             </div>
 
             <ion-button
@@ -2055,6 +2070,9 @@
       </div>
     </ion-card-content>
   </ion-card>
+
+  <!-- AGENDA PUNTUAL: visible para los días configurados con horario continuo -->
+  <app-professional-agenda-manager *ngIf="hasContinuousAvailability" />
 
   <!-- REGLAS -->
   <ion-card>

@@ -17,7 +17,7 @@
     <select
       id="manual-service"
       [ngModel]="store.selectedServiceId()"
-      (ngModelChange)="store.selectService($event || null)"
+      (ngModelChange)="selectService($event || null)"
     >
       <option [ngValue]="null">Selecciona un servicio</option>
       <option *ngFor="let service of servicesStore.activeServices()" [ngValue]="service.id">
