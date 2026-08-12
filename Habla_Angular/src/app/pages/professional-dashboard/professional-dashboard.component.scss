@@ -516,6 +516,22 @@ ion-textarea:focus-within {
     margin-top: 4px;
   }
 
+  .specific-slots-help {
+    margin: -4px 0 12px;
+    color: var(--app-muted);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .continuous-agenda-manager {
+    display: block;
+    margin-top: 12px;
+  }
+
+  .specific-slot-row {
+    flex-wrap: wrap;
+  }
+
 .specific-slot-row input[type="time"]:focus,
 .schedule-field input[type="time"]:focus {
   border-color: var(--app-primary-light);

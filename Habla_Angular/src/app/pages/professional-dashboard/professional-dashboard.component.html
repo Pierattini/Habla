@@ -1935,6 +1935,8 @@
                 type="radio"
                 value="CONTINUOUS"
                 [(ngModel)]="item.scheduleMode"
+                (click)="onScheduleModeChange(item, 'CONTINUOUS')"
+                (ngModelChange)="onScheduleModeChange(item, $event)"
               />
               Horario continuo
             </label>
@@ -1944,6 +1946,8 @@
                 type="radio"
                 value="SPECIFIC"
                 [(ngModel)]="item.scheduleMode"
+                (click)="onScheduleModeChange(item, 'SPECIFIC')"
+                (ngModelChange)="onScheduleModeChange(item, $event)"
               />
               Horarios especificos
             </label>
@@ -2014,12 +2018,21 @@
             >
               + Agregar bloqueo
             </ion-button>
+
+            <app-professional-agenda-manager
+              *ngIf="continuousAgendaDayCode === item.code"
+              class="continuous-agenda-manager"
+            />
           </ng-container>
 
           <ng-container *ngIf="item.scheduleMode === 'SPECIFIC'">
             <div class="subsection-title">
               Horarios especificos
             </div>
+
+            <p class="specific-slots-help">
+              Usa Agendar para tomar una hora para un paciente registrado o ingresando solo su nombre.
+            </p>
 
             <div
               *ngFor="let slot of item.specificSlots; let i = index"
@@ -2070,9 +2083,6 @@
       </div>
     </ion-card-content>
   </ion-card>
-
-  <!-- AGENDA PUNTUAL: visible para los días configurados con horario continuo -->
-  <app-professional-agenda-manager *ngIf="hasContinuousAvailability" />
 
   <!-- REGLAS -->
   <ion-card>
