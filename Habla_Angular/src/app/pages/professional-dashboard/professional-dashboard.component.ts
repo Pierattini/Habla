@@ -1147,10 +1147,10 @@ private prepareProfileImage(file: File): Promise<string> {
     this.closeSpecificAppointment();
   }
 
-  get usesContinuousScheduleOnly(): boolean {
-    const enabledDays = this.availability.filter((item) => item.enabled);
-    return enabledDays.length > 0
-      && enabledDays.every((item) => item.scheduleMode === 'CONTINUOUS');
+  get hasContinuousSchedule(): boolean {
+    return this.availability.some(
+      (item) => item.enabled && item.scheduleMode === 'CONTINUOUS',
+    );
   }
 
   openSpecificAppointment(item: AgendaDay, slot: AgendaTime, index: number): void {
