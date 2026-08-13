@@ -102,6 +102,19 @@ describe('AppointmentsService availability integration', () => {
     ).resolves.toEqual(['09:00', '11:00']);
   });
 
+  it('hides a disabled specific slot without removing it from the weekly schedule', async () => {
+    prisma.availability.findMany.mockResolvedValue([{
+      ...availability,
+      scheduleMode: ScheduleMode.SPECIFIC,
+      specificSlots: [540, 600, 660],
+      blockedRanges: [{ startMinute: 600, endMinute: 601 }],
+    }]);
+
+    await expect(
+      service.getAvailableSlots('professional-1', '2026-08-18'),
+    ).resolves.toEqual(['09:00', '11:00']);
+  });
+
   it('rejects rescheduling into an occupied range before updating the appointment', async () => {
     const tx = {
       professional: { findUnique: jest.fn().mockResolvedValue({

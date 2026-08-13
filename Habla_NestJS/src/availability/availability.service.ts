@@ -75,9 +75,11 @@ export class AvailabilityService {
       throw new ForbiddenException('Duplicated specific schedules are not allowed');
     }
 
-    if (scheduleMode === ScheduleMode.CONTINUOUS) {
-      this.validateBlockedRanges(blockedRanges, startMinute, endMinute);
-    }
+    this.validateBlockedRanges(
+      blockedRanges,
+      scheduleMode === ScheduleMode.CONTINUOUS ? startMinute : 0,
+      scheduleMode === ScheduleMode.CONTINUOUS ? endMinute : 1440,
+    );
 
     return {
       scheduleMode,

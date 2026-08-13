@@ -1053,7 +1053,9 @@ export class AppointmentsService {
     for (const block of availability) {
       const candidates =
         block.scheduleMode === ScheduleMode.SPECIFIC
-          ? this.getSpecificSlots(block.specificSlots)
+          ? this.getSpecificSlots(block.specificSlots).filter((minute) =>
+              !this.isMinuteBlockedByAvailability(block, minute, duration),
+            )
           : this.buildContinuousSlots(block, duration);
 
       for (const minute of candidates) {
@@ -1294,7 +1296,8 @@ export class AppointmentsService {
     duration: number,
   ) {
     if (block.scheduleMode === ScheduleMode.SPECIFIC) {
-      return this.getSpecificSlots(block.specificSlots).includes(minute);
+      return this.getSpecificSlots(block.specificSlots).includes(minute)
+        && !this.isMinuteBlockedByAvailability(block, minute, duration);
     }
 
     if (minute < block.startMinute || minute + duration > block.endMinute) {
@@ -1399,6 +1402,21 @@ export class AppointmentsService {
     ];
 
     return dayMap[date.getDay()] as WeekDay;
+  }
+
+  private isMinuteBlockedByAvailability(
+    block: AvailabilityConfig,
+    minute: number,
+    duration: number,
+  ): boolean {
+    return this.getBlockedRanges(block.blockedRanges).some((range) =>
+      this.minuteRangesOverlap(
+        minute,
+        minute + duration,
+        range.startMinute,
+        range.endMinute,
+      ),
+    );
   }
 
   private getWeekDayInBookingTimezone(date: Date) {

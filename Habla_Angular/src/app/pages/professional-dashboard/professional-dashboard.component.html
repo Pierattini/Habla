@@ -2037,9 +2037,22 @@
               <ion-button
                 fill="solid"
                 size="small"
+                [disabled]="isSpecificSlotUnavailable(item, slot)"
                 (click)="openSpecificAppointment(item, slot, i)"
               >
                 {{ specificAppointmentKey === item.code + '-' + i + '-' + slot.time ? 'Cerrar' : 'Agendar' }}
+              </ion-button>
+
+              <ion-button
+                fill="outline"
+                size="small"
+                [color]="isSpecificSlotUnavailable(item, slot) ? 'success' : 'medium'"
+                [disabled]="specificSlotSavingKey === item.code + '-' + slot.time"
+                (click)="toggleSpecificSlotAvailability(item, slot)"
+              >
+                {{ specificSlotSavingKey === item.code + '-' + slot.time
+                  ? 'Guardando...'
+                  : (isSpecificSlotUnavailable(item, slot) ? 'Disponible' : 'No disponible') }}
               </ion-button>
 
               <ion-button
