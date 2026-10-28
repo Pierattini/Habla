@@ -2021,23 +2021,33 @@
 
           <ng-container *ngIf="item.scheduleMode === 'SPECIFIC'">
             <div class="subsection-title">
-              Horarios especificos
+              Horarios específicos
             </div>
+
+            <p class="schedule-help">
+              Usa "Bloquear" para dejar de ofrecer un horario sin borrarlo. Los cambios se aplican al presionar "Guardar".
+            </p>
 
             <div
               *ngFor="let slot of item.specificSlots; let i = index"
               class="specific-slot-row"
+              role="group"
+              [attr.aria-label]="'Horario de las ' + (slot.time || 'sin hora')"
             >
               <input
                 type="time"
+                aria-label="Hora del horario"
                 [(ngModel)]="slot.time"
                 (change)="sortSpecificSlots(item)"
               />
 
+              <ion-badge *ngIf="slot.unavailable" color="medium">Bloqueado</ion-badge>
+
               <ion-button
                 fill="solid"
                 size="small"
-                [disabled]="isSpecificSlotUnavailable(item, slot)"
+                [disabled]="slot.unavailable"
+                [attr.aria-label]="'Agendar a las ' + slot.time"
                 (click)="openSpecificAppointment(item, slot, i)"
               >
                 {{ specificAppointmentKey === item.code + '-' + i + '-' + slot.time ? 'Cerrar' : 'Agendar' }}
@@ -2046,19 +2056,18 @@
               <ion-button
                 fill="outline"
                 size="small"
-                [color]="isSpecificSlotUnavailable(item, slot) ? 'success' : 'medium'"
-                [disabled]="specificSlotSavingKey === item.code + '-' + slot.time"
-                (click)="toggleSpecificSlotAvailability(item, slot)"
+                [color]="slot.unavailable ? 'success' : 'medium'"
+                [attr.aria-label]="(slot.unavailable ? 'Habilitar' : 'Bloquear') + ' horario de las ' + slot.time"
+                (click)="toggleSpecificSlotAvailability(item, slot, i)"
               >
-                {{ specificSlotSavingKey === item.code + '-' + slot.time
-                  ? 'Guardando...'
-                  : (isSpecificSlotUnavailable(item, slot) ? 'Disponible' : 'No disponible') }}
+                {{ slot.unavailable ? 'Habilitar' : 'Bloquear' }}
               </ion-button>
 
               <ion-button
                 fill="outline"
                 size="small"
                 color="danger"
+                [attr.aria-label]="'Eliminar horario de las ' + slot.time"
                 (click)="removeSpecificSlot(item, i)"
               >
                 Eliminar
@@ -2087,6 +2096,9 @@
   </ion-card>
 
   <!-- La gestión por fecha corresponde únicamente al modo continuo. -->
+  <p *ngIf="hasContinuousSchedule && hasSpecificSchedule" class="schedule-help">
+    La gestión por fecha aplica solo a los días con horario continuo. En los días con horarios específicos usa "Bloquear" en cada horario.
+  </p>
   <app-professional-agenda-manager *ngIf="hasContinuousSchedule" />
 
   <!-- REGLAS -->

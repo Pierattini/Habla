@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, ForbiddenException } from '@nestjs/common';
 import {
   AppointmentStatus,
   AttentionModality,
@@ -115,6 +115,32 @@ describe('AppointmentsService availability integration', () => {
     ).resolves.toEqual(['09:00', '11:00']);
   });
 
+  it('does not hide neighbouring specific slots when the session is longer than the gap', async () => {
+    prisma.availability.findMany.mockResolvedValue([{
+      ...availability,
+      scheduleMode: ScheduleMode.SPECIFIC,
+      specificSlots: [570, 600],
+      blockedRanges: [{ startMinute: 600, endMinute: 601 }],
+    }]);
+
+    await expect(
+      service.getAvailableSlots('professional-1', '2026-08-18'),
+    ).resolves.toEqual(['09:30']);
+  });
+
+  it('can disable the last specific slot of the day', async () => {
+    prisma.availability.findMany.mockResolvedValue([{
+      ...availability,
+      scheduleMode: ScheduleMode.SPECIFIC,
+      specificSlots: [540, 1439],
+      blockedRanges: [{ startMinute: 1439, endMinute: 1440 }],
+    }]);
+
+    await expect(
+      service.getAvailableSlots('professional-1', '2026-08-18'),
+    ).resolves.toEqual(['09:00']);
+  });
+
   it('rejects rescheduling into an occupied range before updating the appointment', async () => {
     const tx = {
       professional: { findUnique: jest.fn().mockResolvedValue({
@@ -208,5 +234,73 @@ describe('AppointmentsService availability integration', () => {
     ).rejects.toBeInstanceOf(ConflictException);
     expect(conflicts.assertRangeAvailable).toHaveBeenCalled();
     expect(tx.appointment.create).not.toHaveBeenCalled();
+  });
+
+  describe('disabled specific slot', () => {
+    const specificAvailability = {
+      ...availability,
+      scheduleMode: ScheduleMode.SPECIFIC,
+      specificSlots: [540, 600, 660],
+      blockedRanges: [{ startMinute: 600, endMinute: 601 }],
+    };
+
+    beforeEach(() => {
+      prisma.availability.findMany.mockResolvedValue([specificAvailability]);
+      prisma.availability.findFirst = jest
+        .fn()
+        .mockResolvedValue(specificAvailability);
+      conflicts.runExclusive = jest.fn();
+      conflicts.assertRangeAvailable = jest.fn();
+    });
+
+    it('rejects a reservation on the disabled slot', async () => {
+      prisma.professional.findUnique.mockResolvedValue({
+        userId: 'professional-1',
+        duration: 60,
+        price: 45_000,
+        attentionMode: AttentionModality.ONLINE,
+        documentAutomationEnabled: false,
+        firstLeadReceivedAt: new Date(),
+        user: { role: 'PROFESSIONAL', sessionDuration: 60 },
+      });
+      prisma.user = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+      };
+      (service as any).professionalAccess = {
+        assertCanReceiveRequests: jest.fn().mockResolvedValue(undefined),
+      };
+
+      await expect(
+        service.create(
+          'customer-1',
+          'professional-1',
+          new Date('2026-08-18T14:00:00.000Z'),
+        ),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(conflicts.runExclusive).not.toHaveBeenCalled();
+    });
+
+    it('rejects rescheduling into the disabled slot', async () => {
+      prisma.appointment.findUnique = jest.fn().mockResolvedValue({
+        id: 'appointment-1',
+        customerId: 'customer-1',
+        professionalId: 'professional-1',
+        date: new Date('2026-08-20T14:00:00.000Z'),
+        status: AppointmentStatus.CONFIRMED,
+        penalty: 0,
+      });
+      prisma.professional.findUnique.mockResolvedValue({
+        duration: 60,
+        price: 45_000,
+        user: { sessionDuration: 60 },
+      });
+
+      await expect(
+        service.rescheduleAppointment('appointment-1', 'customer-1', {
+          date: '2026-08-18T14:00:00.000Z',
+        }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(conflicts.runExclusive).not.toHaveBeenCalled();
+    });
   });
 });

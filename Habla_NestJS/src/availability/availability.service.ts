@@ -57,7 +57,7 @@ export class AvailabilityService {
     const endMinute = dto.endMinute;
     const breakMinute = dto.breakMinute ?? 0;
     const specificSlots = this.uniqueSorted(dto.specificSlots ?? []);
-    const blockedRanges = this.sortRanges(dto.blockedRanges ?? []);
+    const requestedRanges = this.sortRanges(dto.blockedRanges ?? []);
 
     if (startMinute < 0 || endMinute > 1440 || startMinute >= endMinute) {
       throw new ForbiddenException('Invalid time range');
@@ -75,11 +75,14 @@ export class AvailabilityService {
       throw new ForbiddenException('Duplicated specific schedules are not allowed');
     }
 
-    this.validateBlockedRanges(
-      blockedRanges,
-      scheduleMode === ScheduleMode.CONTINUOUS ? startMinute : 0,
-      scheduleMode === ScheduleMode.CONTINUOUS ? endMinute : 1440,
-    );
+    const blockedRanges =
+      scheduleMode === ScheduleMode.SPECIFIC
+        ? this.toSpecificSlotBlocks(requestedRanges, specificSlots)
+        : requestedRanges;
+
+    if (scheduleMode === ScheduleMode.CONTINUOUS) {
+      this.validateBlockedRanges(blockedRanges, startMinute, endMinute);
+    }
 
     return {
       scheduleMode,
@@ -122,6 +125,17 @@ export class AvailabilityService {
         throw new ForbiddenException('Blocked ranges cannot overlap');
       }
     }
+  }
+
+  // En modo específico cada bloqueo marca un horario desactivado por su inicio.
+  // Se descartan los que no corresponden a un horario (p. ej. restos del modo
+  // continuo) y se guardan como marcas de un minuto.
+  private toSpecificSlotBlocks(ranges: TimeRange[], specificSlots: number[]) {
+    const disabledStarts = new Set(ranges.map((range) => range.startMinute));
+
+    return specificSlots
+      .filter((minute) => disabledStarts.has(minute))
+      .map((minute) => ({ startMinute: minute, endMinute: minute + 1 }));
   }
 
   private uniqueSorted(minutes: number[]) {

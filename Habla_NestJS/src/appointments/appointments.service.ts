@@ -1053,9 +1053,7 @@ export class AppointmentsService {
     for (const block of availability) {
       const candidates =
         block.scheduleMode === ScheduleMode.SPECIFIC
-          ? this.getSpecificSlots(block.specificSlots).filter((minute) =>
-              !this.isMinuteBlockedByAvailability(block, minute, duration),
-            )
+          ? this.buildSpecificSlots(block)
           : this.buildContinuousSlots(block, duration);
 
       for (const minute of candidates) {
@@ -1296,21 +1294,31 @@ export class AppointmentsService {
     duration: number,
   ) {
     if (block.scheduleMode === ScheduleMode.SPECIFIC) {
-      return this.getSpecificSlots(block.specificSlots).includes(minute)
-        && !this.isMinuteBlockedByAvailability(block, minute, duration);
+      return this.buildSpecificSlots(block).includes(minute);
     }
 
-    if (minute < block.startMinute || minute + duration > block.endMinute) {
-      return false;
-    }
-
-    return !this.getBlockedRanges(block.blockedRanges).some((range) =>
-      this.minuteRangesOverlap(
+    return (
+      minute >= block.startMinute &&
+      minute + duration <= block.endMinute &&
+      !this.overlapsBlockedRange(
+        this.getBlockedRanges(block.blockedRanges),
         minute,
-        minute + duration,
-        range.startMinute,
-        range.endMinute,
+        duration,
+      )
+    );
+  }
+
+  // En modo específico un bloqueo desactiva solo el horario que empieza en su
+  // startMinute; no se cruza con la duración para no ocultar horarios vecinos.
+  private buildSpecificSlots(block: AvailabilityConfig) {
+    const disabledSlots = new Set(
+      this.getBlockedRanges(block.blockedRanges).map(
+        (range) => range.startMinute,
       ),
+    );
+
+    return this.getSpecificSlots(block.specificSlots).filter(
+      (minute) => !disabledSlots.has(minute),
     );
   }
 
@@ -1324,16 +1332,7 @@ export class AppointmentsService {
       minute + duration <= block.endMinute;
       minute += step
     ) {
-      const blocked = ranges.some((range) =>
-        this.minuteRangesOverlap(
-          minute,
-          minute + duration,
-          range.startMinute,
-          range.endMinute,
-        ),
-      );
-
-      if (!blocked) slots.push(minute);
+      if (!this.overlapsBlockedRange(ranges, minute, duration)) slots.push(minute);
     }
 
     return slots;
@@ -1404,12 +1403,12 @@ export class AppointmentsService {
     return dayMap[date.getDay()] as WeekDay;
   }
 
-  private isMinuteBlockedByAvailability(
-    block: AvailabilityConfig,
+  private overlapsBlockedRange(
+    ranges: TimeRange[],
     minute: number,
     duration: number,
   ): boolean {
-    return this.getBlockedRanges(block.blockedRanges).some((range) =>
+    return ranges.some((range) =>
       this.minuteRangesOverlap(
         minute,
         minute + duration,

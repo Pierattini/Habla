@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
-import { finalize, firstValueFrom, forkJoin, Observable, timeout } from 'rxjs';
+import { finalize, forkJoin, Observable, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   DashboardTaxDocument,
@@ -41,6 +41,7 @@ import {
   IonContent,
   IonCard,
   IonCardContent,
+  IonBadge,
   IonButton,
   IonInput,
   IonTextarea,
@@ -50,6 +51,7 @@ import {
 
 type AgendaTime = {
   time: string;
+  unavailable?: boolean;
 };
 
 type AgendaBlock = {
@@ -98,6 +100,7 @@ type TeamsConnectionState = {
     IonContent,
     IonCard,
     IonCardContent,
+    IonBadge,
     IonButton,
     IonInput,
     IonTextarea,
@@ -114,7 +117,6 @@ export class ProfessionalDashboardComponent {
   specificAppointmentKey: string | null = null;
   specificAppointmentDate = '';
   specificAppointmentTime = '';
-  specificSlotSavingKey: string | null = null;
   loaded = false;
   professionalAvatarPickerOpen = false;
   imageVersion = Date.now();
@@ -994,17 +996,22 @@ private prepareProfileImage(file: File): Promise<string> {
             agendaDay.scheduleMode = item.scheduleMode || 'CONTINUOUS';
             agendaDay.start = this.minutesToTime(item.startMinute ?? 540);
             agendaDay.end = this.minutesToTime(item.endMinute ?? 1080);
+            const blockedRanges = Array.isArray(item.blockedRanges) ? item.blockedRanges : [];
+            const isSpecific = agendaDay.scheduleMode === 'SPECIFIC';
+            // En modo específico los bloqueos marcan horarios desactivados por su inicio.
+            const disabledSlots = new Set(blockedRanges.map((range) => range.startMinute));
             agendaDay.specificSlots = Array.isArray(item.specificSlots)
               ? item.specificSlots.map((minute: number) => ({
                 time: this.minutesToTime(minute),
+                unavailable: isSpecific && disabledSlots.has(minute),
               }))
               : [];
-            agendaDay.blockedRanges = Array.isArray(item.blockedRanges)
-              ? item.blockedRanges.map((range) => ({
+            agendaDay.blockedRanges = isSpecific
+              ? []
+              : blockedRanges.map((range) => ({
                 start: this.minutesToTime(range.startMinute),
                 end: this.minutesToTime(range.endMinute),
-              }))
-              : [];
+              }));
 
             if (Number.isInteger(item.breakMinute)) {
               this.profile.interval = Number(item.breakMinute);
@@ -1080,14 +1087,7 @@ private prepareProfileImage(file: File): Promise<string> {
   }
 
   removeSpecificSlot(item: AgendaDay, index: number): void {
-    const removedTime = item.specificSlots[index]?.time;
     item.specificSlots.splice(index, 1);
-    if (removedTime) {
-      const removedMinute = this.timeToMinutes(removedTime);
-      item.blockedRanges = item.blockedRanges.filter((range) =>
-        this.timeToMinutes(range.start) !== removedMinute,
-      );
-    }
     this.sortSpecificSlots(item);
   }
 
@@ -1097,48 +1097,12 @@ private prepareProfileImage(file: File): Promise<string> {
       .sort((a, b) => this.timeToMinutes(a.time) - this.timeToMinutes(b.time));
   }
 
-  isSpecificSlotUnavailable(item: AgendaDay, slot: AgendaTime): boolean {
-    const minute = this.timeToMinutes(slot.time);
-    return item.blockedRanges.some((range) =>
-      this.timeToMinutes(range.start) === minute,
-    );
-  }
+  // Solo marca el horario; el cambio se guarda con "Guardar" junto al resto de la agenda.
+  toggleSpecificSlotAvailability(item: AgendaDay, slot: AgendaTime, index: number): void {
+    slot.unavailable = !slot.unavailable;
 
-  async toggleSpecificSlotAvailability(item: AgendaDay, slot: AgendaTime): Promise<void> {
-    if (!slot.time) return;
-
-    const savingKey = `${item.code}-${slot.time}`;
-    if (this.specificSlotSavingKey === savingKey) return;
-    const previousRanges = item.blockedRanges.map((range) => ({ ...range }));
-    const minute = this.timeToMinutes(slot.time);
-    const blockedIndex = item.blockedRanges.findIndex((range) =>
-      this.timeToMinutes(range.start) === minute,
-    );
-
-    if (blockedIndex >= 0) {
-      item.blockedRanges.splice(blockedIndex, 1);
-    } else {
-      item.blockedRanges.push({
-        start: slot.time,
-        end: this.minutesToTime(Math.min(minute + 1, 1440)),
-      });
-    }
-
-    this.specificSlotSavingKey = savingKey;
-    try {
-      await firstValueFrom(
-        this.professionalProfileService.saveAvailability(this.toAvailabilityPayload(item)),
-      );
-      this.showProfileFeedback(
-        blockedIndex >= 0 ? 'Horario nuevamente disponible.' : 'Horario marcado como no disponible.',
-        'success',
-        1800,
-      );
-    } catch {
-      item.blockedRanges = previousRanges;
-      this.showProfileFeedback('No pudimos actualizar ese horario.', 'warning', 2200);
-    } finally {
-      this.specificSlotSavingKey = null;
+    if (slot.unavailable && this.specificAppointmentKey === `${item.code}-${index}-${slot.time}`) {
+      this.closeSpecificAppointment();
     }
   }
 
@@ -1150,6 +1114,12 @@ private prepareProfileImage(file: File): Promise<string> {
   get hasContinuousSchedule(): boolean {
     return this.availability.some(
       (item) => item.enabled && item.scheduleMode === 'CONTINUOUS',
+    );
+  }
+
+  get hasSpecificSchedule(): boolean {
+    return this.availability.some(
+      (item) => item.enabled && item.scheduleMode === 'SPECIFIC',
     );
   }
 
@@ -1201,11 +1171,17 @@ private prepareProfileImage(file: File): Promise<string> {
       .map((slot) => this.timeToMinutes(slot.time))
       .sort((a, b) => a - b);
 
-    const blockedRanges = item.blockedRanges
-      .map((range) => ({
+    const blockedRanges = (item.scheduleMode === 'SPECIFIC'
+      ? item.specificSlots
+        .filter((slot) => slot.unavailable)
+        .map((slot) => {
+          const minute = this.timeToMinutes(slot.time);
+          return { startMinute: minute, endMinute: minute + 1 };
+        })
+      : item.blockedRanges.map((range) => ({
         startMinute: this.timeToMinutes(range.start),
         endMinute: this.timeToMinutes(range.end),
-      }))
+      })))
       .sort((a, b) => a.startMinute - b.startMinute);
 
     return {
@@ -1331,11 +1307,6 @@ private prepareProfileImage(file: File): Promise<string> {
 
         if (new Set(slots).size !== slots.length) {
           errors.push(`${item.day}: no se permiten horarios duplicados.`);
-        }
-
-        const slotMinutes = new Set(slots.map((slot) => this.timeToMinutes(slot)));
-        if (item.blockedRanges.some((range) => !slotMinutes.has(this.timeToMinutes(range.start)))) {
-          errors.push(`${item.day}: hay una hora no disponible que ya no existe.`);
         }
       }
     }
