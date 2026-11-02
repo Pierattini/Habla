@@ -23,6 +23,7 @@ export interface LibreDteIssueInput {
   type?: TaxDocumentType | null;
   amount: number;
   currency: string;
+  itemName: string;
   customer: LibreDteParty;
   issuer: LibreDteParty;
   appointmentDate: Date;

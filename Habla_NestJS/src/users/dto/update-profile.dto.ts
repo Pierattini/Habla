@@ -62,6 +62,10 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsBoolean()
+  taxExempt?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
   wantsTaxDocumentByDefault?: boolean;
 
   @IsOptional()

@@ -4,6 +4,7 @@ import { TaxDocumentType } from '@prisma/client';
 type SiiDraftDocument = {
   id: string;
   type?: TaxDocumentType | null;
+  taxExempt?: boolean | null;
   amount?: number | null;
   currency: string;
   customerTaxId?: string | null;
@@ -18,6 +19,7 @@ type SiiDraftDocument = {
   appointment: {
     id: string;
     date: Date;
+    serviceNameSnapshot?: string | null;
   };
 };
 
@@ -34,7 +36,8 @@ export class SiiDteDraftService {
   buildDraft(document: SiiDraftDocument, folio: number): SiiDraftResult {
     const generatedAt = new Date();
     const warnings: string[] = [];
-    const dteCode = this.resolveDteCode(document.type);
+    const exempt = document.taxExempt ?? true;
+    const dteCode = this.resolveDteCode(document.type, exempt);
     const normalizedFolio = this.requirePositiveFolio(folio);
     const amount = this.requirePositiveAmount(document.amount);
     const emitter = this.resolveEmitter(document);
@@ -71,12 +74,13 @@ export class SiiDteDraftService {
       `<CmnaRecep>${this.escapeXml(receiver.city)}</CmnaRecep>`,
       '</Receptor>',
       '<Totales>',
+      ...(exempt ? [`<MntExe>${amount}</MntExe>`] : []),
       `<MntTotal>${amount}</MntTotal>`,
       '</Totales>',
       '</Encabezado>',
       '<Detalle>',
       '<NroLinDet>1</NroLinDet>',
-      '<NmbItem>Atención profesional Conecta</NmbItem>',
+      `<NmbItem>${this.escapeXml(document.appointment.serviceNameSnapshot?.trim() || 'Servicio profesional')}</NmbItem>`,
       `<DscItem>${this.escapeXml(document.professionalTaxNote || `Cita ${document.appointment.id} - ${serviceDate}`)}</DscItem>`,
       '<QtyItem>1</QtyItem>',
       `<PrcItem>${amount}</PrcItem>`,
@@ -95,9 +99,10 @@ export class SiiDteDraftService {
     };
   }
 
-  resolveDteCode(type?: TaxDocumentType | null): number {
-    if (type === TaxDocumentType.FACTURA) return 33;
-    return 39;
+  // 33/39 afectas a IVA; 34/41 exentas (p. ej. prestaciones de salud).
+  resolveDteCode(type?: TaxDocumentType | null, exempt = true): number {
+    if (type === TaxDocumentType.FACTURA) return exempt ? 34 : 33;
+    return exempt ? 41 : 39;
   }
 
   private requirePositiveFolio(value: number): number {

@@ -1184,6 +1184,25 @@
           </ion-item>
         </div>
 
+        <div class="profile-field native-profile-field">
+          <label for="professional-tax-exempt">
+            Tipo de boleta
+          </label>
+
+          <select
+            id="professional-tax-exempt"
+            [ngModel]="$any(profile).taxExempt"
+            (ngModelChange)="$any(profile).taxExempt = $event"
+          >
+            <option [ngValue]="true">Exenta de IVA (servicios de salud, p. ej. psicoterapia)</option>
+            <option [ngValue]="false">Afecta a IVA</option>
+          </select>
+
+          <p class="field-rule">
+            Debe coincidir con la boleta que emites hoy en el SII.
+          </p>
+        </div>
+
         <ion-item class="profile-field profile-field-textarea" lines="none">
           <ion-label position="stacked">
             Mensaje estándar para la boleta

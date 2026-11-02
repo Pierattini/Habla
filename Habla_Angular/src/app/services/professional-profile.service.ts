@@ -47,6 +47,7 @@ export interface ProfessionalProfile {
   taxCountry: string;
   taxCity: string;
   taxDocumentNote: string;
+  taxExempt: boolean;
   timezone: string;
 }
 

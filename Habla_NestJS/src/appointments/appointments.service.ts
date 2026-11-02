@@ -511,6 +511,7 @@ export class AppointmentsService {
             professional.officeCountry ||
             professional.user.country,
           professionalTaxCity: professional.taxCity || professional.officeCity,
+          taxExempt: professional.taxExempt,
           professionalTaxNote:
             professional.taxDocumentNote ||
             'Servicios profesionales prestados a traves de Conecta.',

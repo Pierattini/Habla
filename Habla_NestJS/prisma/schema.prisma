@@ -274,6 +274,8 @@ model Professional {
   taxCountry                String?
   taxCity                   String?
   taxDocumentNote           String?
+  // Servicios de salud (p. ej. psicoterapia) se emiten como boleta/factura exenta.
+  taxExempt                 Boolean      @default(true)
 
   // Suscripción Conecta
   planStatus          ProfessionalPlanStatus @default(FREE)
@@ -549,6 +551,8 @@ model TaxDocument {
   status DocumentStatus   @default(DOCUMENT_PENDING)
   mode   DocumentMode     @default(MANUAL)
   type   TaxDocumentType?
+  // Copia de Professional.taxExempt al crear el documento.
+  taxExempt Boolean @default(true)
 
   amount   Int?
   currency String @default("CLP")

@@ -25,10 +25,12 @@ export class LibreDteMapper {
       : TaxDocumentType.BOLETA;
   }
 
-  resolveKind(type?: TaxDocumentType | null): LibreDteDocumentKind {
-    return type === TaxDocumentType.FACTURA
-      ? 'FACTURA_AFECTA'
-      : 'BOLETA_AFECTA';
+  resolveKind(
+    type?: TaxDocumentType | null,
+    exempt = true,
+  ): LibreDteDocumentKind {
+    const base = type === TaxDocumentType.FACTURA ? 'FACTURA' : 'BOLETA';
+    return `${base}_${exempt ? 'EXENTA' : 'AFECTA'}`;
   }
 
   buildIssuePayload(input: LibreDteIssueInput): Record<string, unknown> {
@@ -44,7 +46,7 @@ export class LibreDteMapper {
       receptor: this.mapParty(input.customer),
       detalle: [
         {
-          nombre: 'Servicio profesional Conecta',
+          nombre: input.itemName,
           cantidad: 1,
           precio: input.amount,
           total: input.amount,

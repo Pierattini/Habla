@@ -118,6 +118,7 @@ export class TaxDocumentsService {
         professionalTaxCity:
           appointment.professional.professional?.taxCity ||
           appointment.professional.professional?.officeCity,
+        taxExempt: appointment.professional.professional?.taxExempt ?? true,
         professionalTaxNote:
           appointment.professional.professional?.taxDocumentNote ||
           'Servicios profesionales prestados a traves de Conecta.',
@@ -605,7 +606,10 @@ export class TaxDocumentsService {
       );
     }
 
-    const dteCode = this.siiDteDraftService.resolveDteCode(document.type);
+    const dteCode = this.siiDteDraftService.resolveDteCode(
+      document.type,
+      document.taxExempt,
+    );
     const folioReservation = document.folio
       ? null
       : await this.reserveSiiFolio(

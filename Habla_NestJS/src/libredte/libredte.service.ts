@@ -12,6 +12,7 @@ import {
 type TaxDocumentForIssue = {
   id: string;
   type?: TaxDocumentType | null;
+  taxExempt?: boolean | null;
   amount?: number | null;
   currency: string;
   customerTaxId?: string | null;
@@ -26,8 +27,10 @@ type TaxDocumentForIssue = {
   professionalTaxAddress?: string | null;
   professionalTaxCountry?: string | null;
   professionalTaxCity?: string | null;
+  professionalTaxNote?: string | null;
   appointment: {
     date: Date;
+    serviceNameSnapshot?: string | null;
   };
 };
 
@@ -42,18 +45,29 @@ export class LibreDteService {
     return this.mapper.getDocumentType(kind || this.mapper.resolveKind(fallback));
   }
 
+  // Nombre del ítem en la boleta: el servicio agendado o, si no hay, la nota del profesional.
+  resolveItemName(document: Pick<TaxDocumentForIssue, 'appointment' | 'professionalTaxNote'>) {
+    return (
+      document.appointment.serviceNameSnapshot?.trim() ||
+      document.professionalTaxNote?.trim() ||
+      'Servicio profesional'
+    );
+  }
+
   async issueDocument(
     document: TaxDocumentForIssue,
     kind?: LibreDteDocumentKind,
     apiToken?: string,
   ) {
-    const resolvedKind = kind || this.mapper.resolveKind(document.type);
+    const resolvedKind =
+      kind || this.mapper.resolveKind(document.type, document.taxExempt ?? true);
     const input: LibreDteIssueInput = {
       documentId: document.id,
       kind: resolvedKind,
       type: document.type,
       amount: this.requireAmount(document.amount),
       currency: document.currency || 'CLP',
+      itemName: this.resolveItemName(document),
       customer: this.buildCustomer(document),
       issuer: this.buildIssuer(document),
       appointmentDate: document.appointment.date,

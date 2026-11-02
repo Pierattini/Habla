@@ -263,7 +263,8 @@ export class ProfessionalDashboardComponent {
     taxAddress: '',
     taxCountry: '',
     taxCity: '',
-    taxDocumentNote: 'Servicios profesionales prestados a traves de Conecta.'
+    taxDocumentNote: 'Servicios profesionales prestados a traves de Conecta.',
+    taxExempt: true
   };
 
   // 🔥 BLOQUES HORARIOS
@@ -500,6 +501,7 @@ export class ProfessionalDashboardComponent {
         taxCountry: this.profile.taxCountry,
         taxCity: this.profile.taxCity,
         taxDocumentNote: this.profile.taxDocumentNote,
+        taxExempt: this.profile.taxExempt,
       }),
       ...availabilityRequests,
     ])
@@ -909,7 +911,8 @@ private prepareProfileImage(file: File): Promise<string> {
         taxAddress: res.professional?.taxAddress || '',
         taxCountry: res.professional?.taxCountry || res.professional?.officeCountry || '',
         taxCity: res.professional?.taxCity || '',
-        taxDocumentNote: res.professional?.taxDocumentNote || 'Servicios profesionales prestados a traves de Conecta.'
+        taxDocumentNote: res.professional?.taxDocumentNote || 'Servicios profesionales prestados a traves de Conecta.',
+        taxExempt: res.professional?.taxExempt !== false
       };
       this.cacheProfile();
       this.publicProfileUrl = this.buildPublicProfileUrl(this.profile.slug || '');
