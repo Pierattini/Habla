@@ -35,6 +35,8 @@ export class TaxDocumentsComponent {
   loading = false;
   loadingMore = false;
   feedbackMessage = '';
+  reportMonth = new Date().toISOString().slice(0, 7);
+  downloadingReport = false;
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly documentFilters = [
@@ -189,6 +191,55 @@ export class TaxDocumentsComponent {
       () => this.taxDocumentsService.markSent(documentId),
       'Documento marcado como enviado.',
       'No se pudo marcar como enviado.',
+    );
+  }
+
+  // Informe del mes en Excel (CSV): pacientes pagados, folios usados y estado de cada boleta.
+  downloadMonthlyReport(): void {
+    if (!this.reportMonth || this.downloadingReport) return;
+
+    this.downloadingReport = true;
+    this.taxDocumentsService.downloadMonthlyReport(this.reportMonth).subscribe({
+      next: (file) => {
+        const url = URL.createObjectURL(file);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `informe-${this.reportMonth}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+        this.downloadingReport = false;
+      },
+      error: (err: unknown) => {
+        console.error('No se pudo descargar el informe:', err);
+        this.feedbackMessage = 'No se pudo descargar el informe del mes.';
+        this.downloadingReport = false;
+      },
+    });
+  }
+
+  retryDocumentIssue(documentId: string): void {
+    this.runDocumentAction(
+      documentId,
+      () => this.taxDocumentsService.retryIssue(documentId),
+      'Reintento en curso. La boleta se emitirá en unos segundos.',
+      'No se pudo reintentar la boleta.',
+    );
+  }
+
+  canRetryIssue(document: DashboardTaxDocument): boolean {
+    return document.status === 'DOCUMENT_FAILED' && document.mode === 'AUTOMATED';
+  }
+
+  getFailureReason(document: DashboardTaxDocument): string {
+    const reasons: Record<string, string> = {
+      MISSING_TAX_PROVIDER_CREDENTIALS:
+        'Falta configurar la emisión automática (certificado digital) en tu perfil.',
+    };
+
+    return (
+      (document.siiStatus && reasons[document.siiStatus]) ||
+      document.siiStatusDetail ||
+      'El SII o el sistema no respondió. Puedes reintentar.'
     );
   }
 

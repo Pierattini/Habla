@@ -840,7 +840,7 @@
             <li>Ingresa a sii.cl con el RUT empresa.</li>
             <li>Ve a Servicios online y luego a Factura electrónica.</li>
             <li>Busca Solicitud de folios o Timbraje electrónico.</li>
-            <li>Selecciona Boleta Electrónica, normalmente tipo DTE 39.</li>
+            <li>Selecciona {{ $any(profile).taxExempt === false ? 'Boleta Electrónica (DTE 39, afecta a IVA)' : 'Boleta Exenta Electrónica (DTE 41)' }}, según el tipo de boleta elegido arriba.</li>
             <li>Solicita los folios y descarga el archivo XML autorizado.</li>
             <li>Sube ese XML en Conecta como archivo de folios SII.</li>
           </ol>
@@ -1266,7 +1266,7 @@
               <li>Ingresa a sii.cl con el RUT empresa.</li>
               <li>Ve a Servicios online y luego a Factura electrónica.</li>
               <li>Busca Solicitud de folios o Timbraje electrónico.</li>
-              <li>Selecciona Boleta Electrónica, normalmente tipo DTE 39.</li>
+              <li>Selecciona {{ $any(profile).taxExempt === false ? 'Boleta Electrónica (DTE 39, afecta a IVA)' : 'Boleta Exenta Electrónica (DTE 41)' }}, según el tipo de boleta elegido arriba.</li>
               <li>Solicita los folios y descarga el archivo XML autorizado.</li>
               <li>Sube ese XML en Conecta como archivo de folios SII.</li>
             </ol>
@@ -1320,8 +1320,73 @@
           />
         </div>
 
+        <div class="certificate-password-field">
+          <label for="company-signer-rut">Tu RUT personal (dueño del certificado)</label>
+          <input
+            id="company-signer-rut"
+            maxlength="20"
+            placeholder="Ej: 18.390.384-5"
+            [(ngModel)]="$any(this).taxProviderSii.signerRut"
+          />
+        </div>
+
+        <div class="certificate-password-field">
+          <label for="company-tax-activity">Giro de la empresa (como aparece en el SII)</label>
+          <input
+            id="company-tax-activity"
+            maxlength="80"
+            placeholder="Ej: Centro terapéutico"
+            [(ngModel)]="$any(this).taxProviderSii.taxActivity"
+          />
+        </div>
+
+        <div class="certificate-password-field">
+          <label for="company-resolution-number">Número de resolución SII</label>
+          <input
+            id="company-resolution-number"
+            inputmode="numeric"
+            maxlength="9"
+            placeholder="Ej: 80 (en pruebas del SII es 0)"
+            [(ngModel)]="$any(this).taxProviderSii.resolutionNumber"
+          />
+        </div>
+
+        <div class="certificate-password-field">
+          <label for="company-resolution-date">Fecha de resolución SII</label>
+          <input
+            id="company-resolution-date"
+            type="date"
+            [(ngModel)]="$any(this).taxProviderSii.resolutionDate"
+          />
+        </div>
+
+        <div class="certificate-password-field">
+          <label for="company-sii-environment">Ambiente</label>
+          <select id="company-sii-environment" [(ngModel)]="$any(this).taxProviderEnvironment">
+            <option value="CERTIFICATION">Pruebas del SII (certificación)</option>
+            <option value="PRODUCTION">Boletas reales (producción)</option>
+          </select>
+        </div>
+
+        <p class="field-rule">
+          Tu contador conoce el número y la fecha de resolución. Usa "Pruebas del SII" hasta que el SII apruebe la emisión; después cambia a "Boletas reales" y sube folios reales.
+        </p>
+
         <p class="field-rule">
           Estado: {{ $any(this).taxProviderCredential?.configured ? 'certificado guardado de forma segura' : 'sin certificado configurado' }}.
+          <ng-container *ngIf="$any(this).taxCertificateDaysLeft !== null">
+            Vence el {{ $any(this).taxProviderCredential?.certificateExpiresAt | date:'dd/MM/yyyy' }}.
+          </ng-container>
+        </p>
+
+        <p
+          *ngIf="$any(this).taxCertificateDaysLeft !== null && $any(this).taxCertificateDaysLeft <= 30"
+          class="public-profile-message"
+          role="alert"
+        >
+          {{ $any(this).taxCertificateDaysLeft < 0
+            ? 'Tu certificado digital venció: las boletas automáticas no se pueden emitir. Compra uno nuevo y súbelo aquí.'
+            : 'Tu certificado digital vence en ' + $any(this).taxCertificateDaysLeft + ' días. Renuévalo y súbelo aquí para que las boletas sigan saliendo solas.' }}
         </p>
 
         <p
@@ -1424,8 +1489,11 @@
         >
           <div class="document-main">
             <div>
-              <h3>Boleta electrónica</h3>
+              <h3>{{ range.dteCode === 41 ? 'Boleta exenta (tipo 41)' : range.dteCode === 39 ? 'Boleta afecta (tipo 39)' : 'Documento tipo ' + range.dteCode }}</h3>
               <p>Folios {{ range.startFolio }} al {{ range.endFolio }}</p>
+              <p *ngIf="range.status === 'ACTIVE' && range.availableFolios < 20" role="alert">
+                {{ range.availableFolios === 0 ? 'Se acabaron estos folios: pide más en sii.cl y súbelos.' : 'Quedan pocos folios: pide más en sii.cl antes de que se acaben.' }}
+              </p>
             </div>
 
             <span class="document-badge">

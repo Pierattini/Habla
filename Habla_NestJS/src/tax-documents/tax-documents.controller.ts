@@ -7,6 +7,7 @@ import {
   Post,
   Query,
   Request,
+  StreamableFile,
   UploadedFile,
   UseInterceptors,
   UseGuards,
@@ -20,6 +21,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { IssueLibreDteDocumentDto } from '../libredte/dto/issue-libredte-document.dto';
 import { CreateTaxDocumentDto } from './dto/create-tax-document.dto';
 import { MarkTaxDocumentDto } from './dto/mark-tax-document.dto';
+import { TaxDocumentJobsService } from './tax-document-jobs.service';
 import { TaxDocumentsService } from './tax-documents.service';
 import { Role } from '@prisma/client';
 
@@ -44,7 +46,10 @@ type ProfessionalTaxDocumentQuery = {
 @Controller('tax-documents')
 @UseGuards(JwtAuthGuard)
 export class TaxDocumentsController {
-  constructor(private readonly taxDocumentsService: TaxDocumentsService) {}
+  constructor(
+    private readonly taxDocumentsService: TaxDocumentsService,
+    private readonly taxDocumentJobsService: TaxDocumentJobsService,
+  ) {}
 
   @Post()
   createDocument(
@@ -76,6 +81,19 @@ export class TaxDocumentsController {
     @Query() query: ProfessionalTaxDocumentQuery,
   ) {
     return this.taxDocumentsService.getDocumentsByProfessional(req.user, query);
+  }
+
+  @Get('professional/report')
+  async getProfessionalMonthlyReport(
+    @Request() req: AuthRequest,
+    @Query('month') month: string,
+  ) {
+    const csv = await this.taxDocumentsService.getProfessionalMonthlyReport(req.user, month);
+
+    return new StreamableFile(Buffer.from(csv, 'utf8'), {
+      type: 'text/csv; charset=utf-8',
+      disposition: `attachment; filename="informe-${month}.csv"`,
+    });
   }
 
   @Get('professional/pending')
@@ -144,6 +162,12 @@ export class TaxDocumentsController {
     @Body() body: MarkTaxDocumentDto,
   ) {
     return this.taxDocumentsService.markAsSent(id, req.user, body.message);
+  }
+
+  @Post(':id/retry')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  retryFailedIssue(@Param('id') id: string, @Request() req: AuthRequest) {
+    return this.taxDocumentJobsService.retryFailedIssue(id, req.user);
   }
 
   @Post(':id/resend-email')

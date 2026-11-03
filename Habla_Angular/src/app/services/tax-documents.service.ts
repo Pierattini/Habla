@@ -110,6 +110,7 @@ export interface DashboardTaxDocument {
   emailSent?: boolean;
   emailSentAt?: string;
   status: string;
+  mode?: string;
   type?: string;
   provider?: string;
   providerDocumentId?: string;
@@ -220,6 +221,20 @@ export class TaxDocumentsService {
   markSent(documentId: string) {
     return this.http.patch<TaxDocument>(
       `${this.api}/tax-documents/${documentId}/sent`,
+      {}
+    );
+  }
+
+  downloadMonthlyReport(month: string) {
+    return this.http.get(`${this.api}/tax-documents/professional/report`, {
+      params: { month },
+      responseType: 'blob',
+    });
+  }
+
+  retryIssue(documentId: string) {
+    return this.http.post<TaxDocument>(
+      `${this.api}/tax-documents/${documentId}/retry`,
       {}
     );
   }

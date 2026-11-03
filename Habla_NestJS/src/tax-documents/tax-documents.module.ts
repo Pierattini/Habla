@@ -8,6 +8,7 @@ import { TaxDocumentJobsService } from './tax-document-jobs.service';
 import { TaxDocumentsController } from './tax-documents.controller';
 import { TaxDocumentsService } from './tax-documents.service';
 import { SiiDteDraftService } from './sii-dte-draft.service';
+import { SiiDirectIssuerService } from './sii-direct-issuer.service';
 
 @Module({
   imports: [
@@ -18,7 +19,12 @@ import { SiiDteDraftService } from './sii-dte-draft.service';
     TaxProviderModule,
   ],
   controllers: [TaxDocumentsController],
-  providers: [TaxDocumentsService, TaxDocumentJobsService, SiiDteDraftService],
+  providers: [
+    TaxDocumentsService,
+    TaxDocumentJobsService,
+    SiiDteDraftService,
+    SiiDirectIssuerService,
+  ],
   exports: [TaxDocumentsService, TaxDocumentJobsService],
 })
 export class TaxDocumentsModule {}

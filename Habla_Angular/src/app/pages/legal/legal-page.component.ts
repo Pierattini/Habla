@@ -187,6 +187,8 @@ export class LegalPageComponent {
             'El paciente puede solicitar datos para boleta, factura u otro documento tributario cuando el flujo lo permita.',
             'El profesional es responsable de emitir correctamente los documentos tributarios que correspondan a su actividad, salvo funciones automatizadas expresamente habilitadas por Conecta.',
             'Conecta puede almacenar datos, archivos y estados de documentos para permitir historial, reenvio, descarga y soporte.',
+            'Conecta no anula boletas ni otros documentos tributarios. Si un profesional necesita anular un documento emitido, debe hacerlo directamente en el sitio del Servicio de Impuestos Internos (sii.cl).',
+            'Conecta pone a disposición del profesional un informe descargable de los documentos emitidos y folios utilizados. Es responsabilidad del profesional presentarlo ante el SII cuando la autoridad lo requiera.',
           ],
         },
         {

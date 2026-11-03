@@ -10,7 +10,20 @@ import { createSecureContext } from 'tls';
 import { PrismaService } from '../prisma/prisma.service';
 import { SaveTaxFolioRangeDto } from './dto/save-tax-folio-range.dto';
 import { SaveTaxProviderCredentialDto } from './dto/save-tax-provider-credential.dto';
-import { SiiDirectAuthService } from './sii-direct-auth.service';
+import { SiiBoletaClient } from '../sii/sii-boleta-client';
+import { extractCertificateKeys, SiiCertificateKeys } from '../sii/sii-certificate';
+
+const forge = require('node-forge');
+
+export type SiiSendingProfile = {
+  keys: SiiCertificateKeys;
+  emitterRut: string;
+  signerRut: string;
+  taxActivity: string;
+  resolutionNumber: number;
+  resolutionDate: string;
+  environment: 'CERTIFICATION' | 'PRODUCTION';
+};
 
 type TaxProviderUser = {
   id: string;
@@ -44,7 +57,7 @@ export class TaxProviderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    private readonly siiDirectAuth: SiiDirectAuthService,
+    private readonly siiBoletaClient: SiiBoletaClient,
   ) {}
 
   async getMyCredential(user: TaxProviderUser) {
@@ -73,6 +86,11 @@ export class TaxProviderService {
         certificateFileName: null,
         certificateFingerprint: null,
         certificateUploadedAt: null,
+        certificateExpiresAt: null,
+        signerRut: null,
+        taxActivity: null,
+        resolutionNumber: null,
+        resolutionDate: null,
       };
     }
 
@@ -88,6 +106,11 @@ export class TaxProviderService {
       certificateFileName: credential.certificateFileName,
       certificateFingerprint: credential.certificateFingerprint,
       certificateUploadedAt: credential.certificateUploadedAt,
+      certificateExpiresAt: credential.certificateExpiresAt,
+      signerRut: credential.signerRut,
+      taxActivity: credential.taxActivity,
+      resolutionNumber: credential.resolutionNumber,
+      resolutionDate: credential.resolutionDate,
     };
   }
 
@@ -108,6 +131,13 @@ export class TaxProviderService {
     this.ensureCertificateFile(certificate);
     this.validateCertificate(certificate!.buffer, certificatePassword);
     const validatedAt = new Date();
+    const siiData = {
+      certificateExpiresAt: this.readCertificateExpiry(certificate!.buffer, certificatePassword),
+      signerRut: dto.signerRut ? this.normalizeRut(dto.signerRut) : null,
+      taxActivity: dto.taxActivity?.trim() || null,
+      resolutionNumber: dto.resolutionNumber ? Number(dto.resolutionNumber) : null,
+      resolutionDate: dto.resolutionDate || null,
+    };
 
     const credential =
       await this.prisma.professionalTaxProviderCredential.upsert({
@@ -128,6 +158,7 @@ export class TaxProviderService {
           environment: dto.environment || 'PRODUCTION',
           status: TaxProviderCredentialStatus.CONFIGURED,
           lastValidatedAt: validatedAt,
+          ...siiData,
         },
         create: {
           professionalId: user.id,
@@ -142,6 +173,7 @@ export class TaxProviderService {
           environment: dto.environment || 'PRODUCTION',
           status: TaxProviderCredentialStatus.CONFIGURED,
           lastValidatedAt: validatedAt,
+          ...siiData,
         },
       });
 
@@ -157,6 +189,11 @@ export class TaxProviderService {
       certificateFileName: credential.certificateFileName,
       certificateFingerprint: credential.certificateFingerprint,
       certificateUploadedAt: credential.certificateUploadedAt,
+      certificateExpiresAt: credential.certificateExpiresAt,
+      signerRut: credential.signerRut,
+      taxActivity: credential.taxActivity,
+      resolutionNumber: credential.resolutionNumber,
+      resolutionDate: credential.resolutionDate,
     };
   }
 
@@ -198,14 +235,30 @@ export class TaxProviderService {
       throw new BadRequestException('Primero debes guardar tu certificado SII');
     }
 
-    const result = await this.siiDirectAuth.requestToken({
-      certificateBuffer: Buffer.from(
-        this.decrypt(credential.encryptedCertificate),
-        'base64',
-      ),
-      passphrase: this.decrypt(credential.encryptedCertificatePassword),
-      environment: credential.environment,
-    });
+    // Se prueba contra la API de boletas, que es la que se usa al emitir.
+    const environment =
+      credential.environment === 'CERTIFICATION' ? 'CERTIFICATION' : 'PRODUCTION';
+    let token: string;
+
+    try {
+      token = await this.siiBoletaClient.getToken(
+        extractCertificateKeys(
+          Buffer.from(this.decrypt(credential.encryptedCertificate), 'base64'),
+          this.decrypt(credential.encryptedCertificatePassword),
+        ),
+        environment,
+      );
+    } catch (error) {
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'No se pudo conectar con el SII',
+      );
+    }
+
+    const result = {
+      environment,
+      tokenPreview: `${token.slice(0, 4)}...`,
+      requestedAt: new Date(),
+    };
 
     const updated =
       await this.prisma.professionalTaxProviderCredential.update({
@@ -376,6 +429,61 @@ export class TaxProviderService {
     };
   }
 
+  // Todo lo necesario para firmar y enviar boletas directo al SII, o null si falta
+  // configurar algo (en ese caso la emisión automática queda como fallida y avisa).
+  async getSiiSendingProfile(professionalId: string): Promise<SiiSendingProfile | null> {
+    const credential =
+      await this.prisma.professionalTaxProviderCredential.findUnique({
+        where: {
+          professionalId_provider: {
+            professionalId,
+            provider: TaxProvider.SII,
+          },
+        },
+      });
+
+    if (
+      !credential ||
+      credential.status !== TaxProviderCredentialStatus.CONFIGURED ||
+      !credential.encryptedCertificate ||
+      !credential.encryptedCertificatePassword ||
+      !credential.signerRut ||
+      !credential.taxActivity ||
+      credential.resolutionNumber === null ||
+      !credential.resolutionDate
+    ) {
+      return null;
+    }
+
+    return {
+      keys: extractCertificateKeys(
+        Buffer.from(this.decrypt(credential.encryptedCertificate), 'base64'),
+        this.decrypt(credential.encryptedCertificatePassword),
+      ),
+      emitterRut: credential.rut,
+      signerRut: credential.signerRut,
+      taxActivity: credential.taxActivity,
+      resolutionNumber: credential.resolutionNumber,
+      resolutionDate: credential.resolutionDate,
+      environment: credential.environment === 'CERTIFICATION' ? 'CERTIFICATION' : 'PRODUCTION',
+    };
+  }
+
+  // Archivo CAF descifrado del rango que contiene ese folio.
+  async getCafXmlForFolio(professionalId: string, dteCode: number, folio: number) {
+    const range = await this.prisma.professionalTaxFolioRange.findFirst({
+      where: {
+        professionalId,
+        provider: TaxProvider.SII,
+        dteCode,
+        startFolio: { lte: folio },
+        endFolio: { gte: folio },
+      },
+    });
+
+    return range ? this.decrypt(range.encryptedCafXml) : null;
+  }
+
   private ensureProfessional(user: TaxProviderUser) {
     if (user.role !== Role.PROFESSIONAL) {
       throw new ForbiddenException('Solo profesionales pueden configurar credenciales tributarias');
@@ -490,6 +598,15 @@ export class TaxProviderService {
       throw new BadRequestException(
         'No pudimos abrir el certificado. Revisa que el archivo y la clave sean correctos.',
       );
+    }
+  }
+
+  private readCertificateExpiry(buffer: Buffer, passphrase: string): Date | null {
+    try {
+      const { certificatePem } = extractCertificateKeys(buffer, passphrase);
+      return forge.pki.certificateFromPem(certificatePem).validity.notAfter;
+    } catch {
+      return null;
     }
   }
 

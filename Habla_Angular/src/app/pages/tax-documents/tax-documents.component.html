@@ -9,6 +9,7 @@
         <span>Módulo tributario</span>
         <h1>Documentos Tributarios</h1>
         <p>Gestiona boletas solicitadas por pacientes, archivos y envíos.</p>
+        <p>Para anular una boleta ya emitida, hazlo directamente en sii.cl.</p>
       </div>
     </header>
 
@@ -57,6 +58,26 @@
       </button>
     </section>
 
+    <section class="filters-panel">
+      <label>
+        <span>Informe del mes</span>
+        <input type="month" [(ngModel)]="reportMonth" aria-label="Mes del informe" />
+      </label>
+
+      <button
+        type="button"
+        class="clear-button"
+        [disabled]="!reportMonth || downloadingReport"
+        (click)="downloadMonthlyReport()"
+      >
+        {{ downloadingReport ? 'Descargando...' : 'Descargar informe (Excel)' }}
+      </button>
+
+      <p class="field-hint">
+        Pacientes con pago confirmado en el mes, con sus datos para boletear y el folio de cada boleta emitida por Habla. Entrégalo al SII solo si te lo piden.
+      </p>
+    </section>
+
     <p *ngIf="feedbackMessage" class="feedback-message">
       {{ feedbackMessage }}
     </p>
@@ -91,6 +112,11 @@
           <span>Monto: {{ document.currency || 'CLP' }} {{ (document.amount || 0) | number:'1.0-0' }}</span>
           <span>Emision: {{ document.view?.issueDate ? (document.view?.issueDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}</span>
           <span>Envío: {{ document.view?.sentDate ? (document.view?.sentDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}</span>
+        </div>
+
+        <div *ngIf="document.status === 'DOCUMENT_FAILED'" class="document-error" role="alert">
+          <strong>No se pudo emitir la boleta</strong>
+          <span>{{ getFailureReason(document) }}</span>
         </div>
 
         <div *ngIf="$any(document).customerTax" class="tax-request-data">
@@ -132,6 +158,16 @@
         </div>
 
         <div class="document-actions">
+          <button
+            type="button"
+            class="primary-action"
+            *ngIf="canRetryIssue(document)"
+            [disabled]="isDocumentActionRunning(document.id)"
+            (click)="retryDocumentIssue(document.id)"
+          >
+            {{ isDocumentActionRunning(document.id) ? 'Reintentando...' : 'Reintentar' }}
+          </button>
+
           <button
             type="button"
             class="outline-action"

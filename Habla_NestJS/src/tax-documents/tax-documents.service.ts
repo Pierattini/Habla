@@ -4,7 +4,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DocumentMode, DocumentStatus, Prisma, Role, TaxProvider } from '@prisma/client';
+import {
+  AppointmentStatus,
+  DocumentMode,
+  DocumentStatus,
+  Prisma,
+  Role,
+  TaxProvider,
+} from '@prisma/client';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { EmailService } from '../email/email.service';
 import { LibreDteService } from '../libredte/libredte.service';
@@ -14,6 +21,10 @@ import { TaxProviderService } from '../tax-provider/tax-provider.service';
 import { CreateTaxDocumentDto } from './dto/create-tax-document.dto';
 import { TaxDocumentUser } from './interfaces/tax-document-user.interface';
 import { SiiDteDraftService } from './sii-dte-draft.service';
+import { SiiDirectIssuerService } from './sii-direct-issuer.service';
+import { buildBoletaPdf } from '../sii/sii-boleta-pdf';
+import { buildMonthlyReportCsv, isInChileMonth, monthWindow } from './monthly-report';
+import { SiiSendingProfile } from '../tax-provider/tax-provider.service';
 
 type AdminTaxDocumentFilters = {
   status?: string;
@@ -63,6 +74,7 @@ export class TaxDocumentsService {
     private readonly libreDteService: LibreDteService,
     private readonly taxProviderService: TaxProviderService,
     private readonly siiDteDraftService: SiiDteDraftService,
+    private readonly siiDirectIssuer: SiiDirectIssuerService,
   ) {}
 
   async createDocument(user: TaxDocumentUser, dto: CreateTaxDocumentDto) {
@@ -195,6 +207,58 @@ export class TaxDocumentsService {
         createdAt: 'desc',
       },
     });
+  }
+
+  // Informe del mes (YYYY-MM) con las citas pagadas en hora de Chile.
+  async getProfessionalMonthlyReport(user: TaxDocumentUser, month: string) {
+    if (user.role !== Role.PROFESSIONAL) {
+      throw new ForbiddenException('Solo los profesionales pueden descargar este informe');
+    }
+
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month || '')) {
+      throw new BadRequestException('Indica el mes como AAAA-MM');
+    }
+
+    const { from, to } = monthWindow(month);
+    const appointments = await this.prisma.appointment.findMany({
+      where: {
+        professionalId: user.id,
+        paidAt: { gte: from, lt: to },
+        status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
+      },
+      select: {
+        date: true,
+        paidAt: true,
+        guestCustomerName: true,
+        serviceNameSnapshot: true,
+        servicePriceAmountSnapshot: true,
+        customer: {
+          select: {
+            name: true,
+            email: true,
+            taxId: true,
+            taxName: true,
+            taxAddress: true,
+            taxCity: true,
+          },
+        },
+        taxDocument: {
+          select: {
+            amount: true,
+            dteCode: true,
+            folio: true,
+            status: true,
+            generatedAt: true,
+            siiStatus: true,
+          },
+        },
+      },
+      orderBy: { paidAt: 'asc' },
+    });
+
+    return buildMonthlyReportCsv(
+      appointments.filter((appointment) => isInChileMonth(appointment.paidAt!, month)),
+    );
   }
 
   async getDocumentsByProfessional(
@@ -711,9 +775,12 @@ export class TaxDocumentsService {
     if (!professional?.documentAutomationEnabled) return document;
     if (document.mode !== DocumentMode.AUTOMATED) return document;
 
+    // En emisión directa al SII el folio se asigna antes de enviar: con folio y sin
+    // trackId la boleta aún no llegó al SII y se puede reintentar con ese mismo folio.
     const alreadyIssued = !!(
       document.providerDocumentId ||
-      document.folio ||
+      document.siiTrackId ||
+      (document.folio && document.provider !== TaxProvider.SII) ||
       document.status === DocumentStatus.DOCUMENT_GENERATED ||
       document.status === DocumentStatus.DOCUMENT_SENT ||
       document.status === DocumentStatus.DOCUMENT_UPLOADED
@@ -725,6 +792,16 @@ export class TaxDocumentsService {
       await this.taxProviderService.getLibreDteTokenForProfessional(
         appointment.professionalId,
       );
+
+    if (!credential) {
+      const siiProfile = await this.siiDirectIssuer.getSendingProfile(
+        appointment.professionalId,
+      );
+
+      if (siiProfile) {
+        return this.issueAutomaticWithSii(document, siiProfile, finalAttempt, options);
+      }
+    }
 
     if (!credential) {
       const error = new BadRequestException(
@@ -924,6 +1001,146 @@ export class TaxDocumentsService {
 
       return failedDocument;
     }
+  }
+
+  private async issueAutomaticWithSii(
+    document: Parameters<SiiDirectIssuerService['issue']>[0],
+    profile: SiiSendingProfile,
+    finalAttempt: boolean,
+    options: AutomaticIssueOptions,
+  ) {
+    const professionalId = document.appointment.professionalId;
+    const claim = await this.prisma.taxDocument.updateMany({
+      where: {
+        id: document.id,
+        status: DocumentStatus.DOCUMENT_PENDING,
+        providerDocumentId: null,
+        siiTrackId: null,
+      },
+      data: { provider: TaxProvider.SII, lastProviderSyncAt: new Date() },
+    });
+
+    if (claim.count === 0) {
+      return this.prisma.taxDocument.findUnique({ where: { id: document.id } });
+    }
+
+    try {
+      return await this.siiDirectIssuer.issue(document, profile, professionalId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error desconocido al emitir';
+
+      if (!finalAttempt) {
+        await this.registerDocumentEvent(
+          document.id,
+          professionalId,
+          'SII_DIRECT_ATTEMPT_FAILED',
+          message,
+          { jobId: options.jobId, appointmentId: document.appointmentId },
+        );
+        throw error;
+      }
+
+      const failedDocument = await this.prisma.taxDocument.update({
+        where: { id: document.id },
+        data: {
+          status: DocumentStatus.DOCUMENT_FAILED,
+          siiStatus: 'SII_DIRECT_ERROR',
+          siiStatusDetail: message,
+          lastProviderSyncAt: new Date(),
+          events: {
+            create: {
+              actorId: professionalId,
+              type: 'SII_DIRECT_DOCUMENT_FAILED',
+              message,
+              metadata: { jobId: options.jobId, appointmentId: document.appointmentId },
+            },
+          },
+        },
+      });
+
+      await this.syncAppointmentDocumentStatus(
+        failedDocument.appointmentId,
+        DocumentStatus.DOCUMENT_FAILED,
+      );
+
+      return failedDocument;
+    }
+  }
+
+  // Revisa en el SII una boleta enviada y deja la cita con el estado final.
+  async syncSiiDirectStatus(documentId: string) {
+    const result = await this.siiDirectIssuer.syncStatus(documentId);
+
+    if (!result || result.outcome === 'PENDING') {
+      return result?.document ?? null;
+    }
+
+    await this.syncAppointmentDocumentStatus(
+      result.document.appointmentId,
+      result.document.status,
+    );
+
+    return result.outcome === 'ACCEPTED'
+      ? this.deliverSiiDirectDocument(documentId)
+      : result.document;
+  }
+
+  // Boleta aceptada por el SII: genera el PDF, guarda PDF y XML y se los envía al paciente.
+  // Si algo falla lanza el error y el cron lo reintenta más tarde (la boleta ya es válida).
+  async deliverSiiDirectDocument(documentId: string) {
+    let document = await this.getDocumentForDelivery(documentId);
+
+    if (!document || document.emailSent) return document;
+
+    const actorId = document.appointment.professionalId;
+
+    if (!document.pdfUrl) {
+      const siiDirect = this.getSiiDirectPayload(document.providerPayload);
+
+      if (!siiDirect?.signedXml) return document;
+
+      const pdf = await buildBoletaPdf(siiDirect.signedXml, {
+        number: siiDirect.resolutionNumber,
+        date: siiDirect.resolutionDate,
+      });
+      const fileBase = `boleta-${document.folio}`;
+      const [pdfUpload, xmlUpload] = await Promise.all([
+        this.cloudinaryService.uploadTaxDocumentBuffer(
+          document.id,
+          pdf,
+          `${fileBase}.pdf`,
+          'application/pdf',
+        ),
+        this.cloudinaryService.uploadTaxDocumentBuffer(
+          document.id,
+          Buffer.from(siiDirect.signedXml, 'latin1'),
+          `${fileBase}.xml`,
+          'application/xml',
+        ),
+      ]);
+
+      document = await this.prisma.taxDocument.update({
+        where: { id: document.id },
+        data: {
+          pdfUrl: pdfUpload.secure_url,
+          pdfPublicId: pdfUpload.public_id,
+          xmlUrl: xmlUpload.secure_url,
+          xmlPublicId: xmlUpload.public_id,
+          fileName: `${fileBase}.pdf`,
+          uploadedAt: new Date(),
+          events: {
+            create: {
+              actorId,
+              type: 'SII_DIRECT_DOCUMENT_STORED',
+              message: 'PDF y XML de la boleta almacenados',
+            },
+          },
+        },
+        include: this.getDeliveryInclude(),
+      });
+    }
+
+    return this.emailDocumentToCustomer(document, actorId, { finalAttempt: false });
   }
 
   async issueLibreDteDocument(
@@ -1152,6 +1369,58 @@ export class TaxDocumentsService {
     };
   }
 
+  // Deja una emisión automática fallida otra vez pendiente; el reencolado lo hace
+  // TaxDocumentJobsService para no crear una dependencia circular.
+  async resetFailedAutomaticIssue(id: string, user: TaxDocumentUser) {
+    const document = await this.prisma.taxDocument.findUnique({
+      where: { id },
+      include: { appointment: true },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Tax document not found');
+    }
+
+    this.ensureProfessionalAccess(document.appointment, user);
+
+    if (
+      document.mode !== DocumentMode.AUTOMATED ||
+      document.status !== DocumentStatus.DOCUMENT_FAILED
+    ) {
+      throw new BadRequestException(
+        'Solo se pueden reintentar boletas automáticas que fallaron',
+      );
+    }
+
+    const reset = await this.prisma.taxDocument.updateMany({
+      where: { id, status: DocumentStatus.DOCUMENT_FAILED },
+      data: {
+        status: DocumentStatus.DOCUMENT_PENDING,
+        siiStatus: null,
+        siiStatusDetail: null,
+      },
+    });
+
+    if (reset.count === 0) {
+      throw new BadRequestException('La boleta ya se está reintentando');
+    }
+
+    await this.prisma.taxDocumentEvent.create({
+      data: {
+        documentId: id,
+        actorId: user.id,
+        type: 'DOCUMENT_RETRY_REQUESTED',
+        message: 'Reintento de emisión solicitado por el profesional',
+        metadata: {
+          previousSiiStatus: document.siiStatus,
+          previousSiiStatusDetail: document.siiStatusDetail,
+        },
+      },
+    });
+
+    return document.appointmentId;
+  }
+
   async resendTaxDocumentEmail(id: string, user: TaxDocumentUser) {
     const document = await this.prisma.taxDocument.findUnique({
       where: { id },
@@ -1335,6 +1604,17 @@ export class TaxDocumentsService {
         return document;
       }
     }
+
+    return this.emailDocumentToCustomer(document, actorId, options);
+  }
+
+  // Envía al paciente el PDF ya almacenado y deja el documento como enviado.
+  private async emailDocumentToCustomer(
+    document: any,
+    actorId: string,
+    options: AutomaticIssueOptions = {},
+  ) {
+    const finalAttempt = options.finalAttempt !== false;
 
     if (!document.pdfUrl || document.emailSent) {
       return document;

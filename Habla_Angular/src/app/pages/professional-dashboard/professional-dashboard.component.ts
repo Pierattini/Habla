@@ -164,6 +164,8 @@ export class ProfessionalDashboardComponent {
   taxProviderCertificatePassword = '';
   taxProviderCertificateFile: File | null = null;
   taxProviderEnvironment: 'CERTIFICATION' | 'PRODUCTION' = 'PRODUCTION';
+  // Datos que el SII pide en cada envío de boletas.
+  taxProviderSii = { signerRut: '', taxActivity: '', resolutionNumber: '', resolutionDate: '' };
   taxProviderSaving = false;
   taxProviderTesting = false;
   taxProviderMessage = '';
@@ -1395,12 +1397,28 @@ private prepareProfileImage(file: File): Promise<string> {
     });
   }
 
+  private applyTaxProviderSiiData(credential: TaxProviderCredentialStatus): void {
+    this.taxProviderEnvironment = credential.environment === 'CERTIFICATION' ? 'CERTIFICATION' : 'PRODUCTION';
+    this.taxProviderSii = {
+      signerRut: credential.signerRut || '',
+      taxActivity: credential.taxActivity || '',
+      resolutionNumber: credential.resolutionNumber === null ? '' : String(credential.resolutionNumber),
+      resolutionDate: credential.resolutionDate || '',
+    };
+  }
+
+  // Días que le quedan al certificado; null si no se conoce la fecha.
+  get taxCertificateDaysLeft(): number | null {
+    const expiresAt = this.taxProviderCredential?.certificateExpiresAt;
+    return expiresAt ? Math.floor((new Date(expiresAt).getTime() - Date.now()) / 86_400_000) : null;
+  }
+
   loadTaxProviderCredential(): void {
     this.taxProviderService.getMyCredential().subscribe({
       next: (credential) => {
         this.taxProviderCredential = credential;
         this.taxProviderRut = credential.rut || this.profile.taxId || '';
-        this.taxProviderEnvironment = 'PRODUCTION';
+        this.applyTaxProviderSiiData(credential);
         this.loadTaxFolioRanges();
       },
       error: (err) => {
@@ -1454,6 +1472,18 @@ private prepareProfileImage(file: File): Promise<string> {
       return;
     }
 
+    const sii = this.taxProviderSii;
+
+    if (!sii.signerRut.trim() || !sii.taxActivity.trim() || !sii.resolutionNumber.trim() || !sii.resolutionDate) {
+      this.taxProviderMessage = 'Completa tu RUT personal, el giro y el número y fecha de resolución del SII.';
+      return;
+    }
+
+    if (!/^\d+$/.test(sii.resolutionNumber.trim())) {
+      this.taxProviderMessage = 'El número de resolución debe tener solo números (en pruebas del SII es 0).';
+      return;
+    }
+
     this.taxProviderSaving = true;
     this.taxProviderMessage = '';
 
@@ -1461,13 +1491,17 @@ private prepareProfileImage(file: File): Promise<string> {
       rut,
       certificatePassword,
       certificate: this.taxProviderCertificateFile,
-      environment: 'PRODUCTION',
+      environment: this.taxProviderEnvironment,
+      signerRut: sii.signerRut.trim(),
+      taxActivity: sii.taxActivity.trim(),
+      resolutionNumber: sii.resolutionNumber.trim(),
+      resolutionDate: sii.resolutionDate,
     }).subscribe({
       next: (credential) => {
         this.taxProviderCredential = credential;
         this.taxProviderRut = credential.rut || rut;
         this.profile.taxId = this.profile.taxId || credential.rut || rut;
-        this.taxProviderEnvironment = 'PRODUCTION';
+        this.applyTaxProviderSiiData(credential);
         this.taxProviderCertificatePassword = '';
         this.taxProviderCertificateFile = null;
         this.taxProviderMessage = 'Certificado SII guardado de forma segura.';

@@ -662,6 +662,12 @@ model ProfessionalTaxProviderCredential {
   certificateMimeType          String?
   certificateFingerprint       String?
   certificateUploadedAt        DateTime?
+  certificateExpiresAt         DateTime?
+  // Datos que el SII exige en cada envío de boletas.
+  signerRut                    String?
+  taxActivity                  String?
+  resolutionNumber             Int?
+  resolutionDate               String?
   environment                  String                      @default("PRODUCTION")
   status                       TaxProviderCredentialStatus @default(CONFIGURED)
   lastValidatedAt              DateTime?

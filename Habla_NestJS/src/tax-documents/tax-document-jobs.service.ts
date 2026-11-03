@@ -4,7 +4,9 @@ import {
   DocumentMode,
   DocumentStatus,
   Prisma,
+  Role,
   TaxDocumentJobStatus,
+  TaxProvider,
 } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -24,13 +26,17 @@ export class TaxDocumentJobsService {
     process.env.TAX_DOCUMENT_JOB_BATCH_SIZE || 3,
   );
   private processing = false;
+  private syncingSii = false;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly taxDocumentsService: TaxDocumentsService,
   ) {}
 
-  async enqueueAutomaticIssue(appointmentId: string) {
+  async enqueueAutomaticIssue(
+    appointmentId: string,
+    options: { retry?: boolean } = {},
+  ) {
     const document = await this.prisma.taxDocument.findUnique({
       where: { appointmentId },
       include: {
@@ -55,7 +61,8 @@ export class TaxDocumentJobsService {
 
     const alreadyDone = !!(
       document.providerDocumentId ||
-      document.folio ||
+      document.siiTrackId ||
+      (document.folio && document.provider !== TaxProvider.SII) ||
       document.status === DocumentStatus.DOCUMENT_GENERATED ||
       document.status === DocumentStatus.DOCUMENT_SENT ||
       document.status === DocumentStatus.DOCUMENT_UPLOADED
@@ -82,7 +89,7 @@ export class TaxDocumentJobsService {
         documentId: document.id,
         maxAttempts: this.maxAttempts,
         nextRunAt: new Date(),
-        ...(document.status === DocumentStatus.DOCUMENT_FAILED
+        ...(document.status === DocumentStatus.DOCUMENT_FAILED || options.retry
           ? {
               status: TaxDocumentJobStatus.PENDING,
               attempts: 0,
@@ -93,6 +100,79 @@ export class TaxDocumentJobsService {
           : {}),
       },
     });
+  }
+
+  async retryFailedIssue(documentId: string, user: { id: string; role: Role }) {
+    const appointmentId = await this.taxDocumentsService.resetFailedAutomaticIssue(
+      documentId,
+      user,
+    );
+    await this.enqueueAutomaticIssue(appointmentId, { retry: true });
+
+    return this.prisma.taxDocument.findUnique({ where: { id: documentId } });
+  }
+
+  // Consulta en el SII las boletas enviadas que aún no tienen respuesta. Todo queda en la
+  // base de datos, así que si el servidor se duerme se retoma al despertar.
+  @Cron('*/30 * * * * *')
+  async syncPendingSiiDocuments() {
+    if (this.syncingSii) return;
+
+    this.syncingSii = true;
+
+    try {
+      const documents = await this.prisma.taxDocument.findMany({
+        where: {
+          provider: TaxProvider.SII,
+          status: DocumentStatus.DOCUMENT_PENDING,
+          siiTrackId: { not: null },
+          lastProviderSyncAt: { lte: new Date(Date.now() - 30_000) },
+        },
+        select: { id: true },
+        orderBy: { lastProviderSyncAt: 'asc' },
+        take: this.batchSize,
+      });
+
+      // Boletas ya aceptadas cuyo PDF o correo falló: se reintenta cada 5 minutos.
+      const undelivered = await this.prisma.taxDocument.findMany({
+        where: {
+          provider: TaxProvider.SII,
+          status: DocumentStatus.DOCUMENT_GENERATED,
+          emailSent: false,
+          lastProviderSyncAt: { lte: new Date(Date.now() - 5 * 60_000) },
+        },
+        select: { id: true },
+        orderBy: { lastProviderSyncAt: 'asc' },
+        take: this.batchSize,
+      });
+
+      for (const document of documents) {
+        await this.runSiiStep(document.id, 'consultar el estado en el SII', () =>
+          this.taxDocumentsService.syncSiiDirectStatus(document.id),
+        );
+      }
+
+      for (const document of undelivered) {
+        await this.runSiiStep(document.id, 'entregar la boleta al paciente', () =>
+          this.taxDocumentsService.deliverSiiDirectDocument(document.id),
+        );
+      }
+    } finally {
+      this.syncingSii = false;
+    }
+  }
+
+  private async runSiiStep(documentId: string, action: string, step: () => Promise<unknown>) {
+    try {
+      await step();
+    } catch (error) {
+      // Se reintenta en una próxima vuelta; se marca la hora para no insistir en bucle.
+      await this.prisma.taxDocument.update({
+        where: { id: documentId },
+        data: { lastProviderSyncAt: new Date() },
+      });
+      console.error(`No se pudo ${action}`, documentId, error);
+    }
   }
 
   @Cron('*/10 * * * * *')
