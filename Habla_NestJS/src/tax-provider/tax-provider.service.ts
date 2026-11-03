@@ -6,7 +6,6 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Role, TaxProvider, TaxProviderCredentialStatus } from '@prisma/client';
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'crypto';
-import { createSecureContext } from 'tls';
 import { PrismaService } from '../prisma/prisma.service';
 import { SaveTaxFolioRangeDto } from './dto/save-tax-folio-range.dto';
 import { SaveTaxProviderCredentialDto } from './dto/save-tax-provider-credential.dto';
@@ -588,12 +587,11 @@ export class TaxProviderService {
     };
   }
 
+  // Se valida con node-forge (el mismo que firma): acepta los .pfx con cifrado antiguo
+  // (RC2/3DES) que entregan varias empresas chilenas y que OpenSSL 3 ya no abre.
   private validateCertificate(buffer: Buffer, passphrase: string): void {
     try {
-      createSecureContext({
-        pfx: buffer,
-        passphrase,
-      });
+      extractCertificateKeys(buffer, passphrase);
     } catch {
       throw new BadRequestException(
         'No pudimos abrir el certificado. Revisa que el archivo y la clave sean correctos.',

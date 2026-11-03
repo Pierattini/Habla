@@ -1508,7 +1508,10 @@ private prepareProfileImage(file: File): Promise<string> {
       },
       error: (err) => {
         console.error('Error guardando credenciales SII:', err);
-        this.taxProviderMessage = 'No se pudo guardar el certificado SII.';
+        const reason = err?.error?.message;
+        this.taxProviderMessage = Array.isArray(reason)
+          ? `No se pudo guardar: ${reason.join(', ')}`
+          : reason || 'No se pudo guardar el certificado SII.';
         this.taxProviderSaving = false;
       },
       complete: () => {
