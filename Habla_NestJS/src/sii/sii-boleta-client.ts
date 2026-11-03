@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { SiiCertificateKeys } from './sii-certificate';
 import { normalizeRut } from './sii-format';
 import { signSiiSeed } from './sii-xml-signer';
@@ -28,6 +29,8 @@ export type SiiStatusResult = {
 type Fetch = typeof fetch;
 
 export class SiiBoletaClient {
+  private readonly logger = new Logger(SiiBoletaClient.name);
+
   constructor(private readonly fetchFn: Fetch = fetch) {}
 
   async getToken(keys: SiiCertificateKeys, environment: SiiEnvironment): Promise<string> {
@@ -127,9 +130,27 @@ export class SiiBoletaClient {
     return { Accept: 'application/json', Cookie: `TOKEN=${token}`, 'User-Agent': USER_AGENT };
   }
 
+  // Cada llamada queda en el log (sin token ni contenido) para diagnosticar al SII.
   private async request(url: string, init: RequestInit = {}): Promise<string> {
-    const response = await this.fetchFn(url, { ...init, signal: AbortSignal.timeout(30_000) });
+    const startedAt = Date.now();
+    const target = `${init.method ?? 'GET'} ${new URL(url).host}${new URL(url).pathname}`;
+    let response: Response;
+
+    try {
+      response = await this.fetchFn(url, { ...init, signal: AbortSignal.timeout(30_000) });
+    } catch (error) {
+      const cause = (error as { cause?: { code?: string } })?.cause?.code;
+      const name = (error as Error)?.name;
+      this.logger.warn(`SII ${target} falló en ${Date.now() - startedAt}ms: ${name} ${cause ?? (error as Error)?.message}`);
+      throw new Error(
+        name === 'TimeoutError' || name === 'AbortError'
+          ? 'El SII no respondió a tiempo. Inténtalo nuevamente en unos minutos.'
+          : `No se pudo conectar con el SII (${cause ?? (error as Error)?.message})`,
+      );
+    }
+
     const text = await response.text();
+    this.logger.log(`SII ${target} ${response.status} en ${Date.now() - startedAt}ms`);
 
     if (!response.ok) {
       throw new Error(`El SII respondió ${response.status}: ${text.slice(0, 200)}`);

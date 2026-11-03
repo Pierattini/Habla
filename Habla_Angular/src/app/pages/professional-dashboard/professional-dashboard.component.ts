@@ -1556,7 +1556,7 @@ private prepareProfileImage(file: File): Promise<string> {
     this.taxProviderTesting = true;
     this.taxProviderMessage = '';
 
-    this.taxProviderService.testSiiAuthentication().subscribe({
+    this.taxProviderService.testSiiAuthentication().pipe(timeout(90_000)).subscribe({
       next: (result) => {
         this.taxProviderMessage = result.message || 'Conexión con SII validada.';
         if (this.taxProviderCredential) {
@@ -1569,7 +1569,9 @@ private prepareProfileImage(file: File): Promise<string> {
       },
       error: (err) => {
         console.error('Error probando conexión SII:', err);
-        this.taxProviderMessage = err?.error?.message || 'No se pudo validar la conexión con SII.';
+        this.taxProviderMessage = err?.name === 'TimeoutError'
+          ? 'El servidor no recibió respuesta del SII. Inténtalo nuevamente en unos minutos.'
+          : err?.error?.message || 'No se pudo validar la conexión con SII.';
         this.taxProviderTesting = false;
       },
       complete: () => {
