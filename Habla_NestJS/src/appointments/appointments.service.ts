@@ -779,6 +779,11 @@ export class AppointmentsService {
       );
     }
 
+    // Confirmar desde la app equivale a confirmar el pago por el enlace del correo.
+    if (appointment.status === AppointmentStatus.PAYMENT_REVIEW) {
+      await this.issueAutomaticTaxDocumentAfterPayment(updated.id);
+    }
+
     const meetLink = updated.meetingUrl || updated.meetLink;
 
     if (meetLink && appointment.customer) {

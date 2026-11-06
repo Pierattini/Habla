@@ -1496,7 +1496,12 @@ private prepareProfileImage(file: File): Promise<string> {
       taxActivity: sii.taxActivity.trim(),
       resolutionNumber: sii.resolutionNumber.trim(),
       resolutionDate: sii.resolutionDate,
-    }).subscribe({
+    }).pipe(
+      finalize(() => {
+        this.taxProviderSaving = false;
+        this.cdr.detectChanges();
+      }),
+    ).subscribe({
       next: (credential) => {
         this.taxProviderCredential = credential;
         this.taxProviderRut = credential.rut || rut;
@@ -1512,11 +1517,7 @@ private prepareProfileImage(file: File): Promise<string> {
         this.taxProviderMessage = Array.isArray(reason)
           ? `No se pudo guardar: ${reason.join(', ')}`
           : reason || 'No se pudo guardar el certificado SII.';
-        this.taxProviderSaving = false;
       },
-      complete: () => {
-        this.taxProviderSaving = false;
-      }
     });
   }
 
@@ -1526,7 +1527,12 @@ private prepareProfileImage(file: File): Promise<string> {
     this.taxProviderSaving = true;
     this.taxProviderMessage = '';
 
-    this.taxProviderService.deleteMyCredential().subscribe({
+    this.taxProviderService.deleteMyCredential().pipe(
+      finalize(() => {
+        this.taxProviderSaving = false;
+        this.cdr.detectChanges();
+      }),
+    ).subscribe({
       next: (credential) => {
         this.taxProviderCredential = credential;
         this.taxProviderRut = '';
@@ -1537,11 +1543,7 @@ private prepareProfileImage(file: File): Promise<string> {
       error: (err) => {
         console.error('Error eliminando credenciales SII:', err);
         this.taxProviderMessage = 'No se pudieron eliminar las credenciales.';
-        this.taxProviderSaving = false;
       },
-      complete: () => {
-        this.taxProviderSaving = false;
-      }
     });
   }
 
@@ -1556,7 +1558,13 @@ private prepareProfileImage(file: File): Promise<string> {
     this.taxProviderTesting = true;
     this.taxProviderMessage = '';
 
-    this.taxProviderService.testSiiAuthentication().pipe(timeout(90_000)).subscribe({
+    this.taxProviderService.testSiiAuthentication().pipe(
+      timeout(90_000),
+      finalize(() => {
+        this.taxProviderTesting = false;
+        this.cdr.detectChanges();
+      }),
+    ).subscribe({
       next: (result) => {
         this.taxProviderMessage = result.message || 'Conexión con SII validada.';
         if (this.taxProviderCredential) {
@@ -1572,11 +1580,7 @@ private prepareProfileImage(file: File): Promise<string> {
         this.taxProviderMessage = err?.name === 'TimeoutError'
           ? 'El servidor no recibió respuesta del SII. Inténtalo nuevamente en unos minutos.'
           : err?.error?.message || 'No se pudo validar la conexión con SII.';
-        this.taxProviderTesting = false;
       },
-      complete: () => {
-        this.taxProviderTesting = false;
-      }
     });
   }
 
@@ -1584,10 +1588,12 @@ private prepareProfileImage(file: File): Promise<string> {
     this.taxProviderService.getMyFolioRanges().subscribe({
       next: (ranges) => {
         this.taxFolioRanges = ranges || [];
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error cargando folios SII:', err);
         this.taxFolioRanges = [];
+        this.cdr.detectChanges();
       }
     });
   }
