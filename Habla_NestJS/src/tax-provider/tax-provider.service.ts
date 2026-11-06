@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SaveTaxFolioRangeDto } from './dto/save-tax-folio-range.dto';
 import { SaveTaxProviderCredentialDto } from './dto/save-tax-provider-credential.dto';
 import { SiiBoletaClient } from '../sii/sii-boleta-client';
+import { parseCaf } from '../sii/sii-caf';
 import { extractCertificateKeys, SiiCertificateKeys } from '../sii/sii-certificate';
 
 const forge = require('node-forge');
@@ -317,7 +318,8 @@ export class TaxProviderService {
     this.ensureProfessional(user);
     this.ensureCafFile(caf);
 
-    const cafXml = caf!.buffer.toString('utf8');
+    // El SII entrega el CAF en ISO-8859-1.
+    const cafXml = caf!.buffer.toString('latin1');
     const parsed = this.parseCafXml(cafXml);
     const fingerprint = this.fingerprint(caf!.buffer);
     const status = dto.status || 'ACTIVE';
@@ -523,37 +525,11 @@ export class TaxProviderService {
   }
 
   private parseCafXml(xml: string) {
-    const dteCode = Number(this.extractXmlValue(xml, 'TD'));
-    const startFolio = Number(this.extractXmlValue(xml, 'D'));
-    const endFolio = Number(this.extractXmlValue(xml, 'H'));
-
-    if (!Number.isInteger(dteCode) || dteCode <= 0) {
-      throw new BadRequestException('El CAF no contiene tipo de DTE válido');
+    try {
+      return parseCaf(xml);
+    } catch (error) {
+      throw new BadRequestException((error as Error).message);
     }
-
-    if (
-      !Number.isInteger(startFolio) ||
-      !Number.isInteger(endFolio) ||
-      startFolio <= 0 ||
-      endFolio < startFolio
-    ) {
-      throw new BadRequestException('El CAF no contiene un rango de folios válido');
-    }
-
-    return {
-      dteCode,
-      startFolio,
-      endFolio,
-    };
-  }
-
-  private extractXmlValue(xml: string, tagName: string): string | null {
-    const pattern = new RegExp(
-      `<(?:\\w+:)?${tagName}[^>]*>([\\s\\S]*?)<\\/(?:\\w+:)?${tagName}>`,
-      'i',
-    );
-    const match = xml.match(pattern);
-    return match?.[1]?.trim() || null;
   }
 
   private toFolioRangeResponse(range: {

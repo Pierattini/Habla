@@ -1630,20 +1630,21 @@ private prepareProfileImage(file: File): Promise<string> {
     this.taxProviderService.saveMyFolioRange({
       caf: this.taxFolioCafFile,
       status: 'ACTIVE',
-    }).subscribe({
+    }).pipe(
+      finalize(() => {
+        this.taxFolioSaving = false;
+        this.cdr.detectChanges();
+      }),
+    ).subscribe({
       next: () => {
         this.taxFolioCafFile = null;
-        this.taxFolioMessage = 'CAF guardado correctamente.';
+        this.taxFolioMessage = 'Folios guardados correctamente.';
         this.loadTaxFolioRanges();
       },
       error: (err) => {
         console.error('Error guardando CAF SII:', err);
-        this.taxFolioMessage = err?.error?.message || 'No se pudo guardar el CAF.';
-        this.taxFolioSaving = false;
+        this.taxFolioMessage = err?.error?.message || 'No se pudieron guardar los folios.';
       },
-      complete: () => {
-        this.taxFolioSaving = false;
-      }
     });
   }
 
