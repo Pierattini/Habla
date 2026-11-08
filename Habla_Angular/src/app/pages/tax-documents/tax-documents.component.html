@@ -2,7 +2,7 @@
   <div class="tax-documents-shell">
     <header class="tax-documents-header">
       <button type="button" class="back-button" (click)="goBack()" aria-label="Volver">
-        <- 
+        Volver
       </button>
 
       <div>
@@ -20,7 +20,7 @@
           type="search"
           [(ngModel)]="search"
           (ngModelChange)="onSearchChange()"
-          placeholder="Paciente, correo o documento"
+          placeholder="Paciente, correo, RUT o folio"
         />
       </label>
 
@@ -31,16 +31,6 @@
             {{ filter.label }}
           </option>
         </select>
-      </label>
-
-      <label>
-        <span>Paciente</span>
-        <input
-          type="text"
-          [(ngModel)]="patient"
-          (ngModelChange)="onSearchChange()"
-          placeholder="Nombre o correo"
-        />
       </label>
 
       <label>

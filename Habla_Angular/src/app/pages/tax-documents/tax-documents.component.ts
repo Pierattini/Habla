@@ -24,7 +24,6 @@ export class TaxDocumentsComponent {
   uploadingDocumentIds: Record<string, boolean> = {};
   documentActionIds: Record<string, boolean> = {};
   search = '';
-  patient = '';
   status = 'ALL';
   fromDate = '';
   toDate = '';
@@ -80,7 +79,6 @@ export class TaxDocumentsComponent {
 
   clearFilters(): void {
     this.search = '';
-    this.patient = '';
     this.status = 'ALL';
     this.fromDate = '';
     this.toDate = '';
@@ -105,7 +103,6 @@ export class TaxDocumentsComponent {
 
     this.taxDocumentsService.getProfessionalDocumentsPage({
       search: this.search,
-      patient: this.patient,
       status: this.status === 'ALL' ? '' : this.status,
       fromDate: this.fromDate,
       toDate: this.toDate,

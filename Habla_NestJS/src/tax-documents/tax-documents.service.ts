@@ -1927,16 +1927,19 @@ export class TaxDocumentsService {
       .map((value) => value?.trim())
       .filter((value): value is string => !!value);
 
+    // Un solo buscador: paciente (nombre o correo), datos de boleta, RUT o folio.
     if (searchTerms.length > 0) {
       const search = searchTerms.join(' ');
-      const appointment = where.appointment as Prisma.AppointmentWhereInput;
+      const contains = { contains: search, mode: 'insensitive' as const };
 
-      appointment.customer = {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
-        ],
-      };
+      where.OR = [
+        { appointment: { customer: { name: contains } } },
+        { appointment: { customer: { email: contains } } },
+        { customerTaxName: contains },
+        { customerTaxEmail: contains },
+        { customerTaxId: contains },
+        { folio: contains },
+      ];
     }
 
     return where;
