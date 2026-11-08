@@ -443,10 +443,8 @@ export class HomePage implements OnInit, OnDestroy {
     this.activeSuggestionIndex = -1;
 
     if (suggestion.type === 'professional') {
-      this.goToDetail({
-        id: suggestion.id,
-        slug: suggestion.slug,
-      });
+      // La sugerencia trae solo id y slug: la ficha debe cargar el perfil completo.
+      this.router.navigate(['/tabs/professional', suggestion.id]);
       return;
     }
 

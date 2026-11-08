@@ -972,7 +972,9 @@ export class LoginComponent implements OnInit {
       return 'No pudimos conectar con Google. Revisa tu conexión e inténtalo nuevamente.';
     }
 
-    return 'No pudimos abrir Google en este momento. Inténtalo nuevamente.';
+    // El código ayuda a diagnosticar fallas que solo ocurren en algunos teléfonos.
+    const code = rawError?.code ? ` (código ${rawError.code})` : '';
+    return `No pudimos abrir Google en este momento. Inténtalo nuevamente.${code}`;
   }
 
   private cleanOptional(value: string): string | undefined {
