@@ -92,11 +92,14 @@ export class TaxDocumentsComponent {
     this.loadDocuments(false);
   }
 
-  loadDocuments(reset: boolean): void {
+  // silent: actualiza la lista sin vaciarla (tras reenviar, reintentar, etc.), así no parpadea.
+  loadDocuments(reset: boolean, silent = false): void {
     if (reset) {
       this.page = 1;
-      this.documents = [];
-      this.loading = true;
+      if (!silent) {
+        this.documents = [];
+        this.loading = true;
+      }
     } else {
       this.loadingMore = true;
     }
@@ -160,7 +163,7 @@ export class TaxDocumentsComponent {
       next: () => {
         delete this.selectedDocumentFiles[documentId];
         this.feedbackMessage = 'Documento subido correctamente.';
-        this.loadDocuments(true);
+        this.loadDocuments(true, true);
       },
       error: (err) => {
         console.error('Error subiendo documento tributario:', err);
@@ -314,7 +317,7 @@ export class TaxDocumentsComponent {
     ).subscribe({
       next: () => {
         this.feedbackMessage = successMessage;
-        this.loadDocuments(true);
+        this.loadDocuments(true, true);
       },
       error: (err: any) => {
         console.error(errorMessage, err);

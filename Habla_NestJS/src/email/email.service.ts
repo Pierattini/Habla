@@ -138,18 +138,25 @@ export class EmailService {
             ${professionalName ? emailRow('Profesional', professionalName) : ''}
             ${emailRow('Fecha', uploadedAt)}
           `)}
-          <p>Puedes revisar el PDF desde el siguiente boton.</p>
+          ${
+            params.pdfAttachment
+              ? '<p>Te adjuntamos el documento en PDF en este correo.</p>'
+              : `<p>Puedes revisar el PDF desde el siguiente boton.</p>
           <p style="word-break:break-all; color:#6f6780; font-size:13px;">${pdfUrl}</p>
           ${
             xmlUrl
               ? `<p style="word-break:break-all; color:#6f6780; font-size:13px;">XML: ${xmlUrl}</p>`
               : ''
+          }`
           }
         `,
-        action: {
-          label: 'Ver documento',
-          url: pdfUrl,
-        },
+        // Con el PDF adjunto no se muestra el enlace: el de Cloudinary puede no abrir.
+        action: params.pdfAttachment
+          ? undefined
+          : {
+              label: 'Ver documento',
+              url: pdfUrl,
+            },
       }),
     });
 
