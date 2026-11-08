@@ -50,7 +50,9 @@ export function createMailTransport(smtpConfig: object): MailTransport {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: process.env.RESEND_FROM || formatAddress(options.from),
+          from:
+            normalizeFrom(process.env.RESEND_FROM) ||
+            formatAddress(options.from),
           to: toList(options.to),
           cc: toList(options.cc),
           bcc: toList(options.bcc),
@@ -91,6 +93,22 @@ export function createMailTransport(smtpConfig: object): MailTransport {
       return response.json();
     },
   };
+}
+
+// Tolera errores comunes al escribir RESEND_FROM en Render: comillas, espacios o el ">"
+// final olvidado ("Conecta <no-reply@turedpro.com").
+function normalizeFrom(value?: string): string | undefined {
+  const clean = value
+    ?.trim()
+    .replace(/^["']|["']$/g, '')
+    .trim();
+  if (!clean) return undefined;
+  const match = clean.match(/^(.*?)<\s*([^<>\s]+@[^<>\s]+?)\s*>?$/);
+  if (match) {
+    const name = match[1].trim();
+    return name ? `${name} <${match[2]}>` : match[2];
+  }
+  return clean;
 }
 
 function formatAddress(value?: MailAddress): string | undefined {
