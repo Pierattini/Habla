@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AlertController } from '@ionic/angular';
+import { AlertController } from '@ionic/angular/standalone';
 import { finalize, forkJoin, Observable, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
@@ -1479,6 +1479,11 @@ private prepareProfileImage(file: File): Promise<string> {
       return;
     }
 
+    if (!this.profile.taxName?.trim() || !this.profile.taxAddress?.trim() || !this.profile.taxCity?.trim()) {
+      this.taxProviderMessage = 'Completa la razón social, la dirección y la comuna de la empresa: aparecen en cada boleta.';
+      return;
+    }
+
     if (!/^\d+$/.test(sii.resolutionNumber.trim())) {
       this.taxProviderMessage = 'El número de resolución debe tener solo números (en pruebas del SII es 0).';
       return;
@@ -1510,6 +1515,7 @@ private prepareProfileImage(file: File): Promise<string> {
         this.taxProviderCertificatePassword = '';
         this.taxProviderCertificateFile = null;
         this.taxProviderMessage = 'Certificado SII guardado de forma segura.';
+        this.saveIssuerTaxData(credential.rut || rut);
       },
       error: (err) => {
         console.error('Error guardando credenciales SII:', err);
@@ -1517,6 +1523,22 @@ private prepareProfileImage(file: File): Promise<string> {
         this.taxProviderMessage = Array.isArray(reason)
           ? `No se pudo guardar: ${reason.join(', ')}`
           : reason || 'No se pudo guardar el certificado SII.';
+      },
+    });
+  }
+
+  // Los datos del emisor de este formulario son los mismos que usa el perfil y cada boleta.
+  private saveIssuerTaxData(rut: string): void {
+    this.professionalProfileService.updateProfile({
+      taxId: rut,
+      taxName: this.profile.taxName.trim(),
+      taxAddress: this.profile.taxAddress.trim(),
+      taxCity: this.profile.taxCity.trim(),
+    }).subscribe({
+      error: (err) => {
+        console.error('Error guardando datos del emisor:', err);
+        this.taxProviderMessage = 'El certificado quedó guardado, pero no se pudieron guardar la razón social, dirección y comuna. Inténtalo nuevamente.';
+        this.cdr.detectChanges();
       },
     });
   }

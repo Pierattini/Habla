@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, inject } from '@angular/core';
-import { AlertController } from '@ionic/angular';
+import { AlertController } from '@ionic/angular/standalone';
 import { ProfessionalTimeBlock } from '../professional-time-blocks.models';
 import { ProfessionalTimeBlocksStore } from '../professional-time-blocks.store';
 import { TimeBlockCardComponent } from '../time-block-card/time-block-card.component';
