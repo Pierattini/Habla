@@ -2031,6 +2031,19 @@
         La duración y el descanso entre sesiones se configuran en Configuración de Sesión.
       </p>
 
+      <p class="schedule-help">
+        <strong>Estos horarios están en hora de {{ profileTimezoneLabel() }}.</strong>
+        Cada paciente los ve convertidos a su hora local.
+      </p>
+
+      <div class="schedule-help" *ngIf="suggestedTimezone()">
+        Estás conectada desde {{ suggestedTimezoneLabel() }}, pero tus horarios están en hora de {{ profileTimezoneLabel() }}.
+        <ion-button size="small" fill="outline" (click)="setProfileTimezone(suggestedTimezone()!)">
+          Usar hora de {{ suggestedTimezoneLabel() }}
+        </ion-button>
+        <br><small>Después revisa tus horas y presiona "Guardar cambios" al final.</small>
+      </div>
+
       <ion-item class="profile-field" lines="none">
         <ion-label position="stacked">Máximo de pacientes por día (opcional)</ion-label>
         <ion-input

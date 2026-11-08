@@ -31,6 +31,7 @@ import {
   TaxProviderService,
 } from '../../services/tax-provider.service';
 import { API_URL } from '../../core/config/api.config';
+import { timeZoneLabel, viewerTimeZone } from '../../utils/timezone.util';
 import { ProfessionalServicesManagerComponent } from '../../features/professional-services/components/professional-services-manager/professional-services-manager.component';
 import { ProfessionalServicesStore } from '../../features/professional-services/state/professional-services.store';
 import { ProfessionalAgendaManagerComponent } from '../../features/professional-time-blocks/professional-agenda-manager/professional-agenda-manager.component';
@@ -338,6 +339,22 @@ export class ProfessionalDashboardComponent {
 
   setProfileTimezone(timezone: string): void {
     this.profile.timezone = timezone || 'America/Santiago';
+  }
+
+  profileTimezoneLabel(): string {
+    return timeZoneLabel(this.getProfileTimezone());
+  }
+
+  // Zona del navegador si es una de las que se pueden elegir y no coincide con la configurada.
+  suggestedTimezone(): string | null {
+    const browserZone = viewerTimeZone();
+    const supported = ['America/Santiago', 'Europe/Madrid'];
+    if (!supported.includes(browserZone)) return null;
+    return browserZone === this.getProfileTimezone() ? null : browserZone;
+  }
+
+  suggestedTimezoneLabel(): string {
+    return timeZoneLabel(this.suggestedTimezone());
   }
 
   professionalAccess: ProfessionalAccess = {

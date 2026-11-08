@@ -199,7 +199,7 @@
     <ion-card *ngIf="$any(this).canShowBookingSteps() && availableHours.length > 0">
       <ion-card-header>
         <ion-card-title>Horarios disponibles</ion-card-title>
-        <p class="document-helper">Horas en tu hora local</p>
+        <p class="document-helper">Horas en tu hora local ({{ $any(this).viewerZoneLabel() }})</p>
       </ion-card-header>
 
       <ion-card-content>

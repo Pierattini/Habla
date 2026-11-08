@@ -6,8 +6,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { API_URL } from '../../core/config/api.config';
 import {
+  formatShortDayForViewer,
   formatTimeForViewer,
   isZonedDateTimeInPast,
+  timeZoneLabel,
+  viewerDateKey,
+  viewerTimeZone,
   zonedDateTimeToIso,
 } from '../../utils/timezone.util';
 import { AlertController } from '@ionic/angular/standalone';
@@ -375,8 +379,16 @@ private professionalTimeZone(): string | undefined {
   return this.professional?.timezone || undefined;
 }
 
+// Si en la zona del paciente la hora cae otro día, se indica el día ("00:40 · lun 9").
 formatSlotForViewer(hour: string): string {
-  return formatTimeForViewer(zonedDateTimeToIso(this.selectedDate, hour, this.professionalTimeZone()));
+  const instant = zonedDateTimeToIso(this.selectedDate, hour, this.professionalTimeZone());
+  const time = formatTimeForViewer(instant);
+  const sameDay = viewerDateKey(instant) === String(this.selectedDate || '').split('T')[0];
+  return sameDay ? time : `${time} · ${formatShortDayForViewer(instant)}`;
+}
+
+viewerZoneLabel(): string {
+  return timeZoneLabel(viewerTimeZone());
 }
 
 isHourDisabled(hour: string): boolean {

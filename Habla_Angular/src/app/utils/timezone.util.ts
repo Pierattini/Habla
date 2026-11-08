@@ -82,3 +82,33 @@ export function formatDateForViewer(value: string | Date): string {
     year: 'numeric',
   }).format(new Date(value)).replace(/-/g, '/');
 }
+
+const TIME_ZONE_LABELS: Record<string, string> = {
+  'America/Santiago': 'Chile',
+  'Europe/Madrid': 'España',
+};
+
+// Nombre corto y entendible de una zona horaria ("Chile", "España").
+export function timeZoneLabel(timeZone?: string | null): string {
+  const zone = timeZone || DEFAULT_BOOKING_TIMEZONE;
+  return TIME_ZONE_LABELS[zone] || zone.split('/').pop()!.replace(/_/g, ' ');
+}
+
+// Fecha (yyyy-MM-dd) del instante en la zona de quien mira.
+export function viewerDateKey(value: string | Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: viewerTimeZone(),
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(value));
+}
+
+// Día corto en la zona de quien mira ("lun 9").
+export function formatShortDayForViewer(value: string | Date): string {
+  return new Intl.DateTimeFormat('es-CL', {
+    timeZone: viewerTimeZone(),
+    weekday: 'short',
+    day: 'numeric',
+  }).format(new Date(value)).replace('.', '').replace(',', '');
+}
