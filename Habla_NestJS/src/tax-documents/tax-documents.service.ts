@@ -1095,54 +1095,66 @@ export class TaxDocumentsService {
     if (!document || document.emailSent) return document;
 
     const actorId = document.appointment.professionalId;
-
-    if (!document.pdfUrl) {
-      const siiDirect = this.getSiiDirectPayload(document.providerPayload);
-
-      if (!siiDirect?.signedXml) return document;
-
-      const pdf = await buildBoletaPdf(siiDirect.signedXml, {
-        number: siiDirect.resolutionNumber,
-        date: siiDirect.resolutionDate,
-      });
-      const fileBase = `boleta-${document.folio}`;
-      const [pdfUpload, xmlUpload] = await Promise.all([
-        this.cloudinaryService.uploadTaxDocumentBuffer(
-          document.id,
-          pdf,
-          `${fileBase}.pdf`,
-          'application/pdf',
-        ),
-        this.cloudinaryService.uploadTaxDocumentBuffer(
-          document.id,
-          Buffer.from(siiDirect.signedXml, 'latin1'),
-          `${fileBase}.xml`,
-          'application/xml',
-        ),
-      ]);
-
-      document = await this.prisma.taxDocument.update({
-        where: { id: document.id },
-        data: {
-          pdfUrl: pdfUpload.secure_url,
-          pdfPublicId: pdfUpload.public_id,
-          xmlUrl: xmlUpload.secure_url,
-          xmlPublicId: xmlUpload.public_id,
-          fileName: `${fileBase}.pdf`,
-          uploadedAt: new Date(),
-          events: {
-            create: {
-              actorId,
-              type: 'SII_DIRECT_DOCUMENT_STORED',
-              message: 'PDF y XML de la boleta almacenados',
-            },
-          },
-        },
-        include: this.getDeliveryInclude(),
-      });
-    }
+    document = await this.storeSiiDirectFiles(document, actorId);
 
     return this.emailDocumentToCustomer(document, actorId, { finalAttempt: false });
+  }
+
+  // PDFs subidos antes como imagen a Cloudinary: la cuenta gratuita no los entrega.
+  private isUndeliverablePdfUrl(url?: string | null) {
+    return !!url && url.includes('res.cloudinary.com') && url.includes('/image/upload/');
+  }
+
+  // Genera y guarda el PDF y XML de una boleta emitida directo al SII (o los regenera
+  // si quedaron guardados como imagen y no se pueden abrir).
+  private async storeSiiDirectFiles(document: any, actorId: string) {
+    if (document.pdfUrl && !this.isUndeliverablePdfUrl(document.pdfUrl)) return document;
+
+    const siiDirect = this.getSiiDirectPayload(document.providerPayload);
+
+    if (!siiDirect?.signedXml) return document;
+
+    const pdf = await buildBoletaPdf(siiDirect.signedXml, {
+      number: siiDirect.resolutionNumber,
+      date: siiDirect.resolutionDate,
+    });
+    const fileBase = `boleta-${document.folio}`;
+    const [pdfUpload, xmlUpload] = await Promise.all([
+      this.cloudinaryService.uploadTaxDocumentBuffer(
+        document.id,
+        pdf,
+        `${fileBase}.pdf`,
+        'application/pdf',
+      ),
+      this.cloudinaryService.uploadTaxDocumentBuffer(
+        document.id,
+        Buffer.from(siiDirect.signedXml, 'latin1'),
+        `${fileBase}.xml`,
+        'application/xml',
+      ),
+    ]);
+
+    document = await this.prisma.taxDocument.update({
+      where: { id: document.id },
+      data: {
+        pdfUrl: pdfUpload.secure_url,
+        pdfPublicId: pdfUpload.public_id,
+        xmlUrl: xmlUpload.secure_url,
+        xmlPublicId: xmlUpload.public_id,
+        fileName: `${fileBase}.pdf`,
+        uploadedAt: new Date(),
+        events: {
+          create: {
+            actorId,
+            type: 'SII_DIRECT_DOCUMENT_STORED',
+            message: 'PDF y XML de la boleta almacenados',
+          },
+        },
+      },
+      include: this.getDeliveryInclude(),
+    });
+
+    return document;
   }
 
   async issueLibreDteDocument(
@@ -1451,6 +1463,16 @@ export class TaxDocumentsService {
     }
 
     this.ensureProfessionalAccess(document.appointment, user);
+
+    if (this.isUndeliverablePdfUrl(document.pdfUrl) && this.getSiiDirectPayload(document.providerPayload)?.signedXml) {
+      const refreshed = await this.storeSiiDirectFiles(
+        await this.getDocumentForDelivery(document.id),
+        document.appointment.professionalId,
+      );
+      document.pdfUrl = refreshed.pdfUrl;
+      document.xmlUrl = refreshed.xmlUrl;
+      document.fileName = refreshed.fileName;
+    }
 
     if (!document.pdfUrl) {
       throw new BadRequestException('Document file is not available');

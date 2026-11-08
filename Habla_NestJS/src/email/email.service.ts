@@ -1,5 +1,5 @@
+import { createMailTransport } from './mail-transport';
 import { Injectable } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
 import {
   buildConectaEmail,
   conectaInfoCard,
@@ -36,7 +36,7 @@ interface SupportTicketEmailParams {
 @Injectable()
 export class EmailService {
   async sendSupportTicketCreatedEmail(params: SupportTicketEmailParams) {
-    const transporter = nodemailer.createTransport(this.getTransportConfig());
+    const transporter = createMailTransport(this.getTransportConfig());
     const adminName = this.escapeHtml(params.adminName);
 
     await transporter.sendMail({
@@ -64,7 +64,7 @@ export class EmailService {
   }
 
   async sendSupportTicketMessageEmail(params: SupportTicketEmailParams) {
-    const transporter = nodemailer.createTransport(this.getTransportConfig());
+    const transporter = createMailTransport(this.getTransportConfig());
     const adminName = this.escapeHtml(params.adminName);
     const customerName = this.escapeHtml(params.customerName);
 
@@ -92,7 +92,7 @@ export class EmailService {
   }
 
   async sendTaxDocumentEmail(params: TaxDocumentEmailParams) {
-    const transporter = nodemailer.createTransport(this.getTransportConfig());
+    const transporter = createMailTransport(this.getTransportConfig());
     const uploadedAt = this.formatDate(params.uploadedAt);
     const appointmentDate = params.appointmentDate
       ? this.formatDate(new Date(params.appointmentDate))

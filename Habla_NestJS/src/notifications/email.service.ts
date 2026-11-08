@@ -1,5 +1,5 @@
+import { createMailTransport } from '../email/mail-transport';
 import { Injectable } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
 import type { NotificationTemplate } from './notification.types';
 
 const CONECTA_EMAIL = 'app.info.conect@gmail.com';
@@ -18,7 +18,7 @@ export class NotificationEmailService {
       };
     }
 
-    const transporter = nodemailer.createTransport({
+    const transporter = createMailTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: Number(process.env.SMTP_PORT || 587),
       secure: process.env.SMTP_SECURE === 'true',
@@ -47,7 +47,7 @@ export class NotificationEmailService {
   }
 
   async verifyConnection() {
-    const transporter = nodemailer.createTransport({
+    const transporter = createMailTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: Number(process.env.SMTP_PORT || 587),
       secure: process.env.SMTP_SECURE === 'true',

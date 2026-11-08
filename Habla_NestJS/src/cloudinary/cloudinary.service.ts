@@ -1,6 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 
+// Las cuentas gratuitas de Cloudinary bloquean la entrega de PDFs subidos como imagen
+// ("auto"): el archivo no se puede abrir. Los PDF y ZIP se suben como "raw" (con su extensión).
+function documentUploadOptions(file: { mimetype?: string; originalname?: string }) {
+  const name = String(file?.originalname || '');
+  const isDocument =
+    /^(application\/pdf|application\/zip|application\/x-zip-compressed)$/.test(file?.mimetype || '') ||
+    /\.(pdf|zip)$/i.test(name);
+
+  if (!isDocument) return { resource_type: 'auto' as const };
+
+  const safeName = name.replace(/[^\w.\-]+/g, '_').replace(/^_+/, '') || 'documento.pdf';
+  // Prefijo de tiempo: en raw el nombre es el identificador y no debe pisar otro archivo.
+  return { resource_type: 'raw' as const, public_id: `${Date.now()}-${safeName}` };
+}
+
 @Injectable()
 export class CloudinaryService {
   constructor() {
@@ -16,7 +31,7 @@ export class CloudinaryService {
       cloudinary.uploader
         .upload_stream(
           {
-            resource_type: 'auto',
+            ...documentUploadOptions(file),
             folder: 'conecta-chat-files',
           },
           (error, result) => {
@@ -36,7 +51,7 @@ export class CloudinaryService {
       cloudinary.uploader
         .upload_stream(
           {
-            resource_type: 'auto',
+            ...documentUploadOptions(file),
             folder: `conecta-tax-documents/${documentId}`,
             use_filename: true,
             unique_filename: true,
@@ -63,12 +78,14 @@ export class CloudinaryService {
       cloudinary.uploader
         .upload_stream(
           {
-            resource_type: 'auto',
+            // "raw": las cuentas gratuitas de Cloudinary bloquean la entrega de PDFs
+            // subidos como imagen ("auto"), y el PDF no se podía abrir ni enviar.
+            // En raw el nombre conserva la extensión (.pdf / .xml).
+            resource_type: 'raw',
             folder: `conecta-tax-documents/${documentId}`,
-            public_id: fileName.replace(/\.[^.]+$/, ''),
+            public_id: fileName,
             use_filename: true,
             unique_filename: true,
-            format: fileName.split('.').pop(),
             context: mimeType ? { mime_type: mimeType } : undefined,
           },
           (error, result) => {

@@ -1,3 +1,4 @@
+import { createMailTransport } from '../email/mail-transport';
 import {
   BadRequestException,
   ConflictException,
@@ -21,7 +22,6 @@ import {
   ProfessionalServiceMode,
   ProfessionalServiceStatus,
 } from '@prisma/client';
-import * as nodemailer from 'nodemailer';
 import {
   createHash,
   createHmac,
@@ -215,7 +215,7 @@ export class AppointmentsService {
   }
 
   private createMailTransporter() {
-    return nodemailer.createTransport({
+    return createMailTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: Number(process.env.SMTP_PORT || 587),
       secure: process.env.SMTP_SECURE === 'true',
