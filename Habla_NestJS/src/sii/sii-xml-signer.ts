@@ -21,9 +21,11 @@ export function signSiiXml(xml: string, id: string, keys: SiiCertificateKeys): s
   });
   const target = `//*[@ID='${id}']`;
 
+  // El esquema del SII acepta un solo Transform. Como la firma queda fuera del nodo
+  // firmado (es su hermana), no hace falta "enveloped-signature": basta C14N.
   signer.addReference({
     xpath: target,
-    transforms: [ENVELOPED, C14N],
+    transforms: [C14N],
     digestAlgorithm: SHA1,
     uri: `#${id}`,
   });
