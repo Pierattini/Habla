@@ -7,7 +7,6 @@ import { FormsModule } from '@angular/forms';
 import { API_URL } from '../../core/config/api.config';
 import {
   formatTimeForViewer,
-  isViewerInBookingTimeZone,
   isZonedDateTimeInPast,
   zonedDateTimeToIso,
 } from '../../utils/timezone.util';
@@ -371,19 +370,17 @@ export class ProfessionalDetailComponent {
     }
   });
 }
-// Los horarios se definen en hora de Chile; cada persona los ve en su propia zona horaria.
-formatSlotForViewer(hour: string): string {
-  return formatTimeForViewer(zonedDateTimeToIso(this.selectedDate, hour));
+// Las horas se definen en la zona horaria de la profesional; cada paciente las ve en la suya.
+private professionalTimeZone(): string | undefined {
+  return this.professional?.timezone || undefined;
 }
 
-slotsTimeZoneLabel(): string {
-  return isViewerInBookingTimeZone()
-    ? 'Hora de Chile'
-    : 'Horas en tu zona horaria (entre paréntesis, la hora de Chile)';
+formatSlotForViewer(hour: string): string {
+  return formatTimeForViewer(zonedDateTimeToIso(this.selectedDate, hour, this.professionalTimeZone()));
 }
 
 isHourDisabled(hour: string): boolean {
-  return isZonedDateTimeInPast(this.selectedDate, hour);
+  return isZonedDateTimeInPast(this.selectedDate, hour, this.professionalTimeZone());
 }
 
 getHourColor(hour: string): string {
@@ -439,7 +436,7 @@ async bookAppointment() {
 
   const payload = withSelectedProfessionalService({
     professionalId: this.professional.id,
-    date: zonedDateTimeToIso(this.selectedDate, this.selectedHour),
+    date: zonedDateTimeToIso(this.selectedDate, this.selectedHour, this.professionalTimeZone()),
     documentRequested: this.selectedDocumentMode !== 'NONE',
     documentCurrency: 'CLP',
     attentionMode: this.selectedAttentionMode,

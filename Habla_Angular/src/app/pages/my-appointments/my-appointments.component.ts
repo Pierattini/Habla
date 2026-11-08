@@ -114,7 +114,7 @@ getCurrentSectionTitle(): string {
   return 'Próximas citas';
 }
 
-// Cada persona ve la cita en su zona horaria; fuera de Chile se agrega la hora de Chile.
+// Cada persona ve la cita en su propia zona horaria.
 formatChileDate(value: string | Date): string {
   return value ? formatDateForViewer(value) : '';
 }
@@ -267,7 +267,9 @@ finishAppointmentsLoad() {
 }
 
 private performCancelAppointment(id: string) {
+  if (this.loadingId) return;
   this.loadingId = id;
+  this.cdr.detectChanges();
 
   this.appointmentsService.cancelAppointment(id).subscribe({
     next: async (res: any) => {
@@ -287,13 +289,14 @@ private performCancelAppointment(id: string) {
       const message = res?.penalty === 0 && res?.status === 'CANCELLED'
         ? 'Cita cancelada sin penalización'
         : 'Cita cancelada correctamente';
-      await this.presentToast(message, 'danger');
+      void this.presentToast(message, 'success');
       this.loadAppointments();
     },
 
-    error: async () => {
+    error: (err) => {
       this.loadingId = null;
-      await this.presentToast('Error al cancelar la cita', 'danger');
+      this.cdr.detectChanges();
+      void this.presentToast(err?.error?.message || 'No pudimos cancelar la cita. Inténtalo nuevamente.', 'danger');
     }
   });
 }

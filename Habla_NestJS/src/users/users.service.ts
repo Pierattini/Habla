@@ -552,6 +552,8 @@ export class UsersService {
         documentAutomationEnabled: p.documentAutomationEnabled,
         manualDocumentMode: p.manualDocumentMode,
         taxDocumentReady: this.isProfessionalTaxReady(p),
+        // Zona horaria en la que la profesional define su disponibilidad.
+        timezone: p.user.timezone || 'America/Santiago',
         attentionMode: p.attentionMode,
         officeCity: p.officeCity,
         officeRegion: p.officeRegion,
@@ -659,6 +661,7 @@ export class UsersService {
       documentAutomationEnabled: professional.documentAutomationEnabled,
       manualDocumentMode: professional.manualDocumentMode,
       taxDocumentReady: this.isProfessionalTaxReady(professional),
+      timezone: professional.user.timezone || 'America/Santiago',
       attentionMode: professional.attentionMode,
       officeCity: professional.officeCity,
       officeRegion: professional.officeRegion,

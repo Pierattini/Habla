@@ -325,8 +325,8 @@ export class AppointmentsService {
       WeekDay.FRI,
       WeekDay.SAT,
     ];
-    // 🔥 FORZAR fecha local sin desfase
-    const appointmentDay = this.getWeekDayInBookingTimezone(date);
+    const bookingTimeZone = professional.user.timezone || BOOKING_TIMEZONE;
+    const appointmentDay = this.getWeekDayInBookingTimezone(date, bookingTimeZone);
 
     const availability = await this.prisma.availability.findFirst({
       where: {
@@ -345,6 +345,8 @@ export class AppointmentsService {
       professionalId,
       date,
       appointmentDurationInMinutes,
+      this.prisma,
+      bookingTimeZone,
     );
 
     if (!matchesScheduleConfig) {
@@ -393,6 +395,7 @@ export class AppointmentsService {
           date,
           selection.durationMinutes,
           tx,
+          bookingTimeZone,
         );
 
         if (!stillMatchesSchedule) {
@@ -412,7 +415,8 @@ export class AppointmentsService {
             tx,
             professional.maxDailyAppointments,
             professionalId,
-            this.normalizeBookingDateKey(date),
+            this.normalizeBookingDateKey(date, bookingTimeZone),
+            bookingTimeZone,
           )
         ) {
           throw new ConflictException(
@@ -618,6 +622,8 @@ export class AppointmentsService {
       professionalId,
       date,
       duration,
+      this.prisma,
+      professional.user.timezone || BOOKING_TIMEZONE,
     );
     if (!matchesSchedule) {
       throw new ForbiddenException('Profesional no disponible en ese horario.');
@@ -643,6 +649,7 @@ export class AppointmentsService {
             date,
             selection.durationMinutes,
             tx,
+            professional.user.timezone || BOOKING_TIMEZONE,
           ),
         ]);
 
@@ -909,11 +916,14 @@ export class AppointmentsService {
         where: { id },
         data: { status: AppointmentStatus.CANCELLED, penalty: 0 },
       });
-      await this.sendAppointmentNotificationById(
+      // Correos y calendario externo en segundo plano: la respuesta llega al tiro.
+      void this.sendAppointmentNotificationById(
         updated.id,
         'APPOINTMENT_CANCELLATION',
       );
-      await this.deleteExternalMeetingIfNeeded(appointment);
+      void this.deleteExternalMeetingIfNeeded(appointment).catch(() =>
+        console.error('No se pudo borrar la videollamada externa de la cita cancelada.'),
+      );
       return { ...updated, requiresPenaltyResolution: false };
     }
 
@@ -947,11 +957,14 @@ export class AppointmentsService {
         },
       });
 
-      await this.sendAppointmentNotificationById(
+      // Correos y calendario externo en segundo plano: la respuesta llega al tiro.
+      void this.sendAppointmentNotificationById(
         updated.id,
         'APPOINTMENT_CANCELLATION',
       );
-      await this.deleteExternalMeetingIfNeeded(appointment);
+      void this.deleteExternalMeetingIfNeeded(appointment).catch(() =>
+        console.error('No se pudo borrar la videollamada externa de la cita cancelada.'),
+      );
 
       return {
         ...updated,
@@ -969,11 +982,14 @@ export class AppointmentsService {
         },
       });
 
-      await this.sendAppointmentNotificationById(
+      // Correos y calendario externo en segundo plano: la respuesta llega al tiro.
+      void this.sendAppointmentNotificationById(
         updated.id,
         'APPOINTMENT_CANCELLATION',
       );
-      await this.deleteExternalMeetingIfNeeded(appointment);
+      void this.deleteExternalMeetingIfNeeded(appointment).catch(() =>
+        console.error('No se pudo borrar la videollamada externa de la cita cancelada.'),
+      );
 
       return {
         ...updated,
@@ -990,11 +1006,13 @@ export class AppointmentsService {
       },
     });
 
-    await this.sendAppointmentNotificationById(
+    void this.sendAppointmentNotificationById(
       updated.id,
       'APPOINTMENT_CANCELLATION',
     );
-    await this.deleteExternalMeetingIfNeeded(appointment);
+    void this.deleteExternalMeetingIfNeeded(appointment).catch(() =>
+      console.error('No se pudo borrar la videollamada externa de la cita cancelada.'),
+    );
 
     return updated;
   }
@@ -1004,10 +1022,6 @@ export class AppointmentsService {
     serviceId?: string,
     bookingActor: 'CUSTOMER' | 'PROFESSIONAL' = 'CUSTOMER',
   ) {
-    const dateKey = this.normalizeBookingDateKey(date);
-    const bookingDay = this.zonedDateTimeToUtc(dateKey, 12 * 60);
-    this.assertDateWithinBookingWindow(bookingDay);
-
     const professional = await this.prisma.professional.findUnique({
       where: { userId: professionalId },
       include: { user: true },
@@ -1016,6 +1030,11 @@ export class AppointmentsService {
     if (!professional) {
       throw new NotFoundException('Professional not found');
     }
+
+    const timeZone = professional.user.timezone || BOOKING_TIMEZONE;
+    const dateKey = this.normalizeBookingDateKey(date, timeZone);
+    const bookingDay = this.zonedDateTimeToUtc(dateKey, 12 * 60, timeZone);
+    this.assertDateWithinBookingWindow(bookingDay);
 
     const selection =
       bookingActor === 'PROFESSIONAL'
@@ -1037,7 +1056,7 @@ export class AppointmentsService {
       throw new ForbiddenException('Fecha inválida');
     }
 
-    const appointmentDay = this.getWeekDayInBookingTimezone(cleanDate);
+    const appointmentDay = this.getWeekDayInBookingTimezone(cleanDate, timeZone);
 
     const availability = await this.prisma.availability.findMany({
       where: {
@@ -1046,10 +1065,11 @@ export class AppointmentsService {
       },
     });
 
-    const startOfDay = this.zonedDateTimeToUtc(dateKey, 0);
+    const startOfDay = this.zonedDateTimeToUtc(dateKey, 0, timeZone);
     const endOfDay = this.zonedDateTimeToUtc(
       this.addDaysToDateKey(dateKey, 1),
       0,
+      timeZone,
     );
 
     const earliestRelevantAppointment = new Date(
@@ -1075,6 +1095,7 @@ export class AppointmentsService {
         professional.maxDailyAppointments,
         professionalId,
         dateKey,
+        timeZone,
       ))
     ) {
       return [];
@@ -1097,7 +1118,7 @@ export class AppointmentsService {
           : this.buildContinuousSlots(block, duration);
 
       for (const minute of candidates) {
-        const slotDate = this.zonedDateTimeToUtc(dateKey, minute);
+        const slotDate = this.zonedDateTimeToUtc(dateKey, minute, timeZone);
 
         if (slotDate <= now) continue;
 
@@ -1314,12 +1335,13 @@ export class AppointmentsService {
     date: Date,
     duration: number,
     client: Prisma.TransactionClient | PrismaService = this.prisma,
+    timeZone = BOOKING_TIMEZONE,
   ) {
-    const minute = this.getMinutesInBookingTimezone(date);
+    const minute = this.getMinutesInBookingTimezone(date, timeZone);
     const availability = await client.availability.findMany({
       where: {
         professionalId,
-        day: this.getWeekDayInBookingTimezone(date),
+        day: this.getWeekDayInBookingTimezone(date, timeZone),
       },
     });
 
@@ -1458,7 +1480,7 @@ export class AppointmentsService {
     );
   }
 
-  private getWeekDayInBookingTimezone(date: Date) {
+  private getWeekDayInBookingTimezone(date: Date, timeZone = BOOKING_TIMEZONE) {
     const dayMap: Record<string, WeekDay> = {
       Sun: WeekDay.SUN,
       Mon: WeekDay.MON,
@@ -1469,16 +1491,16 @@ export class AppointmentsService {
       Sat: WeekDay.SAT,
     };
     const weekday = new Intl.DateTimeFormat('en-US', {
-      timeZone: BOOKING_TIMEZONE,
+      timeZone,
       weekday: 'short',
     }).format(date);
 
     return dayMap[weekday] ?? this.getWeekDay(date);
   }
 
-  private getMinutesInBookingTimezone(date: Date) {
+  private getMinutesInBookingTimezone(date: Date, timeZone = BOOKING_TIMEZONE) {
     const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: BOOKING_TIMEZONE,
+      timeZone,
       hour: '2-digit',
       minute: '2-digit',
       hourCycle: 'h23',
@@ -1514,20 +1536,18 @@ export class AppointmentsService {
     return asUtc - date.getTime();
   }
 
-  private zonedDateTimeToUtc(dateKey: string, minuteOfDay: number) {
+  private zonedDateTimeToUtc(
+    dateKey: string,
+    minuteOfDay: number,
+    timeZone = BOOKING_TIMEZONE,
+  ) {
     const [year, month, day] = dateKey.split('-').map(Number);
     const hour = Math.floor(minuteOfDay / 60);
     const minute = minuteOfDay % 60;
     const utcGuess = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
-    const firstOffset = this.getTimeZoneOffsetMs(
-      new Date(utcGuess),
-      BOOKING_TIMEZONE,
-    );
+    const firstOffset = this.getTimeZoneOffsetMs(new Date(utcGuess), timeZone);
     let utcTime = utcGuess - firstOffset;
-    const secondOffset = this.getTimeZoneOffsetMs(
-      new Date(utcTime),
-      BOOKING_TIMEZONE,
-    );
+    const secondOffset = this.getTimeZoneOffsetMs(new Date(utcTime), timeZone);
 
     if (secondOffset !== firstOffset) {
       utcTime = utcGuess - secondOffset;
@@ -1542,6 +1562,7 @@ export class AppointmentsService {
     maxDailyAppointments: number | null | undefined,
     professionalId: string,
     dateKey: string,
+    timeZone = BOOKING_TIMEZONE,
   ) {
     if (!maxDailyAppointments) return false;
 
@@ -1549,8 +1570,8 @@ export class AppointmentsService {
       where: {
         professionalId,
         date: {
-          gte: this.zonedDateTimeToUtc(dateKey, 0),
-          lt: this.zonedDateTimeToUtc(this.addDaysToDateKey(dateKey, 1), 0),
+          gte: this.zonedDateTimeToUtc(dateKey, 0, timeZone),
+          lt: this.zonedDateTimeToUtc(this.addDaysToDateKey(dateKey, 1), 0, timeZone),
         },
         status: { in: RESERVED_APPOINTMENT_STATUSES },
       },
@@ -1559,7 +1580,7 @@ export class AppointmentsService {
     return booked >= maxDailyAppointments;
   }
 
-  private normalizeBookingDateKey(input: string | Date) {
+  private normalizeBookingDateKey(input: string | Date, timeZone = BOOKING_TIMEZONE) {
     if (typeof input === 'string' && /^\d{4}-\d{2}-\d{2}/.test(input)) {
       return input.slice(0, 10);
     }
@@ -1569,7 +1590,7 @@ export class AppointmentsService {
     if (isNaN(date.getTime())) return '';
 
     const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: BOOKING_TIMEZONE,
+      timeZone,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -1678,8 +1699,10 @@ export class AppointmentsService {
       WeekDay.SAT,
     ];
 
-    const appointmentDay = this.getWeekDayInBookingTimezone(newDate);
-    const minutesFromMidnight = this.getMinutesInBookingTimezone(newDate);
+    const appointmentDay = this.getWeekDayInBookingTimezone(
+      newDate,
+      professional.user.timezone || BOOKING_TIMEZONE,
+    );
 
     const availability = await this.prisma.availability.findFirst({
       where: {
@@ -1696,6 +1719,8 @@ export class AppointmentsService {
       appointment.professionalId,
       newDate,
       duration,
+      this.prisma,
+      professional.user.timezone || BOOKING_TIMEZONE,
     );
 
     if (!matchesScheduleConfig) {
@@ -1710,6 +1735,7 @@ export class AppointmentsService {
           newDate,
           duration,
           tx,
+          professional.user.timezone || BOOKING_TIMEZONE,
         );
 
         if (!stillMatchesSchedule) {

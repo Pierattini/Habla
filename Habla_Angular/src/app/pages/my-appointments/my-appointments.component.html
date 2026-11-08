@@ -98,8 +98,9 @@
     size="small"
     class="btn-sec"
     *ngIf="role === 'PROFESSIONAL' || canCancel(appt)"
+    [disabled]="loadingId === appt.id"
     (click)="cancelAppointment(appt.id)">
-    Cancelar
+    {{ loadingId === appt.id ? 'Cancelando...' : 'Cancelar' }}
   </ion-button>
 
 </div>
@@ -126,8 +127,9 @@
         size="small"
         class="btn-sec"
         *ngIf="role === 'PROFESSIONAL' || canCancel(appt)"
+        [disabled]="loadingId === appt.id"
         (click)="cancelAppointment(appt.id)">
-        Cancelar
+        {{ loadingId === appt.id ? 'Cancelando...' : 'Cancelar' }}
       </ion-button>
 
       <ion-button

@@ -63,25 +63,14 @@ export function viewerTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_BOOKING_TIMEZONE;
 }
 
-export function isViewerInBookingTimeZone(timeZone = DEFAULT_BOOKING_TIMEZONE): boolean {
-  const reference = new Date();
-  return getTimeZoneOffsetMs(reference, viewerTimeZone()) === getTimeZoneOffsetMs(reference, timeZone);
-}
-
-function formatHourIn(date: Date, timeZone: string): string {
+// Hora (HH:mm) en la zona horaria de quien mira la pantalla.
+export function formatTimeForViewer(value: string | Date): string {
   return new Intl.DateTimeFormat('es-CL', {
-    timeZone,
+    timeZone: viewerTimeZone(),
     hour: '2-digit',
     minute: '2-digit',
     hourCycle: 'h23',
-  }).format(date);
-}
-
-// Hora en la zona de quien mira; fuera de Chile agrega la hora de Chile entre paréntesis.
-export function formatTimeForViewer(value: string | Date, timeZone = DEFAULT_BOOKING_TIMEZONE): string {
-  const date = new Date(value);
-  const local = formatHourIn(date, viewerTimeZone());
-  return isViewerInBookingTimeZone(timeZone) ? local : `${local} (${formatHourIn(date, timeZone)} Chile)`;
+  }).format(new Date(value));
 }
 
 // Fecha en la zona de quien mira (dd/MM/yyyy).
