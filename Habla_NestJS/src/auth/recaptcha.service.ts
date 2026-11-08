@@ -86,8 +86,12 @@ export class RecaptchaService {
     }
 
     const result = (await response.json()) as RecaptchaVerifyResponse;
+    // La app Android carga la web desde "localhost" dentro de un WebView, y ahí
+    // Google siempre entrega puntajes bajos; se usa un umbral propio para la app.
+    const isAndroidApp = result.hostname === 'localhost';
     const minScore = Number(
-      this.configService.get<string>('RECAPTCHA_MIN_SCORE') || 0.5,
+      (isAndroidApp && this.configService.get<string>('RECAPTCHA_APP_MIN_SCORE')) ||
+        (isAndroidApp ? 0.1 : this.configService.get<string>('RECAPTCHA_MIN_SCORE') || 0.5),
     );
     const score = Number(result.score || 0);
 
