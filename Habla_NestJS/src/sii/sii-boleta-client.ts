@@ -112,7 +112,14 @@ export class SiiBoletaClient {
         ? 'ACCEPTED'
         : 'PENDING';
 
-    return { state, outcome, detail: outcome === 'REJECTED' ? this.describeRejection(json) : null, raw: json };
+    const detail = outcome === 'REJECTED' ? this.describeRejection(json) : null;
+    // Deja en el log la respuesta del SII (sin datos sensibles) para diagnosticar rechazos.
+    this.logger.log(
+      `SII estado envío ${input.trackId}: ${state || 'sin estado'} (${outcome})${detail ? ` - ${detail}` : ''}` +
+        (outcome === 'REJECTED' ? ` ${JSON.stringify(json).slice(0, 1500)}` : ''),
+    );
+
+    return { state, outcome, detail, raw: json };
   }
 
   private describeRejection(json: any): string {
