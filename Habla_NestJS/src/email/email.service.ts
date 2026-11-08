@@ -1,4 +1,11 @@
 import { createMailTransport } from './mail-transport';
+
+// Sin estos límites, un SMTP bloqueado deja la petición colgada ~2 minutos.
+const SMTP_TIMEOUTS = {
+  connectionTimeout: 10_000,
+  greetingTimeout: 10_000,
+  socketTimeout: 20_000,
+};
 import { Injectable } from '@nestjs/common';
 import {
   buildConectaEmail,
@@ -157,6 +164,7 @@ export class EmailService {
   private getTransportConfig() {
     if (process.env.SMTP_HOST) {
       return {
+        ...SMTP_TIMEOUTS,
         host: process.env.SMTP_HOST,
         port: Number(process.env.SMTP_PORT || 587),
         secure: Number(process.env.SMTP_PORT || 587) === 465,
@@ -168,6 +176,7 @@ export class EmailService {
     }
 
     return {
+      ...SMTP_TIMEOUTS,
       service: 'gmail',
       auth: {
         user: this.getMailUser(),

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Observable } from 'rxjs';
+import { finalize, Observable, timeout } from 'rxjs';
 import { IonButton, IonContent } from '@ionic/angular/standalone';
 import { API_URL } from '../../core/config/api.config';
 import {
@@ -305,18 +305,23 @@ export class TaxDocumentsComponent {
 
     this.documentActionIds[documentId] = true;
 
-    action().subscribe({
+    // Límite de tiempo: si el servidor se reinicia o no responde, el botón no queda pegado.
+    action().pipe(
+      timeout(60_000),
+      finalize(() => {
+        this.documentActionIds[documentId] = false;
+      }),
+    ).subscribe({
       next: () => {
         this.feedbackMessage = successMessage;
         this.loadDocuments(true);
       },
-      error: (err: unknown) => {
+      error: (err: any) => {
         console.error(errorMessage, err);
-        this.feedbackMessage = errorMessage;
-        this.documentActionIds[documentId] = false;
-      },
-      complete: () => {
-        this.documentActionIds[documentId] = false;
+        const reason = err?.name === 'TimeoutError'
+          ? 'el servidor no respondió a tiempo, inténtalo de nuevo'
+          : err?.error?.message;
+        this.feedbackMessage = reason ? `${errorMessage} (${reason})` : errorMessage;
       },
     });
   }
