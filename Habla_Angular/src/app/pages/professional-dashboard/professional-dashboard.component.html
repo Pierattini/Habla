@@ -1396,6 +1396,9 @@
             <option value="CERTIFICATION">Pruebas del SII (certificación)</option>
             <option value="PRODUCTION">Boletas reales (producción)</option>
           </select>
+          <small class="field-rule" *ngIf="$any(this).hasUnsavedSiiSettings()">
+            Cambio sin guardar: presiona "Guardar configuración SII".
+          </small>
         </div>
 
         <p class="field-rule">

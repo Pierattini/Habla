@@ -466,6 +466,11 @@ export class ProfessionalDashboardComponent {
       return;
     }
 
+    // "Guardar cambios" también guarda el ambiente y datos SII si se modificaron.
+    if (this.hasUnsavedSiiSettings()) {
+      this.saveTaxProviderCredential();
+    }
+
     const validationErrors = this.validateAgenda();
 
     if (validationErrors.length > 0) {
@@ -1430,6 +1435,19 @@ private prepareProfileImage(file: File): Promise<string> {
   get taxCertificateDaysLeft(): number | null {
     const expiresAt = this.taxProviderCredential?.certificateExpiresAt;
     return expiresAt ? Math.floor((new Date(expiresAt).getTime() - Date.now()) / 86_400_000) : null;
+  }
+
+  hasUnsavedSiiSettings(): boolean {
+    const saved = this.taxProviderCredential;
+    if (!saved?.configured) return false;
+    const sii = this.taxProviderSii;
+    return (
+      (saved.environment === 'CERTIFICATION' ? 'CERTIFICATION' : 'PRODUCTION') !== this.taxProviderEnvironment ||
+      (saved.signerRut || '') !== sii.signerRut ||
+      (saved.taxActivity || '') !== sii.taxActivity ||
+      (saved.resolutionNumber === null ? '' : String(saved.resolutionNumber)) !== sii.resolutionNumber ||
+      (saved.resolutionDate || '') !== sii.resolutionDate
+    );
   }
 
   loadTaxProviderCredential(): void {
