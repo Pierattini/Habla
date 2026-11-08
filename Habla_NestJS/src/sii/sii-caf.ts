@@ -1,3 +1,4 @@
+import type { SiiEnvironment } from './sii-boleta-client';
 import { normalizeRut } from './sii-format';
 
 const forge = require('node-forge');
@@ -10,6 +11,8 @@ export type SiiCaf = {
   dteCode: number;
   startFolio: number;
   endFolio: number;
+  // El SII marca cada CAF con IDK 100 (pruebas/certificación) o 300 (boletas reales).
+  environment: SiiEnvironment;
 };
 
 // Lee el archivo de folios (CAF) que entrega el SII.
@@ -28,6 +31,7 @@ export function parseCaf(xml: string): SiiCaf {
     dteCode: Number(readTag(cafXml, 'TD')),
     startFolio: Number(readTag(cafXml, 'D')),
     endFolio: Number(readTag(cafXml, 'H')),
+    environment: readTag(cafXml, 'IDK') === '100' ? 'CERTIFICATION' : 'PRODUCTION',
   };
 
   if (

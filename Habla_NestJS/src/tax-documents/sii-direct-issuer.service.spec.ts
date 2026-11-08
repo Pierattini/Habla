@@ -142,4 +142,28 @@ describe('SiiDirectIssuerService', () => {
       'lastProviderSyncAt',
     ]);
   });
+  it('refuses to send real folios to the SII test environment', async () => {
+    taxProvider.getCafXmlForFolio.mockResolvedValue(caf.xml.replace('<IDK>100</IDK>', '<IDK>300</IDK>'));
+
+    await expect(issuer.issue(document, profile, 'professional-1')).rejects.toThrow('Boletas reales');
+    expect(client.upload).not.toHaveBeenCalled();
+  });
+
+  it('frees a boleta sent to another SII environment so it can be resent with its folio', async () => {
+    prisma.taxDocument.findUnique.mockResolvedValue({
+      ...document,
+      folio: '21005',
+      siiTrackId: '33917657',
+      providerPayload: { siiDirect: { environment: 'CERTIFICATION' } },
+    });
+    taxProvider.getSiiSendingProfile.mockResolvedValue({ ...profile, environment: 'PRODUCTION' });
+
+    const result = await issuer.syncStatus('doc-1');
+
+    expect(client.getStatus).not.toHaveBeenCalled();
+    expect(result?.outcome).toBe('REJECTED');
+    expect(prisma.taxDocument.update.mock.calls[0][0].data).toEqual(
+      expect.objectContaining({ status: DocumentStatus.DOCUMENT_FAILED, siiTrackId: null }),
+    );
+  });
 });

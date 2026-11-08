@@ -50,6 +50,17 @@ export class SiiDirectIssuerService {
       throw new Error(`No se encontró el archivo de folios para el folio ${folio}`);
     }
 
+    const caf = parseCaf(cafXml);
+
+    // Folios reales solo sirven en el SII real y los de prueba solo en certificación.
+    if (caf.environment !== profile.environment) {
+      throw new Error(
+        caf.environment === 'PRODUCTION'
+          ? 'Tus folios son del SII real, pero la configuración SII está en "Pruebas del SII". Cambia el ambiente a "Boletas reales" y presiona Reintentar.'
+          : 'Tus folios son de pruebas del SII, pero la configuración SII está en "Boletas reales". Sube folios reales o cambia el ambiente a "Pruebas del SII".',
+      );
+    }
+
     const issuedAt = new Date();
     const signedBoleta = buildSignedBoleta(
       {
@@ -75,7 +86,7 @@ export class SiiDirectIssuerService {
           city: document.customerTaxCity,
         },
       },
-      parseCaf(cafXml),
+      caf,
       profile.keys,
     );
     const envelope = buildSignedEnvioBoleta(
@@ -143,6 +154,32 @@ export class SiiDirectIssuerService {
     const profile = await this.taxProviderService.getSiiSendingProfile(professionalId);
 
     if (!profile) return null;
+
+    // Si la boleta se envió a otro ambiente del SII (por ejemplo a pruebas con folios
+    // reales), ahí nunca se podrá consultar: se libera para reenviarla con el mismo folio.
+    const sentEnvironment = (document.providerPayload as { siiDirect?: { environment?: string } } | null)
+      ?.siiDirect?.environment;
+
+    if (sentEnvironment && sentEnvironment !== profile.environment) {
+      const updated = await this.prisma.taxDocument.update({
+        where: { id: document.id },
+        data: {
+          status: DocumentStatus.DOCUMENT_FAILED,
+          siiTrackId: null,
+          siiStatusDetail:
+            'La boleta se envió a otro ambiente del SII. Presiona Reintentar para enviarla al ambiente configurado con el mismo folio.',
+          lastProviderSyncAt: new Date(),
+          events: {
+            create: {
+              actorId: professionalId,
+              type: 'SII_DIRECT_ENVIRONMENT_CHANGED',
+              message: `Boleta folio ${document.folio} liberada: se envió a ${sentEnvironment} y el ambiente actual es ${profile.environment}`,
+            },
+          },
+        },
+      });
+      return { document: updated, outcome: 'REJECTED' as const };
+    }
 
     const token = await this.client.getToken(profile.keys, profile.environment);
     const status = await this.client.getStatus({

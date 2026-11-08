@@ -1759,7 +1759,11 @@ export class AppointmentsService {
 
     // El correo se envía en segundo plano para que el cliente vea el cambio al tiro.
     void this.sendPaymentEmail(appointment.professional.email, appointment.id).catch(
-      () => console.error('Error enviando correo de pago.'),
+      (error) =>
+        console.error(
+          'Error enviando correo de pago:',
+          error instanceof Error ? error.message : error,
+        ),
     );
 
     return updatedAppointment;
