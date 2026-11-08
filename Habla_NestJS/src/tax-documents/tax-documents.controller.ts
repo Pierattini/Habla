@@ -206,6 +206,18 @@ export class TaxDocumentsController {
     return this.taxDocumentsService.syncLibreDteStatus(id, req.user);
   }
 
+  // Entrega el PDF desde el servidor: los enlaces directos de Cloudinary no abren PDFs
+  // en la cuenta gratuita.
+  @Get(':id/file')
+  async getDocumentFile(@Param('id') id: string, @Request() req: AuthRequest) {
+    const file = await this.taxDocumentsService.getDocumentPdf(id, req.user);
+
+    return new StreamableFile(file.buffer, {
+      type: 'application/pdf',
+      disposition: `inline; filename="${file.fileName}"`,
+    });
+  }
+
   @Get(':id/pdf')
   getProviderPdf(@Param('id') id: string, @Request() req: AuthRequest) {
     return this.taxDocumentsService.getLibreDteResource(id, req.user, 'pdf');

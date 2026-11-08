@@ -225,6 +225,13 @@ export class TaxDocumentsService {
     );
   }
 
+  // PDF entregado por el servidor de Conecta (los enlaces de Cloudinary no abren PDFs).
+  downloadPdf(documentId: string) {
+    return this.http.get(`${this.api}/tax-documents/${documentId}/file`, {
+      responseType: 'blob',
+    });
+  }
+
   downloadMonthlyReport(month: string) {
     return this.http.get(`${this.api}/tax-documents/professional/report`, {
       params: { month },

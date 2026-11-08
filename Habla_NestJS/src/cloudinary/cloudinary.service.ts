@@ -99,4 +99,27 @@ export class CloudinaryService {
         .end(buffer);
     });
   }
+
+  // Descarga un archivo por la API de Cloudinary (con la clave), que no tiene el bloqueo
+  // de entrega de PDFs de las cuentas gratuitas.
+  async downloadFile(url: string, publicId?: string | null): Promise<Buffer> {
+    const resourceType = url.includes('/raw/upload/') ? 'raw' : 'image';
+    let downloadUrl = url;
+
+    if (publicId) {
+      const isRaw = resourceType === 'raw';
+      downloadUrl = cloudinary.utils.private_download_url(publicId, isRaw ? '' : 'pdf', {
+        resource_type: resourceType,
+        type: 'upload',
+      });
+    }
+
+    const response = await fetch(downloadUrl, { signal: AbortSignal.timeout(20_000) });
+
+    if (!response.ok) {
+      throw new Error(`No se pudo descargar el archivo (${response.status})`);
+    }
+
+    return Buffer.from(await response.arrayBuffer());
+  }
 }

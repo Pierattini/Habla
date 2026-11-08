@@ -1383,6 +1383,63 @@ export class TaxDocumentsService {
     };
   }
 
+  // PDF del documento: las boletas emitidas por Conecta se generan desde su XML firmado;
+  // las subidas a mano se descargan de Cloudinary por su API.
+  async getDocumentPdf(id: string, user: TaxDocumentUser) {
+    const document = await this.prisma.taxDocument.findUnique({
+      where: { id },
+      include: { appointment: true },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Tax document not found');
+    }
+
+    this.ensureAppointmentAccess(document.appointment, user.id);
+
+    return this.buildDocumentPdfFile(document);
+  }
+
+  // Si no se puede armar el PDF, el correo igual sale con el enlace.
+  private async tryBuildPdfAttachment(document: any) {
+    try {
+      const file = await this.buildDocumentPdfFile(document);
+      return { fileName: file.fileName, buffer: file.buffer };
+    } catch (error) {
+      console.error('No se pudo adjuntar el PDF al correo', document?.id, error);
+      return null;
+    }
+  }
+
+  private async buildDocumentPdfFile(document: {
+    folio: string | null;
+    fileName: string | null;
+    pdfUrl: string | null;
+    pdfPublicId: string | null;
+    providerPayload: Prisma.JsonValue;
+  }): Promise<{ buffer: Buffer; fileName: string }> {
+    const siiDirect = this.getSiiDirectPayload(document.providerPayload);
+
+    if (siiDirect?.signedXml) {
+      return {
+        buffer: await buildBoletaPdf(siiDirect.signedXml, {
+          number: siiDirect.resolutionNumber,
+          date: siiDirect.resolutionDate,
+        }),
+        fileName: `boleta-${document.folio}.pdf`,
+      };
+    }
+
+    if (!document.pdfUrl) {
+      throw new BadRequestException('Document file is not available');
+    }
+
+    return {
+      buffer: await this.cloudinaryService.downloadFile(document.pdfUrl, document.pdfPublicId),
+      fileName: (document.fileName || 'documento.pdf').replace(/[^\w.\-]+/g, '_'),
+    };
+  }
+
   // Deja una emisión automática fallida otra vez pendiente; el reencolado lo hace
   // TaxDocumentJobsService para no crear una dependencia circular.
   async resetFailedAutomaticIssue(id: string, user: TaxDocumentUser) {
@@ -1500,6 +1557,7 @@ export class TaxDocumentsService {
         document.appointment.professional.name ||
         document.appointment.professional.email,
       professionalEmail: document.appointment.professional.email,
+      pdfAttachment: await this.tryBuildPdfAttachment(document),
     });
 
     return this.prisma.taxDocument.update({
@@ -1668,6 +1726,7 @@ export class TaxDocumentsService {
         appointmentDate: document.appointment.date,
         professionalName: professional,
         professionalEmail: document.appointment.professional.email,
+        pdfAttachment: await this.tryBuildPdfAttachment(document),
       });
 
       const sentDocument = await this.prisma.taxDocument.update({

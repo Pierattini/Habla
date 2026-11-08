@@ -334,14 +334,29 @@ export class TaxDocumentsComponent {
     return this.uploadingDocumentIds[documentId] === true;
   }
 
-  openDocument(document: DashboardTaxDocument): void {
-    if (!document.pdfUrl) return;
+  openDocument(taxDocument: DashboardTaxDocument): void {
+    if (!taxDocument.pdfUrl || this.documentActionIds[taxDocument.id]) return;
 
-    const url = document.pdfUrl.startsWith('http')
-      ? document.pdfUrl
-      : `${API_URL}${document.pdfUrl}`;
-
-    window.open(url, '_blank', 'noopener');
+    this.documentActionIds[taxDocument.id] = true;
+    this.taxDocumentsService.downloadPdf(taxDocument.id).pipe(
+      timeout(60_000),
+      finalize(() => {
+        this.documentActionIds[taxDocument.id] = false;
+      }),
+    ).subscribe({
+      next: (file) => {
+        const url = URL.createObjectURL(new Blob([file], { type: 'application/pdf' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = taxDocument.folio ? `boleta-${taxDocument.folio}.pdf` : 'documento.pdf';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      },
+      error: (err: unknown) => {
+        console.error('No se pudo descargar el PDF:', err);
+        this.feedbackMessage = 'No se pudo descargar el PDF. Inténtalo de nuevo.';
+      },
+    });
   }
 
   openDocumentXml(document: DashboardTaxDocument): void {

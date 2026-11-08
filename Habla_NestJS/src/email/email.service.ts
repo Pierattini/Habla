@@ -28,6 +28,8 @@ interface TaxDocumentEmailParams {
   appointmentDate?: Date | string | null;
   professionalName?: string | null;
   professionalEmail?: string | null;
+  // PDF adjunto al correo (no depende de que el enlace de Cloudinary abra).
+  pdfAttachment?: { fileName: string; buffer: Buffer } | null;
 }
 
 interface SupportTicketEmailParams {
@@ -115,6 +117,15 @@ export class EmailService {
       from: this.getMailFrom(),
       to: params.customerEmail,
       subject: 'Documento disponible en Conecta',
+      attachments: params.pdfAttachment
+        ? [
+            {
+              filename: params.pdfAttachment.fileName,
+              content: params.pdfAttachment.buffer,
+              contentType: 'application/pdf',
+            },
+          ]
+        : undefined,
       html: buildConectaEmail({
         title: 'Documento disponible en Conecta',
         preview: 'Tu documento asociado a tu cita ya se encuentra disponible.',
