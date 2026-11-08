@@ -243,6 +243,25 @@ export class TaxDocumentsComponent {
     );
   }
 
+  // Las boletas automáticas las emite Conecta con el SII: no llevan acciones manuales.
+  isAutomatic(document: DashboardTaxDocument): boolean {
+    return document.mode === 'AUTOMATED';
+  }
+
+  // Las citas se agendan en hora de Chile; se muestran igual sin importar dónde esté el navegador.
+  formatChileDateTime(value?: string | Date | null): string {
+    if (!value) return '';
+    return new Intl.DateTimeFormat('es-CL', {
+      timeZone: 'America/Santiago',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(new Date(value)).replace(/-/g, '/').replace(',', '');
+  }
+
   resendDocumentEmail(documentId: string): void {
     this.runDocumentAction(
       documentId,

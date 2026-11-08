@@ -99,7 +99,7 @@
             <h2>{{ document.view?.customerName }}</h2>
             <p>
               Cita:
-              {{ document.view?.appointmentDate ? (document.view?.appointmentDate | date:'dd/MM/yyyy HH:mm') : 'Sin fecha' }}
+              {{ document.view?.appointmentDate ? formatChileDateTime(document.view?.appointmentDate) : 'Sin fecha' }}
             </p>
           </div>
 
@@ -110,9 +110,14 @@
 
         <div class="document-meta">
           <span>Monto: {{ document.currency || 'CLP' }} {{ (document.amount || 0) | number:'1.0-0' }}</span>
-          <span>Emision: {{ document.view?.issueDate ? (document.view?.issueDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}</span>
-          <span>Envío: {{ document.view?.sentDate ? (document.view?.sentDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}</span>
+          <span *ngIf="document.folio">Folio: {{ document.folio }}</span>
+          <span>Emision: {{ document.view?.issueDate ? formatChileDateTime(document.view?.issueDate) : 'Pendiente' }}</span>
+          <span>Envío: {{ document.view?.sentDate ? formatChileDateTime(document.view?.sentDate) : 'Pendiente' }}</span>
         </div>
+
+        <p *ngIf="isAutomatic(document) && document.status === 'DOCUMENT_PENDING'" class="field-hint">
+          Boleta automática: Conecta la envía al SII y se la manda al paciente por correo apenas el SII la acepte.
+        </p>
 
         <div *ngIf="document.status === 'DOCUMENT_FAILED'" class="document-error" role="alert">
           <strong>No se pudo emitir la boleta</strong>
@@ -130,7 +135,7 @@
           </span>
         </div>
 
-        <div class="document-upload">
+        <div class="document-upload" *ngIf="!isAutomatic(document)">
           <input
             type="file"
             #taxDocumentInput
@@ -180,6 +185,7 @@
           <button
             type="button"
             class="outline-action"
+            *ngIf="!isAutomatic(document)"
             [disabled]="isDocumentActionRunning(document.id)"
             (click)="markDocumentGenerated(document.id)"
           >
@@ -189,6 +195,7 @@
           <button
             type="button"
             class="outline-action"
+            *ngIf="!isAutomatic(document)"
             [disabled]="isDocumentActionRunning(document.id)"
             (click)="markDocumentSent(document.id)"
           >
