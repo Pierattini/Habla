@@ -5,7 +5,12 @@ import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { API_URL } from '../../core/config/api.config';
-import { isZonedDateTimeInPast, zonedDateTimeToIso } from '../../utils/timezone.util';
+import {
+  formatTimeForViewer,
+  isViewerInBookingTimeZone,
+  isZonedDateTimeInPast,
+  zonedDateTimeToIso,
+} from '../../utils/timezone.util';
 import { AlertController } from '@ionic/angular/standalone';
 import { AuthService } from '../../services/auth.service';
 import { ConectaMessageType } from '../../shared/conecta-message/conecta-message.component';
@@ -366,6 +371,17 @@ export class ProfessionalDetailComponent {
     }
   });
 }
+// Los horarios se definen en hora de Chile; cada persona los ve en su propia zona horaria.
+formatSlotForViewer(hour: string): string {
+  return formatTimeForViewer(zonedDateTimeToIso(this.selectedDate, hour));
+}
+
+slotsTimeZoneLabel(): string {
+  return isViewerInBookingTimeZone()
+    ? 'Hora de Chile'
+    : 'Horas en tu zona horaria (entre paréntesis, la hora de Chile)';
+}
+
 isHourDisabled(hour: string): boolean {
   return isZonedDateTimeInPast(this.selectedDate, hour);
 }

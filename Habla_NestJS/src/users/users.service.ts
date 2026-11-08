@@ -202,6 +202,10 @@ export class UsersService {
         duration: dto.duration,
       }),
 
+      ...(dto.maxDailyAppointments !== undefined && {
+        maxDailyAppointments: dto.maxDailyAppointments,
+      }),
+
       ...(dto.taxId !== undefined && {
         taxId: dto.taxId,
       }),

@@ -62,8 +62,9 @@ export class TaxProviderService {
 
   saveMyCredential(data: {
     rut: string;
-    certificatePassword: string;
-    certificate: File;
+    // Sin certificado nuevo, el servidor mantiene el que ya está guardado.
+    certificatePassword?: string;
+    certificate?: File | null;
     environment: 'CERTIFICATION' | 'PRODUCTION';
     signerRut: string;
     taxActivity: string;
@@ -72,13 +73,13 @@ export class TaxProviderService {
   }) {
     const formData = new FormData();
     formData.append('rut', data.rut);
-    formData.append('certificatePassword', data.certificatePassword);
+    if (data.certificatePassword) formData.append('certificatePassword', data.certificatePassword);
     formData.append('environment', data.environment);
     formData.append('signerRut', data.signerRut);
     formData.append('taxActivity', data.taxActivity);
     formData.append('resolutionNumber', data.resolutionNumber);
     formData.append('resolutionDate', data.resolutionDate);
-    formData.append('certificate', data.certificate);
+    if (data.certificate) formData.append('certificate', data.certificate);
 
     return this.http.post<TaxProviderCredentialStatus>(
       `${this.api}/tax-provider/me`,

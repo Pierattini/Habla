@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import {
+  AppointmentStatus,
   DocumentMode,
   DocumentStatus,
   Prisma,
@@ -54,6 +55,7 @@ export class TaxDocumentJobsService {
 
     if (!document) return null;
     if (!document.appointment.documentRequested) return null;
+    if (document.appointment.status === AppointmentStatus.CANCELLED) return null;
     if (document.mode !== DocumentMode.AUTOMATED) return null;
     if (!document.appointment.professional.professional?.documentAutomationEnabled) {
       return null;

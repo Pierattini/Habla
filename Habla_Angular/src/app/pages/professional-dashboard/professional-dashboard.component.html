@@ -2031,6 +2031,20 @@
         La duración y el descanso entre sesiones se configuran en Configuración de Sesión.
       </p>
 
+      <ion-item class="profile-field" lines="none">
+        <ion-label position="stacked">Máximo de pacientes por día (opcional)</ion-label>
+        <ion-input
+          type="number"
+          min="1"
+          max="50"
+          placeholder="Sin límite"
+          [(ngModel)]="profile.maxDailyAppointments">
+        </ion-input>
+      </ion-item>
+      <p class="field-rule">
+        Al llegar a este número de reservas en un día, las demás horas de ese día dejan de mostrarse a los pacientes. Déjalo vacío para que se puedan ocupar todas.
+      </p>
+
       <div
         *ngFor="let item of availability"
         class="day-card"

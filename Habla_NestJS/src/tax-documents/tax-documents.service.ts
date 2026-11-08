@@ -774,6 +774,8 @@ export class TaxDocumentsService {
     if (!appointment.documentRequested) return document;
     if (!professional?.documentAutomationEnabled) return document;
     if (document.mode !== DocumentMode.AUTOMATED) return document;
+    // Una cita cancelada no se boletea, aunque su emisión hubiera quedado en cola.
+    if (appointment.status === AppointmentStatus.CANCELLED) return document;
 
     // En emisión directa al SII el folio se asigna antes de enviar: con folio y sin
     // trackId la boleta aún no llegó al SII y se puede reintentar con ese mismo folio.

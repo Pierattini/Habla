@@ -95,6 +95,13 @@ export class UpdateProfileDto {
   @Max(240)
   duration?: number;
 
+  // null quita el límite.
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  maxDailyAppointments?: number | null;
+
   @IsOptional()
   @IsBoolean()
   documentAutomationEnabled?: boolean;

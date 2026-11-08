@@ -478,6 +478,7 @@ export class ProfessionalDashboardComponent {
         rules: this.profile.rules,
         price: Number(this.profile.price),
         duration: Number(this.profile.duration),
+        maxDailyAppointments: Number(this.profile.maxDailyAppointments) || null,
         attentionMode: this.profile.attentionMode,
         officeAddress: this.profile.officeAddress,
         officeCity: this.profile.officeCity,
@@ -886,6 +887,7 @@ private prepareProfileImage(file: File): Promise<string> {
         timezone: res.timezone || res.professional?.timezone || 'America/Santiago',
         price: res.professional?.price || 0,
         duration: res.professional?.duration || 90,
+        maxDailyAppointments: res.professional?.maxDailyAppointments ?? null,
         interval: res.professional?.interval || 15,
         rules: res.professional?.rules || '',
         image: res.professional?.image || '',
@@ -1475,12 +1477,15 @@ private prepareProfileImage(file: File): Promise<string> {
       return;
     }
 
-    if (!this.taxProviderCertificateFile) {
+    // Con el certificado ya guardado se pueden cambiar los datos sin volver a subirlo.
+    const keepsSavedCertificate = !this.taxProviderCertificateFile && !!this.taxProviderCredential?.configured;
+
+    if (!this.taxProviderCertificateFile && !keepsSavedCertificate) {
       this.taxProviderMessage = 'Selecciona el certificado digital .pfx o .p12.';
       return;
     }
 
-    if (!certificatePassword || certificatePassword.length < 4) {
+    if (!keepsSavedCertificate && (!certificatePassword || certificatePassword.length < 4)) {
       this.taxProviderMessage = 'Ingresa la clave del certificado digital.';
       return;
     }
@@ -1507,7 +1512,7 @@ private prepareProfileImage(file: File): Promise<string> {
 
     this.taxProviderService.saveMyCredential({
       rut,
-      certificatePassword,
+      certificatePassword: keepsSavedCertificate ? undefined : certificatePassword,
       certificate: this.taxProviderCertificateFile,
       environment: this.taxProviderEnvironment,
       signerRut: sii.signerRut.trim(),
@@ -1527,7 +1532,9 @@ private prepareProfileImage(file: File): Promise<string> {
         this.applyTaxProviderSiiData(credential);
         this.taxProviderCertificatePassword = '';
         this.taxProviderCertificateFile = null;
-        this.taxProviderMessage = 'Certificado SII guardado de forma segura.';
+        this.taxProviderMessage = keepsSavedCertificate
+          ? 'Configuración SII guardada.'
+          : 'Certificado SII guardado de forma segura.';
         this.saveIssuerTaxData(credential.rut || rut);
       },
       error: (err) => {

@@ -12,10 +12,12 @@ export class SaveTaxProviderCredentialDto {
   @MaxLength(400)
   apiToken?: string;
 
+  // Solo se exige al subir un certificado nuevo.
+  @IsOptional()
   @IsString()
   @MinLength(4)
   @MaxLength(200)
-  certificatePassword: string;
+  certificatePassword?: string;
 
   // RUT personal de quien firma (dueño del certificado).
   @IsOptional()

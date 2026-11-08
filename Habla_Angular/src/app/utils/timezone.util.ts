@@ -57,3 +57,39 @@ export function isZonedDateTimeInPast(
 ): boolean {
   return new Date(zonedDateTimeToIso(dateKey, time, timeZone)).getTime() < Date.now();
 }
+
+// Zona horaria del navegador de quien mira la pantalla.
+export function viewerTimeZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_BOOKING_TIMEZONE;
+}
+
+export function isViewerInBookingTimeZone(timeZone = DEFAULT_BOOKING_TIMEZONE): boolean {
+  const reference = new Date();
+  return getTimeZoneOffsetMs(reference, viewerTimeZone()) === getTimeZoneOffsetMs(reference, timeZone);
+}
+
+function formatHourIn(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('es-CL', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(date);
+}
+
+// Hora en la zona de quien mira; fuera de Chile agrega la hora de Chile entre paréntesis.
+export function formatTimeForViewer(value: string | Date, timeZone = DEFAULT_BOOKING_TIMEZONE): string {
+  const date = new Date(value);
+  const local = formatHourIn(date, viewerTimeZone());
+  return isViewerInBookingTimeZone(timeZone) ? local : `${local} (${formatHourIn(date, timeZone)} Chile)`;
+}
+
+// Fecha en la zona de quien mira (dd/MM/yyyy).
+export function formatDateForViewer(value: string | Date): string {
+  return new Intl.DateTimeFormat('es-CL', {
+    timeZone: viewerTimeZone(),
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(value)).replace(/-/g, '/');
+}

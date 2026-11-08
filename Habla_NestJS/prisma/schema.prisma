@@ -242,6 +242,8 @@ model Professional {
   name                String?
   price               Int?
   duration            Int?
+  // Máximo de citas que pacientes pueden reservar en un día (null = sin límite).
+  maxDailyAppointments Int?
   isOnline            Boolean?                @default(true)
   image               String?
   attentionMode       AttentionModality       @default(ONLINE)

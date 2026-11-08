@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
   ForbiddenException,
@@ -405,6 +406,19 @@ export class AppointmentsService {
           { professionalId, startAt: date, endAt: lockedEndDate },
           professional.duration ?? professional.user.sessionDuration ?? 60,
         );
+
+        if (
+          await this.isDailyLimitReached(
+            tx,
+            professional.maxDailyAppointments,
+            professionalId,
+            this.normalizeBookingDateKey(date),
+          )
+        ) {
+          throw new ConflictException(
+            'La profesional ya completó sus cupos para ese día. Elige otra fecha.',
+          );
+        }
 
         finalPrice = selection.priceAmount;
 
@@ -913,7 +927,7 @@ export class AppointmentsService {
       where: { userId: appointment.professionalId },
     });
 
-    const price = professional?.price || 0;
+    const price = normalizeLegacyClpPrice(professional?.price);
     const isConfirmedReservation =
       appointment.status === AppointmentStatus.CONFIRMED ||
       appointment.status === AppointmentStatus.RESCHEDULED;
@@ -1053,6 +1067,18 @@ export class AppointmentsService {
         },
       },
     });
+
+    if (
+      bookingActor === 'CUSTOMER' &&
+      (await this.isDailyLimitReached(
+        this.prisma,
+        professional.maxDailyAppointments,
+        professionalId,
+        dateKey,
+      ))
+    ) {
+      return [];
+    }
 
     const timeBlocks = await this.scheduleConflicts.findTimeBlocks(
       this.prisma,
@@ -1508,6 +1534,29 @@ export class AppointmentsService {
     }
 
     return new Date(utcTime);
+  }
+
+  // La profesional puede limitar cuántos pacientes reservan por día, aunque tenga más horas.
+  private async isDailyLimitReached(
+    client: Prisma.TransactionClient | PrismaService,
+    maxDailyAppointments: number | null | undefined,
+    professionalId: string,
+    dateKey: string,
+  ) {
+    if (!maxDailyAppointments) return false;
+
+    const booked = await client.appointment.count({
+      where: {
+        professionalId,
+        date: {
+          gte: this.zonedDateTimeToUtc(dateKey, 0),
+          lt: this.zonedDateTimeToUtc(this.addDaysToDateKey(dateKey, 1), 0),
+        },
+        status: { in: RESERVED_APPOINTMENT_STATUSES },
+      },
+    });
+
+    return booked >= maxDailyAppointments;
   }
 
   private normalizeBookingDateKey(input: string | Date) {

@@ -11,6 +11,7 @@ import { ViewWillEnter } from '@ionic/angular';
 import { AppointmentsService } from '../../services/appointments.service';
 import { TaxDocumentsService } from '../../services/tax-documents.service';
 import { formatClpPrice } from '../../utils/clp-price.util';
+import { formatDateForViewer, formatTimeForViewer } from '../../utils/timezone.util';
 import { ReviewsService } from '../../services/reviews.service';
 import { API_URL } from '../../core/config/api.config';
 import {
@@ -113,19 +114,13 @@ getCurrentSectionTitle(): string {
   return 'Próximas citas';
 }
 
-// Las citas se agendan en hora de Chile; se muestran igual sin importar dónde esté el navegador.
+// Cada persona ve la cita en su zona horaria; fuera de Chile se agrega la hora de Chile.
 formatChileDate(value: string | Date): string {
-  return value
-    ? new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', year: 'numeric' })
-      .format(new Date(value)).replace(/-/g, '/')
-    : '';
+  return value ? formatDateForViewer(value) : '';
 }
 
 formatChileTime(value: string | Date): string {
-  return value
-    ? new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-      .format(new Date(value))
-    : '';
+  return value ? formatTimeForViewer(value) : '';
 }
 
 formatClpAmount(value: any): string {

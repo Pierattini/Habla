@@ -124,6 +124,32 @@ export class TaxProviderService {
     const rut = this.normalizeRut(dto.rut);
     const certificatePassword = dto.certificatePassword?.trim();
 
+    // Sin certificado nuevo se actualizan solo los datos (ambiente, resolución, giro...)
+    // y se mantiene el certificado ya guardado.
+    if (!certificate?.buffer?.length) {
+      const existing = await this.prisma.professionalTaxProviderCredential.findUnique({
+        where: { professionalId_provider: { professionalId: user.id, provider: TaxProvider.SII } },
+      });
+
+      if (!existing?.encryptedCertificate) {
+        throw new BadRequestException('Selecciona el certificado digital .pfx o .p12');
+      }
+
+      const updated = await this.prisma.professionalTaxProviderCredential.update({
+        where: { id: existing.id },
+        data: {
+          rut,
+          environment: dto.environment || existing.environment,
+          signerRut: dto.signerRut ? this.normalizeRut(dto.signerRut) : null,
+          taxActivity: dto.taxActivity?.trim() || null,
+          resolutionNumber: dto.resolutionNumber ? Number(dto.resolutionNumber) : null,
+          resolutionDate: dto.resolutionDate || null,
+        },
+      });
+
+      return this.toCredentialResponse(updated);
+    }
+
     if (!certificatePassword) {
       throw new BadRequestException('Clave del certificado requerida');
     }
@@ -177,6 +203,26 @@ export class TaxProviderService {
         },
       });
 
+    return this.toCredentialResponse(credential);
+  }
+
+  private toCredentialResponse(credential: {
+    provider: TaxProvider;
+    rut: string | null;
+    status: TaxProviderCredentialStatus;
+    lastValidatedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+    environment: string | null;
+    certificateFileName: string | null;
+    certificateFingerprint: string | null;
+    certificateUploadedAt: Date | null;
+    certificateExpiresAt: Date | null;
+    signerRut: string | null;
+    taxActivity: string | null;
+    resolutionNumber: number | null;
+    resolutionDate: string | null;
+  }) {
     return {
       configured: true,
       provider: credential.provider,

@@ -199,7 +199,7 @@
     <ion-card *ngIf="$any(this).canShowBookingSteps() && availableHours.length > 0">
       <ion-card-header>
         <ion-card-title>Horarios disponibles</ion-card-title>
-        <p class="document-helper">Hora de Chile</p>
+        <p class="document-helper">{{ $any(this).slotsTimeZoneLabel() }}</p>
       </ion-card-header>
 
       <ion-card-content>
@@ -212,7 +212,7 @@
             [color]="selectedHour === hour ? 'primary' : 'light'"
             [disabled]="isHourDisabled(hour)"
             (click)="toggleHour(hour)">
-            {{ hour }}
+            {{ $any(this).formatSlotForViewer(hour) }}
           </ion-button>
 
         </div>
