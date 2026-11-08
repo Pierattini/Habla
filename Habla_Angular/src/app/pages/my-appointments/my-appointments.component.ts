@@ -1,15 +1,16 @@
 ﻿import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { ToastController, IonicModule, ModalController } from '@ionic/angular';
+import { IonicModule, ModalController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { AlertController } from '@ionic/angular/standalone';
+import { AlertController, ToastController } from '@ionic/angular/standalone';
 import { RescheduleModalComponent } from '../reschedule-modal/reschedule-modal.component';
 import { ViewWillEnter } from '@ionic/angular';
 import { AppointmentsService } from '../../services/appointments.service';
 import { TaxDocumentsService } from '../../services/tax-documents.service';
+import { formatClpPrice } from '../../utils/clp-price.util';
 import { ReviewsService } from '../../services/reviews.service';
 import { API_URL } from '../../core/config/api.config';
 import {
@@ -113,15 +114,7 @@ getCurrentSectionTitle(): string {
 }
 
 formatClpAmount(value: any): string {
-  const amount = Number(value || 0);
-
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return '0';
-  }
-
-  return new Intl.NumberFormat('es-CL', {
-    maximumFractionDigits: 0
-  }).format(amount);
+  return formatClpPrice(value);
 }
 
 toggleTaxDocument(appointmentId: string) {
@@ -773,13 +766,20 @@ shouldShowPenalty(appt: any): boolean {
 
 // Cliente marca como pagado
 markAsPaid(id: string) {
+  if (this.loadingId) return;
+  this.loadingId = id;
+
   this.appointmentsService.markAsPaid(id).subscribe({
-    next: async () => {
-      await this.presentToast('Pago enviado para revisión', 'warning');
+    next: () => {
+      this.loadingId = null;
       this.loadAppointments();
+      void this.presentToast('Avisamos al profesional que transferiste. Te confirmará el pago.', 'warning');
     },
-    error: async () => {
-      await this.presentToast('Error al enviar pago', 'danger');
+    error: (err) => {
+      console.error('Error al avisar transferencia:', err);
+      this.loadingId = null;
+      this.cdr.detectChanges();
+      void this.presentToast(err?.error?.message || 'No pudimos avisar tu transferencia. Inténtalo nuevamente.', 'danger');
     }
   });
 }

@@ -80,6 +80,13 @@ const CONECTA_EMAIL = 'app.info.conect@gmail.com';
 const CONECTA_EMAIL_FROM = `Conecta <${CONECTA_EMAIL}>`;
 const BOOKING_TIMEZONE = 'America/Santiago';
 
+// Perfiles antiguos guardan el precio en miles (45 = $45.000), igual que lo interpreta la app.
+export function normalizeLegacyClpPrice(price: number | null | undefined): number {
+  const amount = Number(price ?? 0);
+  if (!Number.isFinite(amount) || amount <= 0) return 0;
+  return amount < 1000 ? amount * 1000 : amount;
+}
+
 @Injectable()
 export class AppointmentsService {
   constructor(
@@ -1145,7 +1152,7 @@ export class AppointmentsService {
         snapshotPriceAmount: null,
         currency: null,
         snapshotDurationMinutes: null,
-        priceAmount: professional.price ?? 0,
+        priceAmount: normalizeLegacyClpPrice(professional.price),
         durationMinutes: legacyDuration,
       };
     }

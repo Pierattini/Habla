@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { randomBytes, randomUUID } from 'crypto';
@@ -17,6 +18,8 @@ import { ZoomService } from './zoom.service';
 
 @Injectable()
 export class MeetingService {
+  private readonly logger = new Logger(MeetingService.name);
+
   constructor(
     private prisma: PrismaService,
     private googleCalendarService: GoogleCalendarService,
@@ -24,7 +27,22 @@ export class MeetingService {
     private microsoftTeamsService: MicrosoftTeamsService,
   ) {}
 
+  // Confirmar una cita no debe fallar por la videollamada: si el proveedor
+  // externo (Google, Zoom, Teams o enlace propio) falla, se usa la sala de Conecta.
   async generateMeetingForAppointment(appointmentId: string) {
+    try {
+      return await this.generateProviderMeeting(appointmentId);
+    } catch (error) {
+      if (!(error instanceof BadRequestException)) throw error;
+
+      this.logger.warn(
+        `MEETING_PROVIDER_FALLBACK appointment=${appointmentId} reason=${error.message}`,
+      );
+      return this.createConectaRoom(appointmentId);
+    }
+  }
+
+  private async generateProviderMeeting(appointmentId: string) {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id: appointmentId },
       include: {
@@ -174,15 +192,19 @@ export class MeetingService {
       return appointment;
     }
 
+    return this.createConectaRoom(appointment.id);
+  }
+
+  private async createConectaRoom(appointmentId: string) {
     const meetingId = `conecta-${randomUUID()}`;
     const meetingAccessToken = this.buildSecureToken();
     const meetingUrl = this.buildConectaRoomUrl(
-      appointment.id,
+      appointmentId,
       meetingAccessToken,
     );
 
     return this.prisma.appointment.update({
-      where: { id: appointment.id },
+      where: { id: appointmentId },
       data: {
         videoProvider: VideoProvider.CONNECTA_AUTO,
         meetingProvider: VideoProvider.CONNECTA_AUTO,
