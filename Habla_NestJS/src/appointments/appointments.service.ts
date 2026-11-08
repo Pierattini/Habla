@@ -802,7 +802,8 @@ export class AppointmentsService {
       );
     }
 
-    await this.sendAppointmentNotificationById(
+    // El aviso por correo no debe demorar la respuesta a la profesional.
+    void this.sendAppointmentNotificationById(
       updated.id,
       'APPOINTMENT_CONFIRMATION',
     );
@@ -1756,15 +1757,10 @@ export class AppointmentsService {
       },
     });
 
-    // 🔥 luego intenta enviar correo (sin romper todo si falla)
-    try {
-      await this.sendPaymentEmail(
-        appointment.professional.email,
-        appointment.id,
-      );
-    } catch {
-      console.error('Error enviando correo de pago.');
-    }
+    // El correo se envía en segundo plano para que el cliente vea el cambio al tiro.
+    void this.sendPaymentEmail(appointment.professional.email, appointment.id).catch(
+      () => console.error('Error enviando correo de pago.'),
+    );
 
     return updatedAppointment;
   }

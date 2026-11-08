@@ -113,6 +113,21 @@ getCurrentSectionTitle(): string {
   return 'Próximas citas';
 }
 
+// Las citas se agendan en hora de Chile; se muestran igual sin importar dónde esté el navegador.
+formatChileDate(value: string | Date): string {
+  return value
+    ? new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', year: 'numeric' })
+      .format(new Date(value)).replace(/-/g, '/')
+    : '';
+}
+
+formatChileTime(value: string | Date): string {
+  return value
+    ? new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .format(new Date(value))
+    : '';
+}
+
 formatClpAmount(value: any): string {
   return formatClpPrice(value);
 }
@@ -772,6 +787,9 @@ markAsPaid(id: string) {
   this.appointmentsService.markAsPaid(id).subscribe({
     next: () => {
       this.loadingId = null;
+      const appointment = this.appointments.find((item: any) => item.id === id);
+      if (appointment) appointment.status = 'PAYMENT_REVIEW';
+      this.cdr.detectChanges();
       this.loadAppointments();
       void this.presentToast('Avisamos al profesional que transferiste. Te confirmará el pago.', 'warning');
     },
@@ -787,10 +805,13 @@ confirmAppointment(id: string) {
   this.loadingId = id;
 
   this.appointmentsService.confirmAppointment(id).subscribe({
-    next: async () => {
+    next: () => {
       this.loadingId = null;
-      await this.presentToast('Pago confirmado', 'success');
+      const appointment = this.appointments.find((item: any) => item.id === id);
+      if (appointment) appointment.status = 'CONFIRMED';
+      this.cdr.detectChanges();
       this.loadAppointments();
+      void this.presentToast('Pago confirmado. La boleta se emitirá automáticamente.', 'success');
     },
     error: async () => {
       this.loadingId = null;

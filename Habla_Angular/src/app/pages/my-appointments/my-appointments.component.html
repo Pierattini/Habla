@@ -364,9 +364,9 @@
   <div class="appointment-date-row">
     <span class="appointment-summary-icon" aria-hidden="true"></span>
     <span>Fecha:</span>
-    <strong>{{ appt.date | date:'dd/MM/yyyy' }}</strong>
+    <strong>{{ $any(this).formatChileDate(appt.date) }}</strong>
     <span>Hora:</span>
-    <strong>{{ appt.date | date:'HH:mm' }}</strong>
+    <strong>{{ $any(this).formatChileTime(appt.date) }}</strong>
   </div>
 </div>
 
@@ -435,8 +435,9 @@
     color="success"
     size="small"
     class="btn-main"
+    [disabled]="loadingId === appt.id"
     (click)="markAsPaid(appt.id)">
-    Ya transferí
+    {{ loadingId === appt.id ? 'Enviando...' : 'Ya transferí' }}
   </ion-button>
   </div>
 
@@ -453,8 +454,9 @@
     color="success"
     class="btn-principal"
     *ngIf="!$any(this).isTerminalAppointment(appt) && canProfessionalConfirm(appt)"
+    [disabled]="loadingId === appt.id"
     (click)="confirmAppointment(appt.id)">
-    Confirmar pago
+    {{ loadingId === appt.id ? 'Confirmando...' : 'Confirmar pago' }}
   </ion-button>
 
   <!-- ACCIONES SECUNDARIAS -->
@@ -569,9 +571,9 @@
   <div class="appointment-date-row">
     <span class="appointment-summary-icon" aria-hidden="true"></span>
     <span>Fecha:</span>
-    <strong>{{ appt.date | date:'dd/MM/yyyy' }}</strong>
+    <strong>{{ $any(this).formatChileDate(appt.date) }}</strong>
     <span>Hora:</span>
-    <strong>{{ appt.date | date:'HH:mm' }}</strong>
+    <strong>{{ $any(this).formatChileTime(appt.date) }}</strong>
   </div>
 </div>
 

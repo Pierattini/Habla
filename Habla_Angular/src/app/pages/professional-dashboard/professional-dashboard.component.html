@@ -1998,6 +1998,7 @@
         type="time"
         [(ngModel)]="item.start"
       />
+      <small class="field-rule" *ngIf="item.start">{{ timeOfDayHint(item.start) }}</small>
     </div>
 
     <div class="schedule-field">
@@ -2007,6 +2008,7 @@
         type="time"
         [(ngModel)]="item.end"
       />
+      <small class="field-rule" *ngIf="item.end">{{ timeOfDayHint(item.end) }}</small>
     </div>
 
   </div>
@@ -2077,6 +2079,7 @@
                   type="time"
                   [(ngModel)]="item.start"
                 />
+                <small class="field-rule" *ngIf="item.start">{{ timeOfDayHint(item.start) }}</small>
               </div>
 
               <div class="schedule-field">
@@ -2086,6 +2089,7 @@
                   type="time"
                   [(ngModel)]="item.end"
                 />
+                <small class="field-rule" *ngIf="item.end">{{ timeOfDayHint(item.end) }}</small>
               </div>
             </div>
 
@@ -2104,6 +2108,7 @@
                   type="time"
                   [(ngModel)]="block.start"
                 />
+                <small class="field-rule" *ngIf="block.start">{{ timeOfDayHint(block.start) }}</small>
               </div>
 
               <div class="schedule-field">
@@ -2113,6 +2118,7 @@
                   type="time"
                   [(ngModel)]="block.end"
                 />
+                <small class="field-rule" *ngIf="block.end">{{ timeOfDayHint(block.end) }}</small>
               </div>
 
               <ion-button
@@ -2157,6 +2163,7 @@
                 [(ngModel)]="slot.time"
                 (change)="sortSpecificSlots(item)"
               />
+              <small class="field-rule" *ngIf="slot.time">{{ timeOfDayHint(slot.time) }}</small>
 
               <ion-badge *ngIf="slot.unavailable" color="medium">Bloqueado</ion-badge>
 

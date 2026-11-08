@@ -1,6 +1,7 @@
 import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { API_URL } from '../../core/config/api.config';
@@ -128,6 +129,7 @@ export class ProfessionalDetailComponent {
   readonly phoneCountries = PHONE_COUNTRIES;
   phoneDialCode = DEFAULT_PHONE_DIAL_CODE;
   phoneLocalNumber = '';
+  private availabilityRequest?: Subscription;
 
   constructor(
   private route: ActivatedRoute,
@@ -343,7 +345,10 @@ export class ProfessionalDetailComponent {
     ),
   });
 
-  this.http.get<string[]>(`${API_URL}/appointments/available-slots`, { params })
+  // Solo vale la respuesta de la última fecha elegida: una respuesta atrasada
+  // de otra fecha borraba las horas que ya se veían.
+  this.availabilityRequest?.unsubscribe();
+  this.availabilityRequest = this.http.get<string[]>(`${API_URL}/appointments/available-slots`, { params })
   .subscribe({
    next: (res: any[]) => {
   this.availableHours = res;
