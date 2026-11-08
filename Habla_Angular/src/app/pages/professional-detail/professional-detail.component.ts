@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { API_URL } from '../../core/config/api.config';
 import { isZonedDateTimeInPast, zonedDateTimeToIso } from '../../utils/timezone.util';
-import { AlertController } from '@ionic/angular';
+import { AlertController } from '@ionic/angular/standalone';
 import { AuthService } from '../../services/auth.service';
 import { ConectaMessageType } from '../../shared/conecta-message/conecta-message.component';
 import { formatClpPrice } from '../../utils/clp-price.util';
@@ -41,6 +41,24 @@ import {
   
   
 } from '@ionic/angular/standalone';
+
+// Prefijos telefónicos ofrecidos al pedir boleta; Chile va primero y es el predeterminado.
+const PHONE_COUNTRIES = [
+  { flag: '🇨🇱', name: 'Chile', dialCode: '+56' },
+  { flag: '🇦🇷', name: 'Argentina', dialCode: '+54' },
+  { flag: '🇧🇴', name: 'Bolivia', dialCode: '+591' },
+  { flag: '🇧🇷', name: 'Brasil', dialCode: '+55' },
+  { flag: '🇨🇴', name: 'Colombia', dialCode: '+57' },
+  { flag: '🇪🇨', name: 'Ecuador', dialCode: '+593' },
+  { flag: '🇪🇸', name: 'España', dialCode: '+34' },
+  { flag: '🇺🇸', name: 'Estados Unidos', dialCode: '+1' },
+  { flag: '🇲🇽', name: 'México', dialCode: '+52' },
+  { flag: '🇵🇾', name: 'Paraguay', dialCode: '+595' },
+  { flag: '🇵🇪', name: 'Perú', dialCode: '+51' },
+  { flag: '🇺🇾', name: 'Uruguay', dialCode: '+598' },
+  { flag: '🇻🇪', name: 'Venezuela', dialCode: '+58' },
+];
+const DEFAULT_PHONE_DIAL_CODE = '+56';
 
 @Component({
   selector: 'app-professional-detail',
@@ -107,6 +125,9 @@ export class ProfessionalDetailComponent {
     taxPhone?: string;
     taxComment?: string;
   } | null = null;
+  readonly phoneCountries = PHONE_COUNTRIES;
+  phoneDialCode = DEFAULT_PHONE_DIAL_CODE;
+  phoneLocalNumber = '';
 
   constructor(
   private route: ActivatedRoute,
@@ -605,9 +626,29 @@ private ensureCustomerTaxDraft(): void {
     taxName: current.taxName || current.name || '',
     taxId: current.taxId || '',
     taxAddress: current.taxAddress || '',
-    taxPhone: current.phone || '',
+    taxPhone: '',
     taxComment: '',
   };
+  this.splitPhone(current.phone || '');
+  this.updateTaxPhone();
+}
+
+// Separa un teléfono guardado ("+56 9 1234 5678") en prefijo de país y número local.
+private splitPhone(phone: string): void {
+  const value = phone.trim();
+  const country = [...PHONE_COUNTRIES]
+    .sort((a, b) => b.dialCode.length - a.dialCode.length)
+    .find((item) => value.startsWith(item.dialCode));
+
+  this.phoneDialCode = country?.dialCode || DEFAULT_PHONE_DIAL_CODE;
+  this.phoneLocalNumber = country ? value.slice(country.dialCode.length).trim() : value;
+}
+
+updateTaxPhone(): void {
+  if (!this.customerTaxData) return;
+
+  const localNumber = this.phoneLocalNumber.trim();
+  this.customerTaxData.taxPhone = localNumber ? `${this.phoneDialCode} ${localNumber}` : '';
 }
 
 private cleanOptional(value: string): string | undefined {

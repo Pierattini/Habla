@@ -317,12 +317,24 @@
 
           <label>
             <span>Teléfono *</span>
-            <input
-              type="tel"
-              maxlength="30"
-              placeholder="Ej: +56 9 1234 5678"
-              [(ngModel)]="taxData.taxPhone"
-            />
+            <div class="phone-field">
+              <select
+                aria-label="País del teléfono"
+                [(ngModel)]="$any(this).phoneDialCode"
+                (ngModelChange)="$any(this).updateTaxPhone()"
+              >
+                <option *ngFor="let country of $any(this).phoneCountries" [value]="country.dialCode">
+                  {{ country.flag }} {{ country.dialCode }}
+                </option>
+              </select>
+              <input
+                type="tel"
+                maxlength="20"
+                placeholder="Ej: 9 1234 5678"
+                [(ngModel)]="$any(this).phoneLocalNumber"
+                (ngModelChange)="$any(this).updateTaxPhone()"
+              />
+            </div>
           </label>
 
           <label>

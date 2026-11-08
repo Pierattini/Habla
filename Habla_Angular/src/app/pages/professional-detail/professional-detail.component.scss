@@ -321,6 +321,25 @@ ion-datetime {
   resize: vertical;
 }
 
+.phone-field {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+}
+
+.tax-request-form select {
+  height: 46px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 14%, transparent);
+  border-radius: var(--app-radius-md);
+  background: color-mix(in srgb, var(--app-primary-light) 4%, var(--app-surface));
+  color: var(--app-text);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.tax-request-form select:focus,
 .tax-request-form input:focus,
 .tax-request-form textarea:focus {
   border-color: var(--app-primary);
