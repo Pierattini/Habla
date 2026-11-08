@@ -1472,19 +1472,6 @@ private prepareProfileImage(file: File): Promise<string> {
     this.taxProviderMessage = '';
   }
 
-  // Texto claro bajo cada hora: el selector del navegador puede ocultar a. m./p. m.
-  timeOfDayHint(time: string): string {
-    const [hours, minutes] = String(time || '').split(':').map(Number);
-    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return '';
-
-    const hour12 = hours % 12 || 12;
-    const label = `${hour12}:${String(minutes).padStart(2, '0')}`;
-    if (hours < 12) return `${label} de la mañana`;
-    if (hours === 12) return `${label} del mediodía`;
-    if (hours < 20) return `${label} de la tarde`;
-    return `${label} de la noche`;
-  }
-
   saveTaxProviderCredential(): void {
     const rut = (this.profile.taxId || this.taxProviderRut || '').trim();
     const certificatePassword = this.taxProviderCertificatePassword.trim();
