@@ -104,7 +104,9 @@ export function buildSignedBoleta(input: BoletaInput, caf: SiiCaf, keys: SiiCert
     `<TmstFirma>${chileTimestamp(input.issuedAt)}</TmstFirma>`,
     '</Documento>',
     '</DTE>',
-  ].join('');
+    // El SII rechaza líneas de más de 4090 caracteres ("CHR-00002: Line too long"):
+    // cada etiqueta va en su línea. Se hace antes de firmar, así la firma cubre este texto.
+  ].join('\n');
 
   return signSiiXml(xml, id, keys);
 }
@@ -141,7 +143,7 @@ export function buildSignedEnvioBoleta(
     ...signedBoletas.map((boleta) => boleta.replace(/^<\?xml[^>]*\?>/, '')),
     '</SetDTE>',
     '</EnvioBOLETA>',
-  ].join('');
+  ].join('\n');
 
   return `<?xml version="1.0" encoding="ISO-8859-1"?>\n${signSiiXml(xml, 'SetDoc', keys)}`;
 }

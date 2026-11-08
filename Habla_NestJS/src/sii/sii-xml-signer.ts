@@ -31,7 +31,25 @@ export function signSiiXml(xml: string, id: string, keys: SiiCertificateKeys): s
   });
   signer.computeSignature(xml, { location: { reference: target, action: 'after' } });
 
-  return signer.getSignedXml();
+  return breakSignatureLines(signer.getSignedXml());
+}
+
+// La firma recién creada queda en una sola línea y el certificado solo ya ocupa miles de
+// caracteres; el SII rechaza líneas de más de 4090. Se separa en líneas solo lo que la firma
+// no cubre (lo que va después de SignedInfo). Solo se toca la última firma del texto, para no
+// alterar firmas anteriores ya cubiertas por la firma del sobre.
+function breakSignatureLines(signedXml: string): string {
+  const start = signedXml.lastIndexOf('<Signature ');
+  const signedInfoEnd = signedXml.indexOf('</SignedInfo>', start) + '</SignedInfo>'.length;
+  const signatureEnd = signedXml.indexOf('</Signature>', signedInfoEnd) + '</Signature>'.length;
+  const tail = signedXml
+    .slice(signedInfoEnd, signatureEnd)
+    .replace(/></g, '>\n<')
+    .replace(/(<X509Certificate>)([^<]+)(<\/X509Certificate>)/, (_, open, base64: string, close) =>
+      `${open}\n${base64.replace(/\s+/g, '').match(/.{1,76}/g)!.join('\n')}\n${close}`,
+    );
+
+  return `${signedXml.slice(0, signedInfoEnd)}\n${tail}${signedXml.slice(signatureEnd)}`;
 }
 
 // Firma de la semilla para pedir token: la referencia es el documento completo (URI vacía)

@@ -108,7 +108,9 @@ describe('SII boleta (fase A: timbre y firma)', () => {
     expect(signed).toContain('<TipoDTE>41</TipoDTE>');
     expect(signed).toContain('<MntExe>45000</MntExe>');
     expect(signed).toContain('<IndServicio>3</IndServicio>');
-    expect(signed).toContain('<NroLinDet>1</NroLinDet><IndExe>1</IndExe>');
+    expect(signed).toContain('<NroLinDet>1</NroLinDet>\n<IndExe>1</IndExe>');
+    // El SII rechaza líneas de más de 4090 caracteres.
+    expect(Math.max(...signed.split('\n').map((line) => line.length))).toBeLessThan(4090);
     expect(signed).toContain('<RznSocRecep>Paciente &amp; Cía</RznSocRecep>');
     expect(signed).toContain('<X509Certificate>');
     expect(signed).toContain('<Modulus>');
