@@ -112,3 +112,23 @@ export function formatShortDayForViewer(value: string | Date): string {
     day: 'numeric',
   }).format(new Date(value)).replace('.', '').replace(',', '');
 }
+
+// Desfase actual (en minutos) de una zona horaria respecto de UTC.
+export function currentOffsetMinutes(timeZone: string): number {
+  return Math.round(getTimeZoneOffsetMs(new Date(), timeZone) / 60_000);
+}
+
+// Zona de las que se pueden elegir (Chile/España) que hoy tiene la misma hora que el
+// navegador. Un PC en España puede reportar "Europe/Paris", que tiene la misma hora.
+export function matchingSupportedTimeZone(supported: string[]): string | null {
+  const browserZone = viewerTimeZone();
+  if (supported.includes(browserZone)) return browserZone;
+  const offset = currentOffsetMinutes(browserZone);
+  return supported.find((zone) => currentOffsetMinutes(zone) === offset) || null;
+}
+
+// Nombre de la zona de quien mira: "Chile", "España" o el genérico del navegador.
+export function viewerZoneName(): string {
+  const zone = matchingSupportedTimeZone(Object.keys(TIME_ZONE_LABELS));
+  return zone ? timeZoneLabel(zone) : timeZoneLabel(viewerTimeZone());
+}

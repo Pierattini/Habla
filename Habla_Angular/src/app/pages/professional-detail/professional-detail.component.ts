@@ -9,9 +9,8 @@ import {
   formatShortDayForViewer,
   formatTimeForViewer,
   isZonedDateTimeInPast,
-  timeZoneLabel,
   viewerDateKey,
-  viewerTimeZone,
+  viewerZoneName,
   zonedDateTimeToIso,
 } from '../../utils/timezone.util';
 import { AlertController } from '@ionic/angular/standalone';
@@ -388,7 +387,7 @@ formatSlotForViewer(hour: string): string {
 }
 
 viewerZoneLabel(): string {
-  return timeZoneLabel(viewerTimeZone());
+  return viewerZoneName();
 }
 
 isHourDisabled(hour: string): boolean {
