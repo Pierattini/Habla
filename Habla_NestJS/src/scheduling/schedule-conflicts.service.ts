@@ -35,7 +35,8 @@ export class ScheduleConflictsService {
       try {
         return await this.prisma.$transaction(
           async (tx) => {
-            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${professionalId}))`;
+            // pg_advisory_xact_lock devuelve void, que $queryRaw no puede leer.
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${professionalId}))`;
             return operation(tx);
           },
           { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },

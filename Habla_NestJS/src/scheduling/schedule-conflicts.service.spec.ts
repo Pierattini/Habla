@@ -119,7 +119,7 @@ describe('ScheduleConflictsService', () => {
     const appointments: Array<{ id: string; date: Date }> = [];
     let queue = Promise.resolve();
     const tx: any = {
-      $queryRaw: jest.fn().mockResolvedValue([]),
+      $executeRaw: jest.fn().mockResolvedValue(0),
       professionalTimeBlock: { findFirst: jest.fn().mockResolvedValue(null) },
       appointment: {
         findMany: jest.fn(async () => appointments.slice(0, 1)),
@@ -154,7 +154,7 @@ describe('ScheduleConflictsService', () => {
     const state: { appointment?: { id: string; date: Date }; block?: { id: string } } = {};
     let queue = Promise.resolve();
     const tx: any = {
-      $queryRaw: jest.fn().mockResolvedValue([]),
+      $executeRaw: jest.fn().mockResolvedValue(0),
       professionalTimeBlock: {
         findFirst: jest.fn(async () => state.block ?? null),
       },
