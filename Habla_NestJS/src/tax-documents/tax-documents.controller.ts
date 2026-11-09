@@ -20,6 +20,7 @@ import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { IssueLibreDteDocumentDto } from '../libredte/dto/issue-libredte-document.dto';
 import { CreateTaxDocumentDto } from './dto/create-tax-document.dto';
+import { CreateManualBoletaDto } from './dto/create-manual-boleta.dto';
 import { MarkTaxDocumentDto } from './dto/mark-tax-document.dto';
 import { TaxDocumentJobsService } from './tax-document-jobs.service';
 import { TaxDocumentsService } from './tax-documents.service';
@@ -88,7 +89,10 @@ export class TaxDocumentsController {
     @Request() req: AuthRequest,
     @Query('month') month: string,
   ) {
-    const csv = await this.taxDocumentsService.getProfessionalMonthlyReport(req.user, month);
+    const csv = await this.taxDocumentsService.getProfessionalMonthlyReport(
+      req.user,
+      month,
+    );
 
     return new StreamableFile(Buffer.from(csv, 'utf8'), {
       type: 'text/csv; charset=utf-8',
@@ -162,6 +166,25 @@ export class TaxDocumentsController {
     @Body() body: MarkTaxDocumentDto,
   ) {
     return this.taxDocumentsService.markAsSent(id, req.user, body.message);
+  }
+
+  // Boleta para una sesión hecha fuera de Conecta (por ejemplo, sesiones pasadas).
+  @Post('professional/manual-boleta')
+  @UseGuards(RolesGuard)
+  @Roles(Role.PROFESSIONAL)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  async createManualBoleta(
+    @Request() req: AuthRequest,
+    @Body() body: CreateManualBoletaDto,
+  ) {
+    const document = await this.taxDocumentsService.createManualBoleta(
+      req.user,
+      body,
+    );
+    await this.taxDocumentJobsService.enqueueAutomaticIssue(
+      document.appointmentId,
+    );
+    return document;
   }
 
   @Post(':id/retry')

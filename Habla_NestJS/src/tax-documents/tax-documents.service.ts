@@ -15,15 +15,23 @@ import {
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { EmailService } from '../email/email.service';
 import { LibreDteService } from '../libredte/libredte.service';
-import { LibreDteDocumentKind, LibreDteResourceFormat } from '../libredte/libredte.types';
+import {
+  LibreDteDocumentKind,
+  LibreDteResourceFormat,
+} from '../libredte/libredte.types';
 import { PrismaService } from '../prisma/prisma.service';
 import { TaxProviderService } from '../tax-provider/tax-provider.service';
 import { CreateTaxDocumentDto } from './dto/create-tax-document.dto';
+import { CreateManualBoletaDto } from './dto/create-manual-boleta.dto';
 import { TaxDocumentUser } from './interfaces/tax-document-user.interface';
 import { SiiDteDraftService } from './sii-dte-draft.service';
 import { SiiDirectIssuerService } from './sii-direct-issuer.service';
 import { buildBoletaPdf } from '../sii/sii-boleta-pdf';
-import { buildMonthlyReportCsv, isInChileMonth, monthWindow } from './monthly-report';
+import {
+  buildMonthlyReportCsv,
+  isInChileMonth,
+  monthWindow,
+} from './monthly-report';
 import { SiiSendingProfile } from '../tax-provider/tax-provider.service';
 
 type AdminTaxDocumentFilters = {
@@ -95,7 +103,9 @@ export class TaxDocumentsService {
     }
 
     if (!appointment.customer) {
-      throw new ForbiddenException('Las citas de pacientes sin cuenta no generan documentos tributarios.');
+      throw new ForbiddenException(
+        'Las citas de pacientes sin cuenta no generan documentos tributarios.',
+      );
     }
 
     this.ensureAppointmentAccess(appointment, user.id);
@@ -212,7 +222,9 @@ export class TaxDocumentsService {
   // Informe del mes (YYYY-MM) con las citas pagadas en hora de Chile.
   async getProfessionalMonthlyReport(user: TaxDocumentUser, month: string) {
     if (user.role !== Role.PROFESSIONAL) {
-      throw new ForbiddenException('Solo los profesionales pueden descargar este informe');
+      throw new ForbiddenException(
+        'Solo los profesionales pueden descargar este informe',
+      );
     }
 
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month || '')) {
@@ -224,7 +236,9 @@ export class TaxDocumentsService {
       where: {
         professionalId: user.id,
         paidAt: { gte: from, lt: to },
-        status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
+        status: {
+          in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED],
+        },
       },
       select: {
         date: true,
@@ -257,7 +271,9 @@ export class TaxDocumentsService {
     });
 
     return buildMonthlyReportCsv(
-      appointments.filter((appointment) => isInChileMonth(appointment.paidAt!, month)),
+      appointments.filter((appointment) =>
+        isInChileMonth(appointment.paidAt!, month),
+      ),
     );
   }
 
@@ -266,7 +282,8 @@ export class TaxDocumentsService {
     filters: ProfessionalTaxDocumentFilters = {},
   ) {
     const hasPagedQuery = Object.values(filters).some(
-      (value) => value !== undefined && value !== null && String(value).trim() !== '',
+      (value) =>
+        value !== undefined && value !== null && String(value).trim() !== '',
     );
     const where = this.buildProfessionalDocumentWhere(user.id, filters);
 
@@ -655,14 +672,15 @@ export class TaxDocumentsService {
       };
     }
 
-    const credential = await this.prisma.professionalTaxProviderCredential.findUnique({
-      where: {
-        professionalId_provider: {
-          professionalId: document.appointment.professionalId,
-          provider: TaxProvider.SII,
+    const credential =
+      await this.prisma.professionalTaxProviderCredential.findUnique({
+        where: {
+          professionalId_provider: {
+            professionalId: document.appointment.professionalId,
+            provider: TaxProvider.SII,
+          },
         },
-      },
-    });
+      });
 
     if (!credential?.encryptedCertificate) {
       throw new BadRequestException(
@@ -689,20 +707,23 @@ export class TaxDocumentsService {
     }
 
     const draft = this.siiDteDraftService.buildDraft(document, folio);
-    const providerPayload = this.mergeProviderPayload(document.providerPayload, {
-      siiDirect: {
-        status: 'DRAFT_READY',
-        environment: credential.environment,
-        dteCode: draft.dteCode,
-        folio: draft.folio,
-        folioRangeId: folioReservation?.id,
-        cafFileName: folioReservation?.cafFileName,
-        cafFingerprint: folioReservation?.cafFingerprint,
-        generatedAt: draft.generatedAt.toISOString(),
-        xml: draft.xml,
-        warnings: draft.warnings,
+    const providerPayload = this.mergeProviderPayload(
+      document.providerPayload,
+      {
+        siiDirect: {
+          status: 'DRAFT_READY',
+          environment: credential.environment,
+          dteCode: draft.dteCode,
+          folio: draft.folio,
+          folioRangeId: folioReservation?.id,
+          cafFileName: folioReservation?.cafFileName,
+          cafFingerprint: folioReservation?.cafFingerprint,
+          generatedAt: draft.generatedAt.toISOString(),
+          xml: draft.xml,
+          warnings: draft.warnings,
+        },
       },
-    });
+    );
 
     const updatedDocument = await this.prisma.taxDocument.update({
       where: { id },
@@ -801,7 +822,12 @@ export class TaxDocumentsService {
       );
 
       if (siiProfile) {
-        return this.issueAutomaticWithSii(document, siiProfile, finalAttempt, options);
+        return this.issueAutomaticWithSii(
+          document,
+          siiProfile,
+          finalAttempt,
+          options,
+        );
       }
     }
 
@@ -863,8 +889,8 @@ export class TaxDocumentsService {
         folio: null,
       },
       data: {
-          provider: TaxProvider.LIBREDTE,
-          lastProviderSyncAt: new Date(),
+        provider: TaxProvider.LIBREDTE,
+        lastProviderSyncAt: new Date(),
       },
     });
 
@@ -880,11 +906,11 @@ export class TaxDocumentsService {
         actorId: appointment.professionalId,
         type: 'LIBREDTE_AUTO_ISSUE_STARTED',
         message: 'Emision automatica iniciada al confirmar pago',
-              metadata: {
-                jobId: options.jobId,
-                appointmentId,
-                provider: TaxProvider.LIBREDTE,
-              },
+        metadata: {
+          jobId: options.jobId,
+          appointmentId,
+          provider: TaxProvider.LIBREDTE,
+        },
       },
     });
 
@@ -919,7 +945,8 @@ export class TaxDocumentsService {
               ? issuedAt
               : document.generatedAt,
           lastProviderSyncAt: issuedAt,
-          fileName: document.fileName || `documento-${result.folio || document.id}.pdf`,
+          fileName:
+            document.fileName || `documento-${result.folio || document.id}.pdf`,
           events: {
             create: {
               actorId: appointment.professionalId,
@@ -1027,9 +1054,14 @@ export class TaxDocumentsService {
     }
 
     try {
-      return await this.siiDirectIssuer.issue(document, profile, professionalId);
+      return await this.siiDirectIssuer.issue(
+        document,
+        profile,
+        professionalId,
+      );
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error desconocido al emitir';
+      const message =
+        error instanceof Error ? error.message : 'Error desconocido al emitir';
 
       if (!finalAttempt) {
         await this.registerDocumentEvent(
@@ -1054,7 +1086,10 @@ export class TaxDocumentsService {
               actorId: professionalId,
               type: 'SII_DIRECT_DOCUMENT_FAILED',
               message,
-              metadata: { jobId: options.jobId, appointmentId: document.appointmentId },
+              metadata: {
+                jobId: options.jobId,
+                appointmentId: document.appointmentId,
+              },
             },
           },
         },
@@ -1097,18 +1132,25 @@ export class TaxDocumentsService {
     const actorId = document.appointment.professionalId;
     document = await this.storeSiiDirectFiles(document, actorId);
 
-    return this.emailDocumentToCustomer(document, actorId, { finalAttempt: false });
+    return this.emailDocumentToCustomer(document, actorId, {
+      finalAttempt: false,
+    });
   }
 
   // PDFs subidos antes como imagen a Cloudinary: la cuenta gratuita no los entrega.
   private isUndeliverablePdfUrl(url?: string | null) {
-    return !!url && url.includes('res.cloudinary.com') && url.includes('/image/upload/');
+    return (
+      !!url &&
+      url.includes('res.cloudinary.com') &&
+      url.includes('/image/upload/')
+    );
   }
 
   // Genera y guarda el PDF y XML de una boleta emitida directo al SII (o los regenera
   // si quedaron guardados como imagen y no se pueden abrir).
   private async storeSiiDirectFiles(document: any, actorId: string) {
-    if (document.pdfUrl && !this.isUndeliverablePdfUrl(document.pdfUrl)) return document;
+    if (document.pdfUrl && !this.isUndeliverablePdfUrl(document.pdfUrl))
+      return document;
 
     const siiDirect = this.getSiiDirectPayload(document.providerPayload);
 
@@ -1383,6 +1425,108 @@ export class TaxDocumentsService {
     };
   }
 
+  // Boleta de una sesión hecha fuera de Conecta: se registra una cita completada y pagada
+  // (con la fecha de la sesión) y su documento entra al mismo flujo automático del SII.
+  async createManualBoleta(user: TaxDocumentUser, dto: CreateManualBoletaDto) {
+    if (user.role !== Role.PROFESSIONAL) {
+      throw new ForbiddenException('Solo un profesional puede emitir boletas.');
+    }
+
+    const user_ = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      include: { professional: true },
+    });
+    const professional = user_?.professional;
+
+    if (!user_ || !professional) {
+      throw new NotFoundException('Professional not found');
+    }
+
+    if (!professional.documentAutomationEnabled) {
+      throw new BadRequestException(
+        'Activa la emisión automática de boletas en tu configuración SII antes de emitir.',
+      );
+    }
+
+    const [year, month, day] = dto.sessionDate.split('-').map(Number);
+    // Mediodía en Chile (UTC-3/-4): la fecha no cambia de día al mostrarla.
+    const sessionDate = new Date(Date.UTC(year, month - 1, day, 15, 0, 0));
+
+    if (
+      Number.isNaN(sessionDate.getTime()) ||
+      sessionDate.getTime() > Date.now() + 86_400_000
+    ) {
+      throw new BadRequestException(
+        'La fecha de la sesión no es válida o es futura.',
+      );
+    }
+
+    const description = dto.description.trim();
+    const sessionLabel = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+    const itemName = `${description} ${sessionLabel}`.slice(0, 80);
+    const customerName = dto.customerName.trim();
+    const customerEmail = dto.customerEmail.trim().toLowerCase();
+    const now = new Date();
+
+    return this.prisma.$transaction(async (tx) => {
+      const appointment = await tx.appointment.create({
+        data: {
+          professionalId: user.id,
+          customerId: null,
+          guestCustomerName: customerName,
+          source: 'PROFESSIONAL_MANUAL',
+          date: sessionDate,
+          status: AppointmentStatus.COMPLETED,
+          paidAt: now,
+          serviceNameSnapshot: itemName,
+          servicePriceAmountSnapshot: dto.amount,
+          serviceCurrencySnapshot: 'CLP',
+          documentRequested: true,
+          documentStatus: DocumentStatus.DOCUMENT_PENDING,
+          documentRequestedAt: now,
+          documentAmount: dto.amount,
+          documentCurrency: 'CLP',
+        },
+      });
+
+      return tx.taxDocument.create({
+        data: {
+          appointmentId: appointment.id,
+          status: DocumentStatus.DOCUMENT_PENDING,
+          mode: DocumentMode.AUTOMATED,
+          amount: dto.amount,
+          currency: 'CLP',
+          customerTaxId: dto.customerTaxId?.trim() || null,
+          customerTaxName: customerName,
+          customerTaxEmail: customerEmail,
+          customerTaxAddress: dto.customerAddress?.trim() || null,
+          customerTaxCity: dto.customerCity?.trim() || null,
+          professionalTaxId: professional.taxId,
+          professionalTaxName:
+            professional.taxName || professional.name || user_.email,
+          professionalTaxEmail: professional.taxEmail || user_.email,
+          professionalTaxAddress:
+            professional.taxAddress || professional.officeAddress,
+          professionalTaxCountry:
+            professional.taxCountry ||
+            professional.officeCountry ||
+            user_.country,
+          professionalTaxCity: professional.taxCity || professional.officeCity,
+          taxExempt: professional.taxExempt,
+          professionalTaxNote: professional.taxDocumentNote || itemName,
+          events: {
+            create: {
+              actorId: user.id,
+              type: 'DOCUMENT_CREATED',
+              message: `Boleta manual para sesión del ${sessionLabel}`,
+              metadata: { manual: true, sessionDate: dto.sessionDate },
+            },
+          },
+        },
+      });
+    });
+  }
+
   // PDF del documento: las boletas emitidas por Conecta se generan desde su XML firmado;
   // las subidas a mano se descargan de Cloudinary por su API.
   async getDocumentPdf(id: string, user: TaxDocumentUser) {
@@ -1406,7 +1550,11 @@ export class TaxDocumentsService {
       const file = await this.buildDocumentPdfFile(document);
       return { fileName: file.fileName, buffer: file.buffer };
     } catch (error) {
-      console.error('No se pudo adjuntar el PDF al correo', document?.id, error);
+      console.error(
+        'No se pudo adjuntar el PDF al correo',
+        document?.id,
+        error,
+      );
       return null;
     }
   }
@@ -1435,8 +1583,14 @@ export class TaxDocumentsService {
     }
 
     return {
-      buffer: await this.cloudinaryService.downloadFile(document.pdfUrl, document.pdfPublicId),
-      fileName: (document.fileName || 'documento.pdf').replace(/[^\w.\-]+/g, '_'),
+      buffer: await this.cloudinaryService.downloadFile(
+        document.pdfUrl,
+        document.pdfPublicId,
+      ),
+      fileName: (document.fileName || 'documento.pdf').replace(
+        /[^\w.\-]+/g,
+        '_',
+      ),
     };
   }
 
@@ -1521,7 +1675,10 @@ export class TaxDocumentsService {
 
     this.ensureProfessionalAccess(document.appointment, user);
 
-    if (this.isUndeliverablePdfUrl(document.pdfUrl) && this.getSiiDirectPayload(document.providerPayload)?.signedXml) {
+    if (
+      this.isUndeliverablePdfUrl(document.pdfUrl) &&
+      this.getSiiDirectPayload(document.providerPayload)?.signedXml
+    ) {
       const refreshed = await this.storeSiiDirectFiles(
         await this.getDocumentForDelivery(document.id),
         document.appointment.professionalId,
@@ -1536,12 +1693,14 @@ export class TaxDocumentsService {
     }
 
     const customer = document.appointment.customer;
-    if (!customer) {
-      throw new BadRequestException('La cita no tiene un paciente registrado.');
+    const customerEmail = document.customerTaxEmail || customer?.email;
+    if (!customerEmail) {
+      throw new BadRequestException(
+        'La boleta no tiene un correo de paciente.',
+      );
     }
-    const customerEmail = document.customerTaxEmail || customer.email;
     const customerName =
-      document.customerTaxName || customer.name || customer.email;
+      document.customerTaxName || customer?.name || customerEmail;
     const emailSentAt = new Date();
 
     await this.emailService.sendTaxDocumentEmail({
@@ -1703,13 +1862,14 @@ export class TaxDocumentsService {
     }
 
     try {
+      // Boletas manuales no tienen cuenta de paciente: se usa el correo de la boleta.
       const customer = document.appointment.customer;
-      if (!customer) {
+      const customerEmail = document.customerTaxEmail || customer?.email;
+      if (!customerEmail) {
         return document;
       }
-      const customerEmail = document.customerTaxEmail || customer.email;
       const customerName =
-        document.customerTaxName || customer.name || customer.email;
+        document.customerTaxName || customer?.name || customerEmail;
       const emailSentAt = new Date();
       const professional =
         document.appointment.professional.professional?.name ||
@@ -1837,7 +1997,8 @@ export class TaxDocumentsService {
       format,
       apiToken,
     );
-    const fileBase = document.folio || document.providerDocumentId || document.id;
+    const fileBase =
+      document.folio || document.providerDocumentId || document.id;
 
     return this.cloudinaryService.uploadTaxDocumentBuffer(
       document.id,
@@ -1901,25 +2062,30 @@ export class TaxDocumentsService {
       typeof (error as { getResponse?: unknown }).getResponse === 'function'
     ) {
       const response = (error as { getResponse: () => unknown }).getResponse();
-      const record = response && typeof response === 'object'
-        ? response as Record<string, unknown>
-        : {};
+      const record =
+        response && typeof response === 'object'
+          ? (response as Record<string, unknown>)
+          : {};
 
       return {
         code: String(record['status'] || record['code'] || 'LIBREDTE_ERROR'),
-        message: String(record['message'] || 'LibreDTE no pudo emitir el documento'),
+        message: String(
+          record['message'] || 'LibreDTE no pudo emitir el documento',
+        ),
         response,
       };
     }
 
     return {
       code: 'LIBREDTE_ERROR',
-      message: error instanceof Error
-        ? error.message
-        : 'LibreDTE no pudo emitir el documento',
-      response: error instanceof Error
-        ? { name: error.name, message: error.message, stack: error.stack }
-        : { error: String(error) },
+      message:
+        error instanceof Error
+          ? error.message
+          : 'LibreDTE no pudo emitir el documento',
+      response:
+        error instanceof Error
+          ? { name: error.name, message: error.message, stack: error.stack }
+          : { error: String(error) },
     };
   }
 
@@ -1983,7 +2149,11 @@ export class TaxDocumentsService {
     };
 
     if (filters.status) {
-      if (!Object.values(DocumentStatus).includes(filters.status as DocumentStatus)) {
+      if (
+        !Object.values(DocumentStatus).includes(
+          filters.status as DocumentStatus,
+        )
+      ) {
         throw new BadRequestException('Invalid document status filter');
       }
 
@@ -2062,7 +2232,11 @@ export class TaxDocumentsService {
     const appointment: Prisma.AppointmentWhereInput = {};
 
     if (filters.status) {
-      if (!Object.values(DocumentStatus).includes(filters.status as DocumentStatus)) {
+      if (
+        !Object.values(DocumentStatus).includes(
+          filters.status as DocumentStatus,
+        )
+      ) {
         throw new BadRequestException('Invalid document status filter');
       }
 
@@ -2135,7 +2309,9 @@ export class TaxDocumentsService {
     const payload = this.getProviderPayloadObject(current);
     const siiDirect = payload['siiDirect'];
 
-    return siiDirect && typeof siiDirect === 'object' && !Array.isArray(siiDirect)
+    return siiDirect &&
+      typeof siiDirect === 'object' &&
+      !Array.isArray(siiDirect)
       ? (siiDirect as Record<string, any>)
       : null;
   }
@@ -2144,8 +2320,9 @@ export class TaxDocumentsService {
     professionalId: string,
     dteCode: number,
   ): Promise<SiiFolioReservation> {
-    const [reservation] = await this.prisma.$transaction((tx) =>
-      tx.$queryRaw<SiiFolioReservation[]>`
+    const [reservation] = await this.prisma.$transaction(
+      (tx) =>
+        tx.$queryRaw<SiiFolioReservation[]>`
         UPDATE "ProfessionalTaxFolioRange"
         SET "nextFolio" = "nextFolio" + 1,
             "updatedAt" = NOW()
@@ -2192,7 +2369,9 @@ export class TaxDocumentsService {
       });
 
       if (!appointment) {
-        console.warn('Appointment not found while syncing tax document status.');
+        console.warn(
+          'Appointment not found while syncing tax document status.',
+        );
         return;
       }
 
@@ -2226,8 +2405,13 @@ export class TaxDocumentsService {
     appointment: { professionalId: string },
     user: TaxDocumentUser,
   ) {
-    if (user.role !== Role.PROFESSIONAL || appointment.professionalId !== user.id) {
-      throw new ForbiddenException('Only the professional can upload this document');
+    if (
+      user.role !== Role.PROFESSIONAL ||
+      appointment.professionalId !== user.id
+    ) {
+      throw new ForbiddenException(
+        'Only the professional can upload this document',
+      );
     }
   }
 
@@ -2288,10 +2472,7 @@ export class TaxDocumentsService {
           message: 'No se pudo enviar el correo de documento al cliente',
           metadata: {
             customerEmail,
-            error:
-              error instanceof Error
-                ? error.message
-                : String(error),
+            error: error instanceof Error ? error.message : String(error),
           },
         },
       });

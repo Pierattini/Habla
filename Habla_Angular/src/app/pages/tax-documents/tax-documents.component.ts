@@ -85,6 +85,63 @@ export class TaxDocumentsComponent {
     this.loadDocuments(true);
   }
 
+  // Boleta manual: para sesiones que no se agendaron por Conecta.
+  manualFormOpen = false;
+  manualSaving = false;
+  manualMessage = '';
+  manual = {
+    customerName: '',
+    customerEmail: '',
+    customerTaxId: '',
+    customerAddress: '',
+    customerCity: '',
+    amount: null as number | null,
+    description: 'Sesión psicoterapia individual',
+    sessionDate: '',
+  };
+
+  createManualBoleta(): void {
+    const m = this.manual;
+    const amount = Number(m.amount);
+
+    if (!m.customerName.trim() || !m.customerEmail.trim() || !m.sessionDate || !(amount > 0) || !m.description.trim()) {
+      this.manualMessage = 'Completa nombre, correo, monto, descripción y fecha de la sesión.';
+      return;
+    }
+
+    this.manualSaving = true;
+    this.manualMessage = '';
+    this.taxDocumentsService.createManualBoleta({
+      customerName: m.customerName.trim(),
+      customerEmail: m.customerEmail.trim(),
+      customerTaxId: m.customerTaxId.trim() || undefined,
+      customerAddress: m.customerAddress.trim() || undefined,
+      customerCity: m.customerCity.trim() || undefined,
+      amount: Math.round(amount),
+      description: m.description.trim(),
+      sessionDate: m.sessionDate,
+    }).pipe(
+      timeout(60_000),
+      finalize(() => {
+        this.manualSaving = false;
+      }),
+    ).subscribe({
+      next: () => {
+        const [y, mo, d] = m.sessionDate.split('-');
+        this.manualMessage = `Boleta de la sesión del ${d}/${mo}/${y} enviada a emitir. Puedes ingresar la siguiente fecha.`;
+        // Se mantienen paciente, monto y descripción para emitir varias seguidas.
+        m.sessionDate = '';
+        this.loadDocuments(true, true);
+      },
+      error: (err: any) => {
+        const reason = err?.error?.message;
+        this.manualMessage = Array.isArray(reason)
+          ? `No se pudo emitir: ${reason.join(', ')}`
+          : reason || 'No se pudo emitir la boleta.';
+      },
+    });
+  }
+
   loadMore(): void {
     if (this.loading || this.loadingMore || this.page >= this.totalPages) return;
 
@@ -396,6 +453,8 @@ export class TaxDocumentsComponent {
 
   getDocumentCustomerName(document: DashboardTaxDocument): string {
     return document?.customer?.name ||
+      (document as any)?.customerTaxName ||
+      (document as any)?.appointment?.guestCustomerName ||
       document?.customer?.email ||
       document?.appointment?.customer?.name ||
       document?.appointment?.customer?.email ||

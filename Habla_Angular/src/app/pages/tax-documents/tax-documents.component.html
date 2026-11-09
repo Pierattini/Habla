@@ -49,6 +49,52 @@
     </section>
 
     <section class="filters-panel">
+      <button type="button" class="clear-button" (click)="manualFormOpen = !manualFormOpen">
+        {{ manualFormOpen ? 'Cerrar boleta manual' : 'Emitir boleta manual' }}
+      </button>
+      <p class="field-hint">Para sesiones que no se agendaron por Conecta (por ejemplo, sesiones ya realizadas). Se emite al SII y se envía al correo del paciente.</p>
+
+      <ng-container *ngIf="manualFormOpen">
+        <label>
+          <span>Nombre del paciente</span>
+          <input type="text" [(ngModel)]="manual.customerName" maxlength="100" />
+        </label>
+        <label>
+          <span>Correo del paciente</span>
+          <input type="email" [(ngModel)]="manual.customerEmail" maxlength="160" />
+        </label>
+        <label>
+          <span>RUT (opcional)</span>
+          <input type="text" [(ngModel)]="manual.customerTaxId" placeholder="12.345.678-9" maxlength="14" />
+        </label>
+        <label>
+          <span>Dirección (opcional)</span>
+          <input type="text" [(ngModel)]="manual.customerAddress" maxlength="70" />
+        </label>
+        <label>
+          <span>Comuna (opcional)</span>
+          <input type="text" [(ngModel)]="manual.customerCity" maxlength="40" />
+        </label>
+        <label>
+          <span>Monto (CLP)</span>
+          <input type="number" [(ngModel)]="manual.amount" min="1" placeholder="45000" />
+        </label>
+        <label style="grid-column: 1 / -1">
+          <span>Descripción (máximo 68 caracteres; se le agrega la fecha de la sesión)</span>
+          <input type="text" [(ngModel)]="manual.description" maxlength="68" />
+        </label>
+        <label>
+          <span>Fecha de la sesión</span>
+          <input type="date" [(ngModel)]="manual.sessionDate" />
+        </label>
+        <button type="button" class="clear-button" [disabled]="manualSaving" (click)="createManualBoleta()">
+          {{ manualSaving ? 'Emitiendo...' : 'Emitir boleta' }}
+        </button>
+        <p *ngIf="manualMessage" class="field-hint">{{ manualMessage }}</p>
+      </ng-container>
+    </section>
+
+    <section class="filters-panel">
       <label>
         <span>Informe del mes</span>
         <input type="month" [(ngModel)]="reportMonth" aria-label="Mes del informe" />

@@ -239,6 +239,23 @@ export class TaxDocumentsService {
     });
   }
 
+  // Boleta para una sesión hecha fuera de Conecta (por ejemplo, sesiones pasadas).
+  createManualBoleta(data: {
+    customerName: string;
+    customerEmail: string;
+    customerTaxId?: string;
+    customerAddress?: string;
+    customerCity?: string;
+    amount: number;
+    description: string;
+    sessionDate: string;
+  }) {
+    return this.http.post<TaxDocument>(
+      `${this.api}/tax-documents/professional/manual-boleta`,
+      data
+    );
+  }
+
   retryIssue(documentId: string) {
     return this.http.post<TaxDocument>(
       `${this.api}/tax-documents/${documentId}/retry`,
