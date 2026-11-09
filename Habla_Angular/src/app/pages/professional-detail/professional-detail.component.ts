@@ -465,6 +465,13 @@ async bookAppointment() {
     payload
   ).subscribe({
     next: (appointment: any) => {
+      // Lo usado en esta reserva queda como propuesta para la próxima.
+      if (this.customerTaxData && (this.customerTaxData.taxPhone || this.customerTaxData.taxComment)) {
+        this.lastTaxRequest = {
+          phone: this.customerTaxData.taxPhone || '',
+          comment: this.customerTaxData.taxComment || '',
+        };
+      }
       this.selectedHour = null;
       this.isBooking = false;
       const deadline = appointment?.paymentDeadlineAt
@@ -558,6 +565,7 @@ loadCustomerDocumentPreference() {
     next: (user: any) => {
       this.updateCustomerTaxState(user);
       this.applyDefaultDocumentMode();
+      this.loadLastTaxRequest();
     },
     error: () => {
       this.wantsTaxDocumentByDefault = false;
@@ -652,6 +660,38 @@ getCustomerTaxValidationMessage(): string {
   return this.validateTaxPayload(this.customerTaxData || {}) || 'Datos listos para enviar con la reserva.';
 }
 
+// Último teléfono y comentario que el paciente usó al pedir boleta: se proponen de nuevo
+// (puede cambiarlos y entonces la próxima vez se propone lo nuevo).
+private lastTaxRequest: { phone: string; comment: string } | null = null;
+
+private loadLastTaxRequest(): void {
+  this.http.get<any[]>(`${API_URL}/tax-documents/my`).subscribe({
+    next: (documents) => {
+      const last = (documents || []).find(
+        (item) => item?.customerTaxPhone || item?.customerTaxComment
+      );
+      if (!last) return;
+
+      this.lastTaxRequest = {
+        phone: last.customerTaxPhone || '',
+        comment: last.customerTaxComment || '',
+      };
+
+      // Si el formulario ya se abrió, se completan solo los campos aún vacíos.
+      if (this.customerTaxData) {
+        if (!this.phoneLocalNumber.trim() && this.lastTaxRequest.phone) {
+          this.splitPhone(this.lastTaxRequest.phone);
+          this.updateTaxPhone();
+        }
+        if (!this.customerTaxData.taxComment?.trim()) {
+          this.customerTaxData.taxComment = this.lastTaxRequest.comment;
+        }
+      }
+    },
+    error: () => {},
+  });
+}
+
 private ensureCustomerTaxDraft(): void {
   if (this.customerTaxData) return;
 
@@ -662,9 +702,9 @@ private ensureCustomerTaxDraft(): void {
     taxId: current.taxId || '',
     taxAddress: current.taxAddress || '',
     taxPhone: '',
-    taxComment: '',
+    taxComment: this.lastTaxRequest?.comment || '',
   };
-  this.splitPhone(current.phone || '');
+  this.splitPhone(this.lastTaxRequest?.phone || current.phone || '');
   this.updateTaxPhone();
 }
 
