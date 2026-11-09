@@ -89,7 +89,19 @@ export class TaxDocumentsComponent {
   manualFormOpen = false;
   manualSaving = false;
   manualMessage = '';
-  manual = {
+  manual = this.emptyManualForm();
+
+  // Abierto: conserva lo ingresado para emitir varias seguidas. Al cerrar se limpia todo.
+  toggleManualForm(): void {
+    this.manualFormOpen = !this.manualFormOpen;
+    if (!this.manualFormOpen) {
+      this.manual = this.emptyManualForm();
+      this.manualMessage = '';
+    }
+  }
+
+  private emptyManualForm() {
+    return {
     customerName: '',
     customerEmail: '',
     customerTaxId: '',
@@ -98,7 +110,8 @@ export class TaxDocumentsComponent {
     amount: '' as string | number,
     description: 'Sesión psicoterapia individual',
     sessionDate: '',
-  };
+    };
+  }
 
   createManualBoleta(): void {
     const m = this.manual;

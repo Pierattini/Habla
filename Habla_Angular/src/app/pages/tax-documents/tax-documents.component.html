@@ -49,7 +49,7 @@
     </section>
 
     <section class="filters-panel">
-      <button type="button" class="clear-button" (click)="manualFormOpen = !manualFormOpen">
+      <button type="button" class="clear-button" (click)="toggleManualForm()">
         {{ manualFormOpen ? 'Cerrar boleta manual' : 'Emitir boleta manual' }}
       </button>
       <p class="field-hint">Para sesiones que no se agendaron por Conecta (por ejemplo, sesiones ya realizadas). Se emite al SII y se envía al correo del paciente.</p>
