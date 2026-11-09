@@ -54,7 +54,7 @@
       </button>
       <p class="field-hint">Para sesiones que no se agendaron por Conecta (por ejemplo, sesiones ya realizadas). Se emite al SII y se envía al correo del paciente.</p>
 
-      <ng-container *ngIf="manualFormOpen">
+      <div *ngIf="manualFormOpen" style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;">
         <label>
           <span>Nombre del paciente</span>
           <input type="text" [(ngModel)]="manual.customerName" maxlength="100" />
@@ -77,11 +77,11 @@
         </label>
         <label>
           <span>Monto (CLP)</span>
-          <input type="number" [(ngModel)]="manual.amount" min="1" placeholder="45000" />
+          <input type="text" inputmode="numeric" [(ngModel)]="manual.amount" placeholder="Ej: 45000" />
         </label>
         <label style="grid-column: 1 / -1">
-          <span>Descripción (máximo 68 caracteres; se le agrega la fecha de la sesión)</span>
-          <input type="text" [(ngModel)]="manual.description" maxlength="68" />
+          <span>Descripción (máximo 80 caracteres; si no incluyes la fecha, se agrega sola)</span>
+          <input type="text" [(ngModel)]="manual.description" maxlength="80" />
         </label>
         <label>
           <span>Fecha de la sesión</span>
@@ -91,7 +91,7 @@
           {{ manualSaving ? 'Emitiendo...' : 'Emitir boleta' }}
         </button>
         <p *ngIf="manualMessage" class="field-hint">{{ manualMessage }}</p>
-      </ng-container>
+      </div>
     </section>
 
     <section class="filters-panel">

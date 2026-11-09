@@ -1463,7 +1463,11 @@ export class TaxDocumentsService {
 
     const description = dto.description.trim();
     const sessionLabel = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
-    const itemName = `${description} ${sessionLabel}`.slice(0, 80);
+    // Si la descripción ya trae una fecha (ej. "... - 13/10/26") se usa tal cual;
+    // si no, se le agrega la fecha de la sesión cuando cabe en los 80 caracteres del SII.
+    const hasDate = /\d{1,2}[/-]\d{1,2}[/-]\d{2,4}/.test(description);
+    const withDate = `${description} ${sessionLabel}`;
+    const itemName = hasDate || withDate.length > 80 ? description.slice(0, 80) : withDate;
     const customerName = dto.customerName.trim();
     const customerEmail = dto.customerEmail.trim().toLowerCase();
     const now = new Date();

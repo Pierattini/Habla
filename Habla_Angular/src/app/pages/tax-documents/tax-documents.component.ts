@@ -95,14 +95,15 @@ export class TaxDocumentsComponent {
     customerTaxId: '',
     customerAddress: '',
     customerCity: '',
-    amount: null as number | null,
+    amount: '' as string | number,
     description: 'Sesión psicoterapia individual',
     sessionDate: '',
   };
 
   createManualBoleta(): void {
     const m = this.manual;
-    const amount = Number(m.amount);
+    // Acepta "45000", "45.000" o "$45.000".
+    const amount = Number(String(m.amount ?? '').replace(/[^\d]/g, ''));
 
     if (!m.customerName.trim() || !m.customerEmail.trim() || !m.sessionDate || !(amount > 0) || !m.description.trim()) {
       this.manualMessage = 'Completa nombre, correo, monto, descripción y fecha de la sesión.';

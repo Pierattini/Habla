@@ -34,10 +34,10 @@ export class CreateManualBoletaDto {
   @Max(100_000_000)
   amount!: number;
 
-  // El detalle de la boleta admite 80 caracteres: descripción + " dd/mm/aaaa".
+  // El detalle de la boleta admite 80 caracteres (máximo del SII).
   @IsString()
   @MinLength(2)
-  @MaxLength(68)
+  @MaxLength(80)
   description!: string;
 
   @IsOptional()
