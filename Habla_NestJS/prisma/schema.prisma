@@ -110,6 +110,9 @@ model Appointment {
   createdAt                      DateTime                      @default(now())
   rescheduleCount                Int                           @default(0)
   paidAt                         DateTime?
+  paymentDeadlineAt              DateTime?
+  paymentReminderSentAt          DateTime?
+  paymentLastReminderSentAt      DateTime?
   bookedEmailSentAt              DateTime?
   sameDayEmailSentAt             DateTime?
   sameDayPushSentAt              DateTime?
@@ -172,6 +175,7 @@ model Appointment {
   review         Review?
 
   @@index([serviceId])
+  @@index([status, paymentDeadlineAt])
 }
 
 model Review {
@@ -233,30 +237,32 @@ model Professional {
   user   User    @relation(fields: [userId], references: [id])
   slug   String? @unique
 
-  professionId        String?
-  profession          Profession?             @relation(fields: [professionId], references: [id])
-  customProfession    String?
-  specialty           String?
-  description         String?
-  rules               String?
-  name                String?
-  price               Int?
-  duration            Int?
+  professionId         String?
+  profession           Profession?             @relation(fields: [professionId], references: [id])
+  customProfession     String?
+  specialty            String?
+  description          String?
+  rules                String?
+  name                 String?
+  price                Int?
+  duration             Int?
   // Máximo de citas que pacientes pueden reservar en un día (null = sin límite).
   maxDailyAppointments Int?
-  isOnline            Boolean?                @default(true)
-  image               String?
-  attentionMode       AttentionModality       @default(ONLINE)
-  officeAddress       String?
-  officeCity          String?
-  officeRegion        String?
-  officeCountry       String?
-  officeLatitude      Float?
-  officeLongitude     Float?
-  arrivalInstructions String?
-  videoProvider       VideoProvider           @default(CONNECTA_AUTO)
-  customVideoUrl      String?
-  serviceMode         ProfessionalServiceMode @default(SINGLE_PRICE)
+  // Horas antes de la sesión para pagar; 0 = no liberar automáticamente.
+  paymentDeadlineHours Int                     @default(48)
+  isOnline             Boolean?                @default(true)
+  image                String?
+  attentionMode        AttentionModality       @default(ONLINE)
+  officeAddress        String?
+  officeCity           String?
+  officeRegion         String?
+  officeCountry        String?
+  officeLatitude       Float?
+  officeLongitude      Float?
+  arrivalInstructions  String?
+  videoProvider        VideoProvider           @default(CONNECTA_AUTO)
+  customVideoUrl       String?
+  serviceMode          ProfessionalServiceMode @default(SINGLE_PRICE)
 
   // Datos Bancarios
   bankName      String?
@@ -550,11 +556,11 @@ model TaxDocument {
   id            String @id @default(uuid())
   appointmentId String @unique
 
-  status DocumentStatus   @default(DOCUMENT_PENDING)
-  mode   DocumentMode     @default(MANUAL)
-  type   TaxDocumentType?
+  status    DocumentStatus   @default(DOCUMENT_PENDING)
+  mode      DocumentMode     @default(MANUAL)
+  type      TaxDocumentType?
   // Copia de Professional.taxExempt al crear el documento.
-  taxExempt Boolean @default(true)
+  taxExempt Boolean          @default(true)
 
   amount   Int?
   currency String @default("CLP")

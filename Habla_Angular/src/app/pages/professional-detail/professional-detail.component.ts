@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { API_URL } from '../../core/config/api.config';
 import {
+  formatDeadlineForViewer,
   formatShortDayForViewer,
   formatTimeForViewer,
   isZonedDateTimeInPast,
@@ -463,13 +464,18 @@ async bookAppointment() {
     `${API_URL}/appointments`,
     payload
   ).subscribe({
-    next: () => {
+    next: (appointment: any) => {
       this.selectedHour = null;
       this.isBooking = false;
+      const deadline = appointment?.paymentDeadlineAt
+        ? formatDeadlineForViewer(appointment.paymentDeadlineAt)
+        : '';
       this.showMessage(
         'success',
         'Reserva realizada',
-        'Tu cita fue registrada correctamente en Conecta.'
+        deadline
+          ? `Tu hora quedó reservada. Transfiere antes del ${deadline} (puedes hacerlo ahora o más tarde desde "Mis citas"). Si no, la hora se liberará.`
+          : 'Tu cita fue registrada correctamente en Conecta.'
       );
 
       // 👇 navegar después

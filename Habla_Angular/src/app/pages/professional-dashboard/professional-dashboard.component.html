@@ -2059,6 +2059,23 @@
         Al llegar a este número de reservas en un día, las demás horas de ese día dejan de mostrarse a los pacientes. Déjalo vacío para que se puedan ocupar todas.
       </p>
 
+      <div class="profile-field native-profile-field">
+        <label for="payment-deadline-hours">Plazo para pagar antes de la sesión</label>
+        <select
+          id="payment-deadline-hours"
+          [ngModel]="$any(this).profile.paymentDeadlineHours ?? 48"
+          (ngModelChange)="$any(this).profile.paymentDeadlineHours = +$event"
+        >
+          <option [ngValue]="24">24 horas antes</option>
+          <option [ngValue]="48">48 horas antes</option>
+          <option [ngValue]="72">72 horas antes</option>
+          <option [ngValue]="0">Sin liberación automática</option>
+        </select>
+      </div>
+      <p class="field-rule">
+        Si el paciente no transfiere antes de este plazo, la hora se libera sola y se le avisa. Si reserva con menos anticipación, tiene 2 horas para pagar. Se le envían recordatorios antes del plazo.
+      </p>
+
       <div
         *ngFor="let item of availability"
         class="day-card"

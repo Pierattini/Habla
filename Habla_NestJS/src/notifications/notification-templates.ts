@@ -32,9 +32,19 @@ export function buildNotificationTemplate(
     fullAddress: values.fullAddress || '',
     arrivalInstructions: values.arrivalInstructions || '',
     mapsUrl: values.mapsUrl || buildMapsUrl(values.fullAddress),
+    paymentDeadline: values.paymentDeadline || '',
   };
 
+  // Plazo de pago (citas sin pagar): se muestra arriba del detalle.
+  const paymentNotice = shared.paymentDeadline
+    ? `<p><strong>${isEnglish ? 'Pay before' : 'Transfiere antes del'}:</strong> ${escapeHtml(shared.paymentDeadline)}.<br>${
+        isEnglish
+          ? 'If the payment is not registered by then, the slot will be released for other patients.'
+          : 'Si el pago no se registra antes de ese plazo, la hora se liberará para otros pacientes.'
+      }</p>`
+    : '';
   const appointmentDetails = buildAppointmentDetails(shared, isEnglish);
+  const detailsWithPayment = `${paymentNotice}${appointmentDetails}`;
 
   const templates: Record<NotificationType, NotificationTemplate> = {
     REGISTRATION_SUCCESS: {
@@ -65,7 +75,7 @@ export function buildNotificationTemplate(
       isEnglish ? 'Your appointment request was scheduled' : 'Tu cita fue agendada',
       isEnglish ? 'Appointment scheduled' : 'Cita agendada',
       shared,
-      appointmentDetails,
+      detailsWithPayment,
       isEnglish,
     ),
     APPOINTMENT_MANUAL_CREATED: appointmentTemplate(
@@ -140,6 +150,31 @@ export function buildNotificationTemplate(
       isEnglish ? 'Appointment in 15 minutes' : 'Cita en 15 minutos',
       shared,
       appointmentDetails,
+      isEnglish,
+    ),
+    APPOINTMENT_PAYMENT_REMINDER: appointmentTemplate(
+      isEnglish ? 'Reminder: pay to keep your appointment' : 'Recuerda transferir para mantener tu hora',
+      isEnglish ? 'Payment pending' : 'Pago pendiente',
+      shared,
+      detailsWithPayment,
+      isEnglish,
+    ),
+    APPOINTMENT_PAYMENT_LAST_REMINDER: appointmentTemplate(
+      isEnglish ? 'Last notice: your slot will be released' : 'Último aviso: tu hora será liberada',
+      isEnglish ? 'Last payment notice' : 'Último aviso de pago',
+      shared,
+      detailsWithPayment,
+      isEnglish,
+    ),
+    APPOINTMENT_RELEASED_UNPAID: appointmentTemplate(
+      isEnglish ? 'Appointment released for lack of payment' : 'Hora liberada por falta de pago',
+      isEnglish ? 'Appointment released' : 'Hora liberada',
+      shared,
+      `<p>${
+        isEnglish
+          ? 'The payment was not registered before the deadline, so the appointment was cancelled and the slot is available again.'
+          : 'No se registró el pago antes del plazo, así que la cita se canceló y la hora quedó disponible nuevamente.'
+      }</p>${appointmentDetails}`,
       isEnglish,
     ),
     PROFESSIONAL_WELCOME: {

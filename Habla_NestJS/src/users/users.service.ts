@@ -202,6 +202,9 @@ export class UsersService {
         duration: dto.duration,
       }),
 
+      ...(dto.paymentDeadlineHours !== undefined && {
+        paymentDeadlineHours: dto.paymentDeadlineHours,
+      }),
       ...(dto.maxDailyAppointments !== undefined && {
         maxDailyAppointments: dto.maxDailyAppointments,
       }),

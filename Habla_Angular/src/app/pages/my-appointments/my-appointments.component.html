@@ -415,6 +415,14 @@
     *ngTemplateOutlet="documentoTributario; context: { $implicit: appt }">
   </ng-container>
 </div>
+<p class="field-rule" *ngIf="$any(this).paymentDeadlineLabel(appt)">
+  <ng-container *ngIf="$any(this).role !== 'PROFESSIONAL'; else deadlinePro">
+    Transfiere antes del <strong>{{ $any(this).paymentDeadlineLabel(appt) }}</strong>. Si no, la hora se liberará para otros pacientes. Puedes pagar ahora o más tarde.
+  </ng-container>
+  <ng-template #deadlinePro>
+    Pago pendiente. Si el paciente no transfiere antes del <strong>{{ $any(this).paymentDeadlineLabel(appt) }}</strong>, la hora se liberará sola.
+  </ng-template>
+</p>
 <div class="botones">
 
   <div
@@ -811,6 +819,10 @@
       Transfiere al profesional con estos datos. Luego presiona
       <strong>Ya transferí</strong> para avisar que el pago fue realizado.
     </p>
+    <p class="payment-intro" *ngIf="$any(this).paymentDeadlineLabel($any(this).paymentModalAppointment)">
+      Puedes pagar ahora o más tarde: tienes hasta el
+      <strong>{{ $any(this).paymentDeadlineLabel($any(this).paymentModalAppointment) }}</strong>.
+    </p>
 
     <div class="payment-data-list">
       <div class="payment-data-row">
@@ -897,7 +909,17 @@
       class="payment-confirm"
       (click)="$any(this).confirmPaymentFromModal()"
     >
-      Ya transferi
+      Ya transferí
+    </button>
+
+    <button
+      type="button"
+      class="payment-confirm"
+      style="background: transparent; color: inherit; border: 1px solid currentColor;"
+      *ngIf="$any(this).paymentDeadlineLabel($any(this).paymentModalAppointment)"
+      (click)="$any(this).closePaymentModal()"
+    >
+      Pagaré después
     </button>
   </div>
 </div>

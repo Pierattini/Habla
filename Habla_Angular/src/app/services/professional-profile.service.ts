@@ -21,6 +21,7 @@ export interface ProfessionalProfile {
   duration: number;
   // Máximo de pacientes que pueden reservar por día (null = sin límite).
   maxDailyAppointments?: number | null;
+  paymentDeadlineHours?: number;
   interval: number;
   rules: string;
   image: string;

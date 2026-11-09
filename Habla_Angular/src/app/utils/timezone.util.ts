@@ -132,3 +132,15 @@ export function viewerZoneName(): string {
   const zone = matchingSupportedTimeZone(Object.keys(TIME_ZONE_LABELS));
   return zone ? timeZoneLabel(zone) : timeZoneLabel(viewerTimeZone());
 }
+
+// "martes 18 de noviembre, 19:00" en la zona de quien mira (plazos de pago).
+export function formatDeadlineForViewer(value: string | Date): string {
+  const date = new Date(value);
+  const day = new Intl.DateTimeFormat('es-CL', {
+    timeZone: viewerTimeZone(),
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(date);
+  return `${day}, ${formatTimeForViewer(date)}`;
+}

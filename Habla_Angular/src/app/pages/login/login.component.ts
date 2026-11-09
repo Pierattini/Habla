@@ -973,8 +973,11 @@ export class LoginComponent implements OnInit {
     }
 
     // El código ayuda a diagnosticar fallas que solo ocurren en algunos teléfonos.
-    const code = rawError?.code ? ` (código ${rawError.code})` : '';
-    return `No pudimos abrir Google en este momento. Inténtalo nuevamente.${code}`;
+    // Se muestra el detalle técnico (recortado) para poder diagnosticar desde una captura.
+    const code = rawError?.code ? ` código ${rawError.code}` : '';
+    const message = String(rawError?.message || '').trim().slice(0, 160);
+    const detail = code || message ? ` (${[code.trim(), message].filter(Boolean).join(': ')})` : '';
+    return `No pudimos abrir Google en este momento. Inténtalo nuevamente.${detail}`;
   }
 
   private cleanOptional(value: string): string | undefined {

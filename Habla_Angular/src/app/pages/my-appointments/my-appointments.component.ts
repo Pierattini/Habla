@@ -11,7 +11,7 @@ import { ViewWillEnter } from '@ionic/angular';
 import { AppointmentsService } from '../../services/appointments.service';
 import { TaxDocumentsService } from '../../services/tax-documents.service';
 import { formatClpPrice } from '../../utils/clp-price.util';
-import { formatDateForViewer, formatTimeForViewer } from '../../utils/timezone.util';
+import { formatDateForViewer, formatTimeForViewer, formatDeadlineForViewer } from '../../utils/timezone.util';
 import { ReviewsService } from '../../services/reviews.service';
 import { API_URL } from '../../core/config/api.config';
 import {
@@ -1160,6 +1160,12 @@ async openPayment(appt: any) {
   this.paymentModalAppointment = appt;
   this.paymentModalData = data;
   this.cdr.detectChanges();
+}
+
+// Plazo para pagar una cita sin pagar; vacío si no tiene plazo o ya no está pendiente.
+paymentDeadlineLabel(appt: any): string {
+  if (appt?.status !== 'PENDING' || !appt?.paymentDeadlineAt) return '';
+  return formatDeadlineForViewer(appt.paymentDeadlineAt);
 }
 
 closePaymentModal(): void {

@@ -102,6 +102,13 @@ export class UpdateProfileDto {
   @Max(50)
   maxDailyAppointments?: number | null;
 
+  // Horas antes de la sesión para pagar (0 = no liberar la hora automáticamente).
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(168)
+  paymentDeadlineHours?: number;
+
   @IsOptional()
   @IsBoolean()
   documentAutomationEnabled?: boolean;

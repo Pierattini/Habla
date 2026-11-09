@@ -461,6 +461,11 @@ export class AppointmentsService {
         serviceCurrencySnapshot: selection.currency,
         serviceDurationMinutesSnapshot: selection.snapshotDurationMinutes,
         penalty: finalPrice, // opcional (puedes usar otro campo si luego haces pricing formal)
+        paymentDeadlineAt: this.computePaymentDeadline(
+          date,
+          professional.paymentDeadlineHours,
+          now,
+        ),
         documentRequested,
         attentionMode,
         appointmentAddress:
@@ -1797,6 +1802,18 @@ export class AppointmentsService {
             date: newDate,
             status: nextStatus,
             penalty: isConfirmedReschedule ? 0 : appointment.penalty ?? 0,
+            // Cita aún sin pagar: el plazo se recalcula con la nueva fecha.
+            ...(nextStatus === AppointmentStatus.PENDING && appointment.paymentDeadlineAt
+              ? {
+                  paymentDeadlineAt: this.computePaymentDeadline(
+                    newDate,
+                    professional.paymentDeadlineHours,
+                    now,
+                  ),
+                  paymentReminderSentAt: null,
+                  paymentLastReminderSentAt: null,
+                }
+              : {}),
           },
         });
       },
@@ -1932,6 +1949,8 @@ export class AppointmentsService {
           data: {
             status: AppointmentStatus.PENDING,
             paidAt: null,
+            // El paciente informó un pago: no se libera automáticamente.
+            paymentDeadlineAt: null,
           },
         });
       }
@@ -2391,6 +2410,106 @@ export class AppointmentsService {
     }
   }
 
+  // Plazo para pagar: X horas antes de la sesión (configurable por la profesional, 48 por
+  // defecto). Si se reserva con menos anticipación, hay 2 horas para pagar. 0 = sin plazo.
+  private computePaymentDeadline(
+    sessionDate: Date,
+    hours: number | null | undefined,
+    now = new Date(),
+  ): Date | null {
+    const deadlineHours = hours ?? 48;
+    if (deadlineHours <= 0) return null;
+
+    const deadline = sessionDate.getTime() - deadlineHours * 3_600_000;
+    const minimum = now.getTime() + 2 * 3_600_000;
+
+    if (deadline >= minimum) return new Date(deadline);
+    return new Date(Math.min(minimum, sessionDate.getTime()));
+  }
+
+  // Citas sin pagar: recordatorios antes del plazo y liberación de la hora al vencer.
+  @Cron('*/5 * * * *')
+  async processPaymentDeadlines() {
+    const now = Date.now();
+    const pending = await this.prisma.appointment.findMany({
+      where: {
+        status: AppointmentStatus.PENDING,
+        paymentDeadlineAt: { not: null, lte: new Date(now + 24 * 3_600_000) },
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        paymentDeadlineAt: true,
+        paymentReminderSentAt: true,
+        paymentLastReminderSentAt: true,
+      },
+      take: 100,
+    });
+
+    for (const appointment of pending) {
+      const deadline = appointment.paymentDeadlineAt!.getTime();
+      const createdAt = appointment.createdAt.getTime();
+
+      try {
+        if (deadline <= now) {
+          // Solo se cancela si sigue pendiente (evita pisar un pago recién informado).
+          const released = await this.prisma.appointment.updateMany({
+            where: { id: appointment.id, status: AppointmentStatus.PENDING },
+            data: { status: AppointmentStatus.CANCELLED },
+          });
+          if (released.count > 0) {
+            void this.sendAppointmentNotificationById(
+              appointment.id,
+              'APPOINTMENT_RELEASED_UNPAID',
+              ['EMAIL', 'PUSH'],
+            );
+          }
+          continue;
+        }
+
+        const msLeft = deadline - now;
+        // Último aviso 3 h antes (si la reserva se hizo antes de esa ventana).
+        if (
+          msLeft <= 3 * 3_600_000 &&
+          !appointment.paymentLastReminderSentAt &&
+          deadline - createdAt > 3 * 3_600_000
+        ) {
+          await this.prisma.appointment.update({
+            where: { id: appointment.id },
+            data: { paymentLastReminderSentAt: new Date() },
+          });
+          void this.sendAppointmentNotificationById(
+            appointment.id,
+            'APPOINTMENT_PAYMENT_LAST_REMINDER',
+            ['EMAIL', 'PUSH'],
+            'customer',
+          );
+          continue;
+        }
+
+        // Recordatorio 24 h antes del plazo.
+        if (
+          msLeft > 3 * 3_600_000 &&
+          !appointment.paymentReminderSentAt &&
+          deadline - createdAt > 24 * 3_600_000
+        ) {
+          await this.prisma.appointment.update({
+            where: { id: appointment.id },
+            data: { paymentReminderSentAt: new Date() },
+          });
+          void this.sendAppointmentNotificationById(
+            appointment.id,
+            'APPOINTMENT_PAYMENT_REMINDER',
+            ['EMAIL', 'PUSH'],
+            'customer',
+          );
+        }
+      } catch (error) {
+        console.error('[Payments] No se pudo procesar el plazo de pago', appointment.id, error);
+      }
+    }
+  }
+
   @Cron('*/5 * * * *')
   async sendAppointmentTimeReminders() {
     await this.sendReminderWindow({
@@ -2538,6 +2657,7 @@ export class AppointmentsService {
     appointmentId: string,
     type: NotificationType,
     channels: NotificationChannel[] = ['EMAIL'],
+    recipients: 'both' | 'customer' = 'both',
   ): Promise<void> {
     try {
       const appointment = await this.prisma.appointment.findUnique({
@@ -2588,7 +2708,19 @@ export class AppointmentsService {
             ? 'Presencial'
             : 'Online o presencial';
 
+      // Plazo de pago solo mientras la cita sigue sin pagar.
+      const paymentDeadline =
+        appointment.paymentDeadlineAt &&
+        appointment.status === AppointmentStatus.PENDING
+          ? new Intl.DateTimeFormat('es-CL', {
+              dateStyle: 'full',
+              timeStyle: 'short',
+              timeZone: timezone,
+            }).format(appointment.paymentDeadlineAt)
+          : null;
+
       const data = {
+        paymentDeadline,
         appointmentDate: date,
         appointmentTime: time,
         timezone,
@@ -2625,7 +2757,7 @@ export class AppointmentsService {
           },
         }));
       }
-      notifications.push(this.notificationService.notify({
+      if (recipients === 'both') notifications.push(this.notificationService.notify({
           type,
           recipient: {
             userId: appointment.professional.id,
