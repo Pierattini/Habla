@@ -999,8 +999,16 @@ ion-textarea:focus-within {
     text-align: center;
   }
 
+  ion-item {
+    --padding-start: 0;
+    --inner-padding-start: 0;
+  }
+
+  // Ionic achica las etiquetas "stacked" desde la izquierda; se achican desde el centro.
   ion-label {
     width: 100%;
+    max-width: 100% !important;
+    transform-origin: center top !important;
     text-align: center;
   }
 
@@ -1010,13 +1018,37 @@ ion-textarea:focus-within {
   }
 }
 
-// En cada día: el nombre y "Disponible" quedan como están; lo de abajo, centrado.
+// En cada día: nombre al centro y "Disponible" a la derecha; lo de abajo, centrado.
 .schedule-card .day-card {
   .day-card-header {
-    text-align: left;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    flex-direction: row;
+
+    > h3 {
+      grid-column: 2;
+      text-align: center;
+    }
+
+    > .availability-toggle {
+      grid-column: 3;
+      justify-self: end;
+    }
   }
 
   .mode-selector {
     justify-content: center;
+  }
+}
+
+// Reglas y condiciones: título y texto centrados.
+.rules-card {
+  .section-title {
+    text-align: center;
+  }
+
+  ion-textarea {
+    text-align: center;
   }
 }
