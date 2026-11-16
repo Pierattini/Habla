@@ -164,7 +164,13 @@ export class ProfessionalDashboardComponent {
   taxProviderRut = '';
   taxProviderCertificatePassword = '';
   taxProviderCertificateFile: File | null = null;
+  // Las boletas siempre van al SII real; el ambiente de pruebas ya no se ofrece.
   taxProviderEnvironment: 'CERTIFICATION' | 'PRODUCTION' = 'PRODUCTION';
+  // Secciones plegables: abiertas mientras falten datos; ya completas, se muestran plegadas.
+  taxConfigOpen = true;
+  bankOpen = true;
+  private taxConfigOpenDecided = false;
+  private bankOpenDecided = false;
   // Datos que el SII pide en cada envío de boletas.
   taxProviderSii = { signerRut: '', taxActivity: '', resolutionNumber: '', resolutionDate: '' };
   taxProviderSaving = false;
@@ -944,6 +950,12 @@ private prepareProfileImage(file: File): Promise<string> {
         taxExempt: res.professional?.taxExempt !== false
       };
       this.cacheProfile();
+      if (!this.bankOpenDecided) {
+        this.bankOpenDecided = true;
+        const p = this.profile as any;
+        this.bankOpen = ![p.bankName, p.accountType, p.accountNumber, p.accountHolder, p.accountRut]
+          .every((value) => String(value || '').trim());
+      }
       this.publicProfileUrl = this.buildPublicProfileUrl(this.profile.slug || '');
       this.loadPlanPricing(this.profile.officeCountry || 'CL');
       this.loadGoogleConnectionStatus();
@@ -1425,7 +1437,6 @@ private prepareProfileImage(file: File): Promise<string> {
   }
 
   private applyTaxProviderSiiData(credential: TaxProviderCredentialStatus): void {
-    this.taxProviderEnvironment = credential.environment === 'CERTIFICATION' ? 'CERTIFICATION' : 'PRODUCTION';
     this.taxProviderSii = {
       signerRut: credential.signerRut || '',
       taxActivity: credential.taxActivity || '',
@@ -1655,6 +1666,16 @@ private prepareProfileImage(file: File): Promise<string> {
     this.taxProviderService.getMyFolioRanges().subscribe({
       next: (ranges) => {
         this.taxFolioRanges = ranges || [];
+        if (!this.taxConfigOpenDecided) {
+          this.taxConfigOpenDecided = true;
+          const credential = this.taxProviderCredential;
+          this.taxConfigOpen = !(
+            credential?.configured &&
+            credential.resolutionNumber &&
+            credential.resolutionDate &&
+            this.taxFolioRanges.length > 0
+          );
+        }
         this.cdr.detectChanges();
       },
       error: (err) => {

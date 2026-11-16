@@ -1163,6 +1163,26 @@
       </ng-container>
 
       <ng-template #companyTaxFields>
+        <div class="tax-config-collapse">
+          <div>
+            <h3>Datos de empresa, certificado y folios SII</h3>
+            <p>
+              RUT empresa, tipo de boleta, mensaje, certificado digital, resolución SII y
+              folios autorizados para emitir boletas electrónicas.
+            </p>
+          </div>
+
+          <ion-button
+            size="small"
+            fill="outline"
+            [attr.aria-expanded]="$any(this).taxConfigOpen"
+            (click)="$any(this).taxConfigOpen = !$any(this).taxConfigOpen"
+          >
+            {{ $any(this).taxConfigOpen ? 'Ocultar' : 'Ver y editar' }}
+          </ion-button>
+        </div>
+
+        <ng-container *ngIf="$any(this).taxConfigOpen">
         <div class="tax-profile-grid company-tax-fields">
           <ion-item class="profile-field" lines="none">
             <ion-label position="stacked">
@@ -1398,19 +1418,12 @@
           />
         </div>
 
-        <div class="certificate-password-field">
-          <label for="company-sii-environment">Ambiente</label>
-          <select id="company-sii-environment" [(ngModel)]="$any(this).taxProviderEnvironment">
-            <option value="CERTIFICATION">Pruebas del SII (certificación)</option>
-            <option value="PRODUCTION">Boletas reales (producción)</option>
-          </select>
-          <small class="field-rule" *ngIf="$any(this).hasUnsavedSiiSettings()">
-            Cambio sin guardar: presiona "Guardar configuración SII".
-          </small>
-        </div>
+        <p class="field-rule" *ngIf="$any(this).hasUnsavedSiiSettings()">
+          Cambio sin guardar: presiona "Guardar configuración SII".
+        </p>
 
         <p class="field-rule">
-          Tu contador conoce el número y la fecha de resolución. Usa "Pruebas del SII" hasta que el SII apruebe la emisión; después cambia a "Boletas reales" y sube folios reales.
+          Tu contador conoce el número y la fecha de resolución. Las boletas se emiten directo al SII; si el SII rechaza alguna, aparece con error y el motivo en Documentos tributarios.
         </p>
 
         <p class="field-rule">
@@ -1560,6 +1573,7 @@
             </ion-button>
           </div>
         </div>
+        </ng-container>
       </ng-template>
 
       <div
@@ -1824,6 +1838,20 @@
         Estos datos se mostrarán al paciente cuando presione Ver datos para pagar por transferencia.
       </p>
 
+      <!-- Completo: se muestra plegado. Incompleto: abierto para llenarlo. -->
+      <div class="collapse-toggle-row">
+        <ion-button
+          size="small"
+          fill="outline"
+          [attr.aria-expanded]="$any(this).bankOpen"
+          (click)="$any(this).bankOpen = !$any(this).bankOpen"
+        >
+          {{ $any(this).bankOpen ? 'Ocultar datos bancarios' : 'Ver y editar datos bancarios' }}
+        </ion-button>
+      </div>
+
+      <ng-container *ngIf="$any(this).bankOpen">
+
       <ion-item class="profile-field" lines="none">
         <ion-label position="stacked">
           Banco
@@ -1897,6 +1925,7 @@
           [(ngModel)]="profile.accountEmail">
         </ion-input>
       </ion-item>
+      </ng-container>
 
     </ion-card-content>
 

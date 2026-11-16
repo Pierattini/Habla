@@ -861,3 +861,36 @@ ion-textarea:focus-within {
     margin: 0;
   }
 }
+
+// Bloque plegable con la configuración SII de empresa.
+.tax-config-collapse {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 16px 0 12px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 18%, transparent);
+  border-radius: var(--app-radius-lg);
+  background: color-mix(in srgb, var(--app-primary-light) 7%, var(--app-surface));
+  text-align: center;
+
+  h3 {
+    margin: 0 0 4px;
+    color: var(--app-text);
+    font-size: 16px;
+    font-weight: 900;
+  }
+
+  p {
+    margin: 0;
+    color: var(--app-muted);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+}
+
+.collapse-toggle-row {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 10px;
+}
