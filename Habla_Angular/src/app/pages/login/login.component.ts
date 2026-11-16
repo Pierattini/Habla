@@ -963,7 +963,7 @@ export class LoginComponent implements OnInit {
       details.includes('developer_error') ||
       details.includes('12500') ||
       details.includes('code: 10') ||
-      details.includes('status code: 10')
+      /(^|\s)10:/.test(details)
     ) {
       return 'Google Sign-In aún no está configurado para esta versión de la aplicación.';
     }
@@ -975,7 +975,9 @@ export class LoginComponent implements OnInit {
     // El código ayuda a diagnosticar fallas que solo ocurren en algunos teléfonos.
     // Se muestra el detalle técnico (recortado) para poder diagnosticar desde una captura.
     const code = rawError?.code ? ` código ${rawError.code}` : '';
-    const message = String(rawError?.message || '').trim().slice(0, 160);
+    const message = String(rawError?.message || (code ? '' : String(error)) || '')
+      .trim()
+      .slice(0, 160);
     const detail = code || message ? ` (${[code.trim(), message].filter(Boolean).join(': ')})` : '';
     return `No pudimos abrir Google en este momento. Inténtalo nuevamente.${detail}`;
   }
