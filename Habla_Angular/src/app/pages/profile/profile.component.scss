@@ -712,3 +712,33 @@ ion-button[color="tertiary"] {
     grid-template-columns: 1fr;
   }
 }
+
+// ---- Centrados ----
+.profile-name {
+  text-align: center;
+}
+
+// Cuenta: texto centrado y el botón debajo.
+.account-section {
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+
+  p {
+    max-width: 320px;
+    margin-inline: auto;
+  }
+}
+
+.summary-card {
+  text-align: center;
+
+  ion-item {
+    --padding-start: 0;
+    --inner-padding-end: 0;
+  }
+
+  ion-label {
+    text-align: center;
+  }
+}
