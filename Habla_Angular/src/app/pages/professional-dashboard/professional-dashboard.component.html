@@ -147,7 +147,7 @@
 
 </div>
 
-  <ion-card>
+  <ion-card class="centered-card">
     <ion-card-content>
       <h2 class="section-title">
         Mi perfil publico
@@ -195,7 +195,7 @@
     </ion-card-content>
   </ion-card>
 
-  <ion-card>
+  <ion-card class="centered-card">
     <ion-card-content>
       <div class="documents-title-row">
         <h2 class="section-title">
@@ -239,7 +239,7 @@
     </ion-card-content>
   </ion-card>
 
-  <ion-card>
+  <ion-card class="centered-card">
     <ion-card-content>
       <div class="documents-title-row">
         <h2 class="section-title">
@@ -304,7 +304,7 @@
 
   <ion-card>
     <ion-card-content>
-      <h2 class="section-title">
+      <h2 class="section-title centered-title">
         Solicitudes de pacientes
       </h2>
 
@@ -385,7 +385,7 @@
   </ion-card>
 
   <!-- DOCUMENTOS -->
-  <ion-card>
+  <ion-card class="centered-card">
     <ion-card-content>
       <div class="documents-title-row">
         <h2 class="section-title">
@@ -424,6 +424,14 @@
           (click)="$any(this).goToTaxDocuments()"
         >
           Ver documentos tributarios
+        </ion-button>
+
+        <ion-button
+          size="small"
+          fill="outline"
+          (click)="$any(this).goToManualBoleta()"
+        >
+          Emitir boleta manual
         </ion-button>
       </div>
     </ion-card-content>
@@ -721,7 +729,7 @@
 
     <ion-card-content>
 
-      <h2 class="section-title">
+      <h2 class="section-title centered-title">
         Perfil profesional
       </h2>
 
@@ -763,7 +771,7 @@
         </ion-textarea>
       </ion-item>
 
-      <div class="profile-field native-profile-field">
+      <div class="profile-field native-profile-field timezone-field">
         <label for="professional-timezone">
           Zona horaria donde atiendes
         </label>

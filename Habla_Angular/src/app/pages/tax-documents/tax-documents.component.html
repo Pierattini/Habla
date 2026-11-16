@@ -48,13 +48,14 @@
       </button>
     </section>
 
-    <section class="filters-panel">
+    <!-- Se abre con el botón "Emitir boleta manual" del Panel Pro. -->
+    <section class="filters-panel" *ngIf="manualFormOpen">
       <button type="button" class="clear-button" (click)="toggleManualForm()">
-        {{ manualFormOpen ? 'Cerrar boleta manual' : 'Emitir boleta manual' }}
+        Cerrar boleta manual
       </button>
       <p class="field-hint">Para sesiones que no se agendaron por Conecta (por ejemplo, sesiones ya realizadas). Se emite al SII y se envía al correo del paciente.</p>
 
-      <div *ngIf="manualFormOpen" style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;">
+      <div style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;">
         <label>
           <span>Nombre del paciente</span>
           <input type="text" [(ngModel)]="manual.customerName" maxlength="100" />

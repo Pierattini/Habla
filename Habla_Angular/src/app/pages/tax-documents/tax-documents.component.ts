@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize, Observable, timeout } from 'rxjs';
 import { IonButton, IonContent } from '@ionic/angular/standalone';
 import { API_URL } from '../../core/config/api.config';
@@ -55,9 +55,19 @@ export class TaxDocumentsComponent {
   constructor(
     private readonly taxDocumentsService: TaxDocumentsService,
     private readonly router: Router,
+    private readonly route: ActivatedRoute,
   ) {}
 
   ionViewWillEnter(): void {
+    // "Emitir boleta manual" del Panel Pro llega con ?manual=1 y abre el formulario.
+    if (this.route.snapshot.queryParamMap.get('manual') === '1') {
+      if (!this.manualFormOpen) this.toggleManualForm();
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: {},
+        replaceUrl: true,
+      });
+    }
     this.loadDocuments(true);
   }
 

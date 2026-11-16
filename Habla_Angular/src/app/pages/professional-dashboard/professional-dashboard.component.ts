@@ -2032,6 +2032,12 @@ private prepareProfileImage(file: File): Promise<string> {
     this.router.navigate(['/tabs/tax-documents']);
   }
 
+  goToManualBoleta(): void {
+    this.router.navigate(['/tabs/tax-documents'], {
+      queryParams: { manual: '1' },
+    });
+  }
+
   setDocumentFilter(filter: string): void {
     this.selectedDocumentFilter = filter;
     this.updateDashboardView();
