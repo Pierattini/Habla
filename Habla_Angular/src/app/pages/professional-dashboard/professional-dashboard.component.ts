@@ -169,6 +169,7 @@ export class ProfessionalDashboardComponent {
   // Secciones plegables: abiertas mientras falten datos; ya completas, se muestran plegadas.
   taxConfigOpen = true;
   bankOpen = true;
+  sessionOpen = true;
   private taxConfigOpenDecided = false;
   private bankOpenDecided = false;
   // Datos que el SII pide en cada envío de boletas.
@@ -453,6 +454,49 @@ export class ProfessionalDashboardComponent {
 
   isVideoProvider(provider: VideoProvider): boolean {
     return this.profile.videoProvider === provider;
+  }
+
+  // Precio con separador de miles ("45.000"); acepta "45000", "45.000" o "$45.000".
+  formatPrice(value: unknown): string {
+    const amount = Number(value) || 0;
+    return amount > 0 ? amount.toLocaleString('es-CL') : '';
+  }
+
+  setPrice(value: unknown): void {
+    this.profile.price = Number(String(value ?? '').replace(/[^\d]/g, '')) || 0;
+  }
+
+  readonly videoProviderOptions: { value: VideoProvider; label: string }[] = [
+    { value: 'CONNECTA_AUTO', label: 'Sala automática' },
+    { value: 'GOOGLE_MEET', label: 'Google Meet' },
+    { value: 'ZOOM', label: 'Zoom' },
+    { value: 'MICROSOFT_TEAMS', label: 'Microsoft Teams' },
+    { value: 'CUSTOM', label: 'Enlace propio' },
+  ];
+
+  // La cuenta conectada se muestra plegada; el cambio de método pide confirmación.
+  videoAccountOpen = false;
+  pendingVideoProvider: VideoProvider | null = null;
+
+  getVideoProviderLabel(provider: string): string {
+    return this.videoProviderOptions.find((option) => option.value === provider)?.label || provider;
+  }
+
+  requestVideoProviderChange(provider: VideoProvider): void {
+    if (provider === this.profile.videoProvider) return;
+    this.pendingVideoProvider = provider;
+  }
+
+  confirmVideoProviderChange(): void {
+    if (this.pendingVideoProvider) {
+      this.profile.videoProvider = this.pendingVideoProvider;
+      this.videoAccountOpen = false;
+    }
+    this.pendingVideoProvider = null;
+  }
+
+  cancelVideoProviderChange(): void {
+    this.pendingVideoProvider = null;
   }
 
   setDocumentEmissionMode(mode: 'MANUAL' | 'AUTOMATED') {
@@ -951,6 +995,11 @@ private prepareProfileImage(file: File): Promise<string> {
       };
       this.cacheProfile();
       if (!this.bankOpenDecided) {
+        // Sesión: plegada si ya tiene precio razonable y duración.
+        this.sessionOpen = !(
+          this.professionalServicesStore.isCatalogMode() ||
+          (Number(this.profile.price) >= 1000 && Number(this.profile.duration) > 0)
+        );
         this.bankOpenDecided = true;
         const p = this.profile as any;
         this.bankOpen = ![p.bankName, p.accountType, p.accountNumber, p.accountHolder, p.accountRut]
@@ -1671,7 +1720,7 @@ private prepareProfileImage(file: File): Promise<string> {
           const credential = this.taxProviderCredential;
           this.taxConfigOpen = !(
             credential?.configured &&
-            credential.resolutionNumber &&
+            credential.resolutionNumber !== null &&
             credential.resolutionDate &&
             this.taxFolioRanges.length > 0
           );

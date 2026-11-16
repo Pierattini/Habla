@@ -36,7 +36,7 @@ h3 {
   border-radius: var(--app-radius-lg);
   background: color-mix(in srgb, var(--app-primary) 4%, var(--app-surface));
   color: var(--app-text);
-  text-align: left;
+  text-align: center;
   cursor: pointer;
 }
 
@@ -75,4 +75,9 @@ h3 {
   .mode-options {
     grid-template-columns: 1fr;
   }
+}
+
+// Encabezado centrado, igual que el resto del Panel Pro.
+.mode-selector > div:first-child {
+  text-align: center;
 }

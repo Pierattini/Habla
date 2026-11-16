@@ -894,3 +894,129 @@ ion-textarea:focus-within {
   justify-content: center;
   margin: 4px 0 10px;
 }
+
+// ---- Modalidad de atención ----
+.modality-card {
+  text-align: center;
+
+  .mode-selector {
+    justify-content: center;
+  }
+
+  .provider-action {
+    display: grid;
+    justify-items: center;
+  }
+  // Los campos de texto (dirección, enlace propio...) se escriben alineados a la izquierda.
+  ion-item,
+  .profile-field {
+    text-align: left;
+  }
+}
+
+.connected-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0 4px;
+  color: var(--app-text);
+  font-size: 14px;
+  font-weight: 800;
+
+  button {
+    padding: 6px 12px;
+    border: 1px solid color-mix(in srgb, var(--app-primary) 25%, transparent);
+    border-radius: 999px;
+    background: var(--app-surface);
+    color: var(--app-primary);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+}
+
+.confirm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(17, 24, 39, 0.45);
+}
+
+.confirm-modal {
+  width: min(100%, 420px);
+  padding: 22px;
+  border-radius: var(--app-radius-xl, 24px);
+  background: var(--app-surface);
+  box-shadow: 0 24px 60px rgba(17, 24, 39, 0.25);
+  text-align: center;
+
+  h3 {
+    margin: 0 0 10px;
+    color: var(--app-text);
+    font-size: 18px;
+    font-weight: 900;
+  }
+
+  p {
+    margin: 0 0 10px;
+    color: var(--app-muted);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .confirm-modal-note {
+    font-size: 12px;
+    font-weight: 700;
+  }
+}
+
+.confirm-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.session-summary {
+  margin: 0 0 6px;
+  color: var(--app-text);
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+}
+
+// ---- Configuración de Sesión y Horarios centrados ----
+.centered-fields-card {
+  text-align: center;
+
+  ion-item {
+    --inner-padding-end: 0;
+    text-align: center;
+  }
+
+  ion-label {
+    width: 100%;
+    text-align: center;
+  }
+
+  ion-input {
+    --placeholder-opacity: 0.6;
+    text-align: center;
+  }
+}
+
+// En cada día: el nombre y "Disponible" quedan como están; lo de abajo, centrado.
+.schedule-card .day-card {
+  .day-card-header {
+    text-align: left;
+  }
+
+  .mode-selector {
+    justify-content: center;
+  }
+}

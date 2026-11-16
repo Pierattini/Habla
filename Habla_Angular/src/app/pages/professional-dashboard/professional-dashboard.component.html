@@ -1588,7 +1588,7 @@
   </ion-card>
 
   <!-- MODALIDAD -->
-  <ion-card>
+  <ion-card class="modality-card">
 
     <ion-card-content>
 
@@ -1618,25 +1618,15 @@
         <div class="choice-field">
           <p class="subsection-title">Videollamada</p>
           <div class="mode-selector">
-            <label>
-              <input type="radio" name="videoProvider" value="CONNECTA_AUTO" [(ngModel)]="profile.videoProvider">
-              Sala automatica
-            </label>
-            <label>
-              <input type="radio" name="videoProvider" value="GOOGLE_MEET" [(ngModel)]="profile.videoProvider">
-              Google Meet
-            </label>
-            <label>
-              <input type="radio" name="videoProvider" value="ZOOM" [(ngModel)]="profile.videoProvider">
-              Zoom
-            </label>
-            <label>
-              <input type="radio" name="videoProvider" value="MICROSOFT_TEAMS" [(ngModel)]="profile.videoProvider">
-              Microsoft Teams
-            </label>
-            <label>
-              <input type="radio" name="videoProvider" value="CUSTOM" [(ngModel)]="profile.videoProvider">
-              Enlace propio
+            <label *ngFor="let option of $any(this).videoProviderOptions">
+              <input
+                type="radio"
+                name="videoProvider"
+                [value]="option.value"
+                [checked]="profile.videoProvider === option.value"
+                (click)="$event.preventDefault(); $any(this).requestVideoProviderChange(option.value)"
+              >
+              {{ option.label }}
             </label>
           </div>
         </div>
@@ -1650,7 +1640,18 @@
             Conecta tu cuenta de Google para generar automáticamente enlaces de Meet.
           </p>
 
-          <div *ngIf="$any(this).googleConnection.connected" class="connected-provider">
+          <div *ngIf="$any(this).googleConnection.connected" class="connected-summary">
+            <span>✓ Cuenta Google conectada</span>
+            <button
+              type="button"
+              [attr.aria-expanded]="$any(this).videoAccountOpen"
+              (click)="$any(this).videoAccountOpen = !$any(this).videoAccountOpen"
+            >
+              {{ $any(this).videoAccountOpen ? 'Ocultar ▴' : 'Ver cuenta ▾' }}
+            </button>
+          </div>
+
+          <div *ngIf="$any(this).googleConnection.connected && $any(this).videoAccountOpen" class="connected-provider">
             <strong>Cuenta conectada</strong>
             <span>{{ $any(this).googleConnection.googleEmail }}</span>
             <small *ngIf="$any(this).googleConnection.connectedAt">
@@ -1667,7 +1668,7 @@
           </ion-button>
 
           <ion-button
-            *ngIf="$any(this).googleConnection.connected"
+            *ngIf="$any(this).googleConnection.connected && $any(this).videoAccountOpen"
             fill="clear"
             color="medium"
             (click)="$any(this).disconnectGoogleAccount()">
@@ -1680,7 +1681,18 @@
             Conecta tu cuenta de Zoom para generar automáticamente reuniones.
           </p>
 
-          <div *ngIf="$any(this).zoomConnection.connected" class="connected-provider">
+          <div *ngIf="$any(this).zoomConnection.connected" class="connected-summary">
+            <span>✓ Cuenta Zoom conectada</span>
+            <button
+              type="button"
+              [attr.aria-expanded]="$any(this).videoAccountOpen"
+              (click)="$any(this).videoAccountOpen = !$any(this).videoAccountOpen"
+            >
+              {{ $any(this).videoAccountOpen ? 'Ocultar ▴' : 'Ver cuenta ▾' }}
+            </button>
+          </div>
+
+          <div *ngIf="$any(this).zoomConnection.connected && $any(this).videoAccountOpen" class="connected-provider">
             <strong>Cuenta conectada</strong>
             <span>{{ $any(this).zoomConnection.zoomEmail }}</span>
             <small *ngIf="$any(this).zoomConnection.connectedAt">
@@ -1697,7 +1709,7 @@
           </ion-button>
 
           <ion-button
-            *ngIf="$any(this).zoomConnection.connected"
+            *ngIf="$any(this).zoomConnection.connected && $any(this).videoAccountOpen"
             fill="clear"
             color="medium"
             (click)="$any(this).disconnectZoomAccount()">
@@ -1710,7 +1722,18 @@
             Conecta tu cuenta Microsoft para generar automáticamente reuniones de Teams.
           </p>
 
-          <div *ngIf="$any(this).teamsConnection.connected" class="connected-provider">
+          <div *ngIf="$any(this).teamsConnection.connected" class="connected-summary">
+            <span>✓ Cuenta Microsoft conectada</span>
+            <button
+              type="button"
+              [attr.aria-expanded]="$any(this).videoAccountOpen"
+              (click)="$any(this).videoAccountOpen = !$any(this).videoAccountOpen"
+            >
+              {{ $any(this).videoAccountOpen ? 'Ocultar ▴' : 'Ver cuenta ▾' }}
+            </button>
+          </div>
+
+          <div *ngIf="$any(this).teamsConnection.connected && $any(this).videoAccountOpen" class="connected-provider">
             <strong>Cuenta conectada</strong>
             <span>{{ $any(this).teamsConnection.microsoftEmail }}</span>
             <small *ngIf="$any(this).teamsConnection.connectedAt">
@@ -1727,7 +1750,7 @@
           </ion-button>
 
           <ion-button
-            *ngIf="$any(this).teamsConnection.connected"
+            *ngIf="$any(this).teamsConnection.connected && $any(this).videoAccountOpen"
             fill="clear"
             color="medium"
             (click)="$any(this).disconnectTeamsAccount()">
@@ -1936,24 +1959,56 @@
   ></app-professional-services-manager>
 
   <!-- CONFIG SESIÓN -->
-  <ion-card>
+  <ion-card class="centered-fields-card">
 
     <ion-card-content>
 
-      <h2 class="section-title">
+      <h2 class="section-title centered-title">
         Configuración de Sesión
       </h2>
 
+      <!-- Configurada: se muestra plegada con un resumen. -->
+      <p class="session-summary" *ngIf="!$any(this).sessionOpen">
+        <ng-container *ngIf="!professionalServicesStore.isCatalogMode()">
+          {{ $any(this).formatPrice(profile.price) ? '$' + $any(this).formatPrice(profile.price) : 'Sin precio' }}
+          · {{ profile.duration }} min ·
+        </ng-container>
+        descanso {{ profile.interval || 0 }} min
+      </p>
+
+      <div class="collapse-toggle-row">
+        <ion-button
+          size="small"
+          fill="outline"
+          [attr.aria-expanded]="$any(this).sessionOpen"
+          (click)="$any(this).sessionOpen = !$any(this).sessionOpen"
+        >
+          {{ $any(this).sessionOpen ? 'Ocultar' : 'Ver y editar' }}
+        </ion-button>
+      </div>
+
+      <ng-container *ngIf="$any(this).sessionOpen">
       <ion-item *ngIf="!professionalServicesStore.isCatalogMode()">
         <ion-label position="stacked">
           Precio CLP
         </ion-label>
 
         <ion-input
-          type="number"
-          [(ngModel)]="profile.price">
+          type="text"
+          inputmode="numeric"
+          placeholder="Ej: 45.000"
+          [ngModel]="$any(this).formatPrice(profile.price)"
+          (ngModelChange)="$any(this).setPrice($event)">
         </ion-input>
       </ion-item>
+
+      <p
+        *ngIf="!professionalServicesStore.isCatalogMode() && profile.price > 0 && profile.price < 1000"
+        class="public-profile-message"
+        role="alert"
+      >
+        Ojo: el precio es solo ${{ profile.price }} pesos. Si la sesión cuesta 45 mil, escribe 45000.
+      </p>
 
       <ion-item *ngIf="!professionalServicesStore.isCatalogMode()">
   <ion-label position="stacked">
@@ -1976,6 +2031,7 @@
     [(ngModel)]="profile.interval">
   </ion-input>
 </ion-item>
+      </ng-container>
 
     </ion-card-content>
 
@@ -2059,7 +2115,7 @@
 
   </ion-card>
 
-  <ion-card>
+  <ion-card class="centered-fields-card schedule-card">
     <ion-card-content>
       <h2 class="section-title">
         Horarios disponibles
@@ -2096,7 +2152,7 @@
         Al llegar a este número de reservas en un día, las demás horas de ese día dejan de mostrarse a los pacientes. Déjalo vacío para que se puedan ocupar todas.
       </p>
 
-      <div class="profile-field native-profile-field">
+      <div class="profile-field native-profile-field timezone-field">
         <label for="payment-deadline-hours">Plazo para pagar antes de la sesión</label>
         <select
           id="payment-deadline-hours"
@@ -2331,6 +2387,39 @@
   >
     {{ isSaving ? 'Guardando...' : 'Guardar cambios' }}
   </ion-button>
+
+  <!-- Confirmación al cambiar el método de videollamada -->
+  <div
+    class="confirm-modal-backdrop"
+    *ngIf="$any(this).pendingVideoProvider"
+    (click)="$any(this).cancelVideoProviderChange()"
+  >
+    <div
+      class="confirm-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="video-provider-modal-title"
+      (click)="$event.stopPropagation()"
+    >
+      <h3 id="video-provider-modal-title">
+        ¿Cambiar videollamada a {{ $any(this).getVideoProviderLabel($any(this).pendingVideoProvider) }}?
+      </h3>
+      <p>
+        Las nuevas citas usarán {{ $any(this).getVideoProviderLabel($any(this).pendingVideoProvider) }}
+        en vez de {{ $any(this).getVideoProviderLabel(profile.videoProvider) }}.
+        Las citas ya agendadas mantienen su enlace actual.
+      </p>
+      <p class="confirm-modal-note">Recuerda presionar "Guardar cambios" al final de la página para que el cambio quede guardado.</p>
+      <div class="confirm-modal-actions">
+        <ion-button fill="outline" size="small" (click)="$any(this).cancelVideoProviderChange()">
+          Cancelar
+        </ion-button>
+        <ion-button size="small" (click)="$any(this).confirmVideoProviderChange()">
+          Sí, cambiar
+        </ion-button>
+      </div>
+    </div>
+  </div>
 
 </ion-content>
 
