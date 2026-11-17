@@ -685,3 +685,10 @@ ion-modal.payment-data-modal::part(content) {
 .grecaptcha-badge {
   visibility: hidden !important;
 }
+
+/* En computador la barra de desplazamiento ocupa ~17px a la derecha y corre el contenido.
+   Reservar el mismo espacio a ambos lados deja todo perfectamente centrado. En el teléfono
+   la barra flota sobre el contenido, así que esto no cambia nada ahí. */
+ion-content::part(scroll) {
+  scrollbar-gutter: stable both-edges;
+}
