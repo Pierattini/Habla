@@ -28,12 +28,13 @@ ion-content {
 .back-button {
   display: grid;
   place-items: center;
-  height: 40px;
+  height: 44px;
   padding: 0 14px;
+  font-size: 14px;
   font-weight: 900;
   border: 0;
   border-radius: 999px;
-  background: rgba(168, 85, 247, 0.1);
+  background: color-mix(in srgb, var(--app-primary) 10%, var(--app-surface));
   color: var(--app-primary);
 }
 

@@ -72,11 +72,12 @@
     <label *ngIf="requiresPrice()">
       <span>Precio</span>
       <input
-        type="number"
+        type="text"
+        inputmode="numeric"
         name="servicePrice"
-        [(ngModel)]="draft.priceAmount"
-        min="0"
-        step="1"
+        placeholder="Ej: 45.000"
+        [ngModel]="formatPrice(draft.priceAmount)"
+        (ngModelChange)="setPrice($event)"
         [attr.aria-invalid]="!!errors['priceAmount']"
         aria-describedby="service-price-error"
       />

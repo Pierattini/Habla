@@ -80,7 +80,7 @@
   <!-- MENSAJES -->
 <div *ngIf="activeTab === 'messages'" class="messages-container">
   <div
-    *ngFor="let msg of messages"
+    *ngFor="let msg of messages; trackBy: trackMessage"
     class="message-wrapper"
     [class.own-message]="$any(this).isOwnMessage(msg)"
     [class.other-message]="!$any(this).isOwnMessage(msg)"
@@ -98,6 +98,8 @@
       <img
         *ngIf="msg.fileType?.startsWith('image/')"
         [src]="msg.fileUrl"
+        alt="Imagen enviada en el chat"
+        loading="lazy"
         class="chat-image"
       />
 
@@ -111,6 +113,28 @@
 
     </div>
   </div>
+
+  <!-- Mensajes propios que aún no confirma el servidor o que fallaron -->
+  <div
+    *ngFor="let pending of pendingMessages"
+    class="message-wrapper own-message"
+  >
+    <div class="message-bubble" [class.message-failed]="pending.status === 'failed'">
+      {{ pending.content }}
+      <small class="message-status" *ngIf="pending.status === 'sending'">Enviando...</small>
+      <button
+        type="button"
+        class="message-retry"
+        *ngIf="pending.status === 'failed'"
+        (click)="retryMessage(pending.localId)"
+      >
+        No se envió · Reintentar
+      </button>
+    </div>
+  </div>
+
+  <p class="chat-error" role="alert" *ngIf="chatError">{{ chatError }}</p>
+  <p class="chat-uploading" *ngIf="uploadingFile">Enviando archivo...</p>
 </div>
 
 <!-- DOCUMENTOS -->

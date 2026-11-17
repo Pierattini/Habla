@@ -14,8 +14,16 @@
   </p>
 
 </div>
+  <!-- Error al cargar -->
+  <div class="empty-state" role="alert" *ngIf="loadError && !loading">
+    <ion-icon name="cloud-offline-outline"></ion-icon>
+    <h3>No pudimos cargar tus mensajes</h3>
+    <p>Revisa tu conexión e inténtalo de nuevo.</p>
+    <ion-button size="small" (click)="loadConversations()">Reintentar</ion-button>
+  </div>
+
   <!-- Estado vacío -->
-  <div class="empty-state" *ngIf="$any(this).loaded && !loading && conversations.length === 0 && !conversationNotFound">
+  <div class="empty-state" *ngIf="$any(this).loaded && !loading && !loadError && conversations.length === 0 && !conversationNotFound">
     <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
     <h3>No tienes conversaciones</h3>
     <p>Cuando tengas citas activas podrás conversar aquí.</p>
@@ -23,8 +31,8 @@
 
   <div class="empty-state" *ngIf="$any(this).loaded && !loading && conversationNotFound">
     <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
-    <h3>No existe una conversacion previa</h3>
-    <p>Cuando se envie el primer mensaje, la conversacion aparecera aqui.</p>
+    <h3>No existe una conversación previa</h3>
+    <p>Cuando se envíe el primer mensaje, la conversación aparecerá aquí.</p>
   </div>
 
   <!-- Lista -->

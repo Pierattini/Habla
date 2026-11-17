@@ -219,7 +219,22 @@ export class ProfessionalDashboardComponent {
     this.restoreCachedProfile();
   }
 
+  // Al volver al Panel Pro antes de 1 minuto no se recarga todo (perfil, SII, plan, videollamada):
+  // solo lo que cambia seguido. Así abre más rápido, gasta menos datos y no borra lo que se estaba editando.
+  private lastFullLoadAt = 0;
+  private static readonly FULL_RELOAD_AFTER_MS = 60_000;
+
   ionViewWillEnter() {
+    if (this.loaded && Date.now() - this.lastFullLoadAt < ProfessionalDashboardComponent.FULL_RELOAD_AFTER_MS) {
+      this.dashboardRequestsPending = 0;
+      this.loading = false;
+      this.loadPendingTaxDocuments();
+      this.loadTaxDocuments();
+      this.loadAppointmentRequests();
+      return;
+    }
+    this.lastFullLoadAt = Date.now();
+
     const hasRenderableProfile = Boolean(this.profile.name || this.profile.image || this.profile.specialty);
     this.loading = !hasRenderableProfile;
     this.loaded = hasRenderableProfile;
@@ -491,8 +506,15 @@ export class ProfessionalDashboardComponent {
     if (this.pendingVideoProvider) {
       this.profile.videoProvider = this.pendingVideoProvider;
       this.videoAccountOpen = false;
+      this.loadVideoConnectionStatus(this.pendingVideoProvider);
     }
     this.pendingVideoProvider = null;
+  }
+
+  private loadVideoConnectionStatus(provider: string): void {
+    if (provider === 'GOOGLE_MEET') this.loadGoogleConnectionStatus();
+    else if (provider === 'ZOOM') this.loadZoomConnectionStatus();
+    else if (provider === 'MICROSOFT_TEAMS') this.loadTeamsConnectionStatus();
   }
 
   cancelVideoProviderChange(): void {
@@ -1007,9 +1029,8 @@ private prepareProfileImage(file: File): Promise<string> {
       }
       this.publicProfileUrl = this.buildPublicProfileUrl(this.profile.slug || '');
       this.loadPlanPricing(this.profile.officeCountry || 'CL');
-      this.loadGoogleConnectionStatus();
-      this.loadZoomConnectionStatus();
-      this.loadTeamsConnectionStatus();
+      // Solo se consulta la cuenta de videollamada que está en uso.
+      this.loadVideoConnectionStatus(this.profile.videoProvider);
 
       this.loadAvailability(() => this.finishDashboardRequest());
 
@@ -1353,7 +1374,7 @@ private prepareProfileImage(file: File): Promise<string> {
     }
 
     if (this.profile.documentAutomationEnabled && !this.isProfessionalTaxReady) {
-      errors.push('Completa tus datos tributarios para activar la emision automatica.');
+      errors.push('Completa tus datos tributarios para activar la emisión automática.');
     }
 
     for (const item of this.availability as AgendaDay[]) {

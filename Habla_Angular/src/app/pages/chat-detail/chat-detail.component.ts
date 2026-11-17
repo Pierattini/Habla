@@ -1,8 +1,18 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import {
+  IonButton,
+  IonContent,
+  IonFooter,
+  IonIcon,
+  IonInput,
+  IonItem,
+  IonLabel,
+  IonToolbar,
+} from '@ionic/angular/standalone';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { finalize, timeout } from 'rxjs';
 import { MessagesService } from '../../services/messages.service';
 import { AuthService } from '../../services/auth.service';
 import {
@@ -18,7 +28,7 @@ import { attachOutline, sendOutline } from 'ionicons/icons';
   templateUrl: './chat-detail.component.html',
   styleUrls: ['./chat-detail.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonicModule, FormsModule],
+  imports: [CommonModule, IonButton, IonContent, IonFooter, IonIcon, IonInput, IonItem, IonLabel, IonToolbar, FormsModule],
 })
 export class ChatDetailComponent {
   conversationId!: string;
@@ -49,8 +59,18 @@ export class ChatDetailComponent {
     });
   }
 
+  // Mensajes escritos aquí que aún no confirma el servidor ('sending') o que fallaron ('failed').
+  pendingMessages: { localId: number; content: string; status: 'sending' | 'failed' | 'sent'; sentAt?: number }[] = [];
+  chatError = '';
+  uploadingFile = false;
+  private isActive = false;
+  private loadingMessages = false;
+  private nextLocalId = 1;
+
   ionViewWillEnter() {
     this.clearRefreshInterval();
+    this.isActive = true;
+    this.chatError = '';
     this.conversationId = this.route.snapshot.paramMap.get('id') || '';
 
     this.authService.getProfile().subscribe({
@@ -63,9 +83,12 @@ export class ChatDetailComponent {
         this.loadMessages();
         this.loadSupportTicket();
 
+        // Si ya salió de la pantalla mientras cargaba el perfil, no se deja un intervalo vivo.
+        if (!this.isActive) return;
+        this.clearRefreshInterval();
         this.intervalId = setInterval(() => {
           this.loadMessages();
-        }, 3000);
+        }, 5000);
 
         this.messagesService.markAsRead(this.conversationId).subscribe();
       },
@@ -76,18 +99,49 @@ export class ChatDetailComponent {
   }
 
   ionViewWillLeave() {
+    this.isActive = false;
     this.clearRefreshInterval();
   }
 
   loadMessages() {
-    this.messagesService.getConversationMessages(this.conversationId).subscribe({
+    // No se lanza otra consulta si la anterior sigue en camino (señal lenta).
+    if (this.loadingMessages || !this.conversationId) return;
+    this.loadingMessages = true;
+    const requestedAt = Date.now();
+
+    this.messagesService.getConversationMessages(this.conversationId).pipe(
+      timeout(20_000),
+      finalize(() => (this.loadingMessages = false)),
+    ).subscribe({
       next: (data: any[]) => {
-        this.messages = data;
+        const next = data || [];
+        // Solo se redibuja si hay cambios: evita parpadeos de fotos y saltos del scroll.
+        if (!this.sameMessages(this.messages, next)) {
+          this.messages = next;
+        }
+        // Los enviados se quitan solo cuando una consulta posterior al envío ya los trae.
+        this.pendingMessages = this.pendingMessages.filter(
+          (item) => !(item.status === 'sent' && (item.sentAt || 0) <= requestedAt),
+        );
+        this.chatError = '';
       },
       error: (err: any) => {
         console.error(err);
+        if (!this.messages.length) {
+          this.chatError = 'No pudimos cargar los mensajes. Revisa tu conexión.';
+        }
       },
     });
+  }
+
+  private sameMessages(current: any[], next: any[]): boolean {
+    if (current.length !== next.length) return false;
+    const last = (list: any[]) => list[list.length - 1];
+    return !next.length || (last(current)?.id === last(next)?.id && last(current)?.readAt === last(next)?.readAt);
+  }
+
+  trackMessage(_index: number, message: any): string {
+    return message?.id || String(_index);
   }
 
   loadSupportTicket() {
@@ -172,26 +226,32 @@ export class ChatDetailComponent {
     const text = this.newMessage.trim();
     if (!text) return;
 
-    const tempMessage = {
-      content: text,
-      senderId: this.currentUserId,
-      sender: {
-        id: this.currentUserId,
-        name: this.currentUserName,
-        role: this.currentUserRole,
-      },
-      createdAt: new Date(),
-    };
-
-    this.messages.push(tempMessage);
+    const pending = { localId: this.nextLocalId++, content: text, status: 'sending' as const };
+    this.pendingMessages.push(pending);
     this.newMessage = '';
+    this.deliver(pending);
+  }
 
-    this.messagesService.sendMessageToConversation(this.conversationId, text).subscribe({
+  // Reintenta un mensaje que no se pudo enviar.
+  retryMessage(localId: number) {
+    const pending = this.pendingMessages.find((item) => item.localId === localId);
+    if (!pending) return;
+    pending.status = 'sending';
+    this.deliver(pending);
+  }
+
+  private deliver(pending: { localId: number; content: string; status: 'sending' | 'failed' | 'sent'; sentAt?: number }) {
+    this.messagesService.sendMessageToConversation(this.conversationId, pending.content).pipe(
+      timeout(20_000),
+    ).subscribe({
       next: () => {
+        pending.status = 'sent';
+        pending.sentAt = Date.now();
         this.loadMessages();
       },
       error: (err: any) => {
         console.error(err);
+        pending.status = 'failed';
       },
     });
   }
@@ -202,13 +262,25 @@ export class ChatDetailComponent {
     if (!input.files?.length) return;
 
     const file = input.files[0];
+    const maxBytes = 10 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      this.chatError = 'El archivo es muy grande. El máximo es 10 MB.';
+      input.value = '';
+      return;
+    }
 
-    this.messagesService.uploadFileToConversation(this.conversationId, file).subscribe({
+    this.chatError = '';
+    this.uploadingFile = true;
+    this.messagesService.uploadFileToConversation(this.conversationId, file).pipe(
+      timeout(120_000),
+      finalize(() => (this.uploadingFile = false)),
+    ).subscribe({
       next: (message) => {
-        this.messages.push(message);
+        this.messages = [...this.messages, message];
       },
       error: (err) => {
         console.error(err);
+        this.chatError = err?.error?.message || 'No se pudo enviar el archivo. Inténtalo nuevamente.';
       },
     });
 
@@ -227,7 +299,12 @@ export class ChatDetailComponent {
   }
 
   goBack() {
-    window.history.back();
+    // Si el chat se abrió desde una notificación no hay pantalla anterior: se va a Mensajes.
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      this.router.navigate(['/tabs/messages']);
+    }
   }
 
   isOwnMessage(message: any): boolean {

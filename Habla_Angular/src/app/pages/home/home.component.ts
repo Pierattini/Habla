@@ -76,6 +76,8 @@ export class HomePage implements OnInit, OnDestroy {
   private suggestionsDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private suggestionsSubscription?: Subscription;
   private loadingFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+  // La búsqueda falló (sin señal o servidor lento): se muestra "Reintentar" en vez de "sin resultados".
+  loadError = false;
   private professionalsSubscription?: Subscription;
   private professionalsRequestId = 0;
   private initialized = false;
@@ -233,6 +235,7 @@ export class HomePage implements OnInit, OnDestroy {
     }
 
     this.loading = true;
+    this.loadError = false;
     this.professionals = [];
     this.filteredProfessionals = [];
     this.totalProfessionals = 0;
@@ -251,15 +254,8 @@ export class HomePage implements OnInit, OnDestroy {
       country: this.selectedCountry,
     };
 
-    this.loadingFallbackTimer = setTimeout(() => {
-      if (requestId === this.professionalsRequestId && this.loading) {
-        this.loading = false;
-        this.refreshView();
-      }
-    }, 2500);
-
     this.professionalsSubscription = this.auth.getProfessionals(requestParams).pipe(
-      timeout(8000),
+      timeout(20_000),
       finalize(() => {
         if (requestId === this.professionalsRequestId && this.loading) {
           this.loading = false;
@@ -310,6 +306,7 @@ export class HomePage implements OnInit, OnDestroy {
         this.totalProfessionals = 0;
         this.totalPages = 1;
         this.loading = false;
+        this.loadError = true;
         this.refreshView();
         console.error('[Conecta][Home professionals error]', error);
       },

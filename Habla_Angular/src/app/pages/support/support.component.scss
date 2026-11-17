@@ -16,9 +16,12 @@
 }
 
 .back-link {
+  min-height: 44px;
   margin-bottom: 18px;
+  padding: 0 14px;
   border: 0;
-  background: transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-primary) 10%, var(--app-surface));
   color: var(--app-primary);
   cursor: pointer;
   font: inherit;

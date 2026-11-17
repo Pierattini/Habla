@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Subscription } from 'rxjs';
+import { Subscription, timeout } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { API_URL } from '../../core/config/api.config';
@@ -460,10 +460,12 @@ async bookAppointment() {
   }, this.selectedServiceId());
 
 
+  // Con señal mala la petición puede quedar colgada: tras 60 s se libera el botón.
+  // (60 s y no menos: el servidor gratuito puede tardar en despertar.)
   this.http.post(
     `${API_URL}/appointments`,
     payload
-  ).subscribe({
+  ).pipe(timeout(60_000)).subscribe({
     next: (appointment: any) => {
       // Lo usado en esta reserva queda como propuesta para la próxima.
       if (this.customerTaxData && (this.customerTaxData.taxPhone || this.customerTaxData.taxComment)) {
@@ -497,6 +499,15 @@ async bookAppointment() {
 
       // 🔥 MUY IMPORTANTE (esto te faltaba)
       this.isBooking = false;
+
+      if (err?.name === 'TimeoutError') {
+        this.showMessage(
+          'error',
+          'No supimos si se reservó',
+          'La conexión tardó demasiado. Revisa "Mis citas" antes de volver a intentarlo, para no reservar dos veces.'
+        );
+        return;
+      }
 
       this.showMessage(
         'error',

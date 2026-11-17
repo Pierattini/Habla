@@ -227,7 +227,7 @@
 
     <ion-card *ngIf="$any(this).canShowBookingSteps()">
       <ion-card-header>
-        <ion-card-title>Documento tributario</ion-card-title>
+        <ion-card-title>¿Necesitas boleta o factura?</ion-card-title>
       </ion-card-header>
 
       <ion-card-content>
@@ -248,8 +248,8 @@
               (ngModelChange)="$any(this).onDocumentModeChange($event)"
             />
             <span>
-              <strong>No necesito boleta/factura</strong>
-              <small>No necesito documento tributario para esta reserva.</small>
+              <strong>No necesito boleta ni factura</strong>
+              <small>Reservo sin boleta ni factura.</small>
             </span>
           </label>
 
@@ -265,7 +265,7 @@
               (ngModelChange)="$any(this).onDocumentModeChange($event)"
             />
             <span>
-              <strong>Si necesito boleta/factura</strong>
+              <strong>Sí, necesito boleta o factura</strong>
               <small>Completa los datos para que el profesional pueda emitir el documento.</small>
             </span>
           </label>
@@ -279,7 +279,7 @@
           class="document-helper warning"
           *ngIf="$any(this).selectedDocumentMode !== 'NONE' && !$any(this).customerTaxData"
         >
-          Al solicitar la cita te pediremos nombre o razon social, documento tributario, dirección y teléfono.
+          Completa tu nombre o razón social, RUT, dirección y teléfono para que el profesional emita el documento.
         </p>
 
         <div
@@ -287,17 +287,17 @@
           *ngIf="$any(this).selectedDocumentMode !== 'NONE' && $any(this).customerTaxData as taxData"
         >
           <label>
-            <span>Nombre o razon social *</span>
+            <span>Nombre o razón social *</span>
             <input
               type="text"
               maxlength="120"
-              placeholder="Ej: Maria Rodriguez"
+              placeholder="Ej: María Rodríguez"
               [(ngModel)]="taxData.taxName"
             />
           </label>
 
           <label>
-            <span>RUT / NIF / documento tributario *</span>
+            <span>RUT o NIF *</span>
             <input
               type="text"
               maxlength="20"

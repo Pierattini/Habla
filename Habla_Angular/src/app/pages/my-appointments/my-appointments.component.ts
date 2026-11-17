@@ -1,13 +1,19 @@
 ﻿import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { IonicModule, ModalController } from '@ionic/angular';
+import {
+  IonButton,
+  IonCard,
+  IonCardContent,
+  IonContent,
+  ModalController,
+} from '@ionic/angular/standalone';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { AlertController, ToastController } from '@ionic/angular/standalone';
 import { RescheduleModalComponent } from '../reschedule-modal/reschedule-modal.component';
-import { ViewWillEnter } from '@ionic/angular';
+import type { ViewWillEnter } from '@ionic/angular';
 import { AppointmentsService } from '../../services/appointments.service';
 import { TaxDocumentsService } from '../../services/tax-documents.service';
 import { formatClpPrice } from '../../utils/clp-price.util';
@@ -37,7 +43,7 @@ type ReviewSubmitEvent = {
   styleUrls: ['./my-appointments.compact.scss'],
   imports: [
     CommonModule,
-    IonicModule,
+    IonButton, IonCard, IonCardContent, IonContent,
     FormsModule,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA]
@@ -47,6 +53,7 @@ export class MyAppointmentsComponent {
   appointments: any[] = [];
   loading = true;
   loaded = false;
+  loadError = false;
   expandedTaxDocuments: Record<string, boolean> = {};
   expandedAppointmentDetails: Record<string, boolean> = {};
 
@@ -194,6 +201,7 @@ async presentToast(message: string, color: string = 'success') {
   loadAppointments() {
   this.loading = true;
   this.loaded = false;
+  this.loadError = false;
 
   this.appointmentsService.getAppointmentsByRole(this.role).subscribe({
   next: (res: any[]) => {
@@ -208,6 +216,7 @@ this.loadTaxDocumentsForAppointments();
     this.groupAppointments();
     this.loading = false;
     this.loaded = true;
+    this.loadError = true;
     this.cdr.detectChanges();
   }
 });
@@ -1166,6 +1175,40 @@ async openPayment(appt: any) {
 paymentDeadlineLabel(appt: any): string {
   if (appt?.status !== 'PENDING' || !appt?.paymentDeadlineAt) return '';
   return formatDeadlineForViewer(appt.paymentDeadlineAt);
+}
+
+// Monto de la sesión: el del servicio reservado o, si no hay, el precio del profesional.
+paymentAmountLabel(appt: any): string {
+  const amount =
+    appt?.servicePriceAmountSnapshot ??
+    appt?.documentAmount ??
+    appt?.professional?.professional?.price;
+  if (!(Number(amount) > 0)) return '';
+  const currency = appt?.serviceCurrencySnapshot || appt?.documentCurrency || 'CLP';
+  return '$' + formatClpPrice(amount) + ' ' + currency;
+}
+
+// Sin banco, número de cuenta o RUT no se puede transferir.
+hasPaymentData(): boolean {
+  const data = this.paymentModalData;
+  return Boolean(data?.bankName && data?.accountNumber && data?.accountRut);
+}
+
+openChatFromPaymentModal(): void {
+  const appt = this.paymentModalAppointment;
+  this.closePaymentModal();
+  if (appt) this.openChat(appt);
+}
+
+// 50% del valor de la cita que se quiere cancelar tarde (ej. "$22.500").
+penaltyAmountLabel(): string {
+  const appt = this.appointments.find((item: any) => item.id === this.penaltyCancelAppointmentId);
+  const amount =
+    appt?.servicePriceAmountSnapshot ??
+    appt?.documentAmount ??
+    appt?.professional?.professional?.price;
+  if (!(Number(amount) > 0)) return '';
+  return '$' + formatClpPrice(Math.round(Number(amount) / 2));
 }
 
 closePaymentModal(): void {

@@ -37,11 +37,14 @@ ion-title {
 
 .back-button {
   --color: var(--app-primary);
-  --background-hover: color-mix(in srgb, var(--app-primary-light) 14%, transparent);
+  --background: color-mix(in srgb, var(--app-primary) 10%, var(--app-surface));
+  --background-hover: color-mix(in srgb, var(--app-primary) 16%, var(--app-surface));
   --border-radius: 999px;
+  --padding-start: 14px;
+  --padding-end: 14px;
   margin-left: 6px;
-  height: 36px;
-  font-size: 13px;
+  height: 44px;
+  font-size: 14px;
   font-weight: 900;
   text-transform: none;
   position: relative;

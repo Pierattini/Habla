@@ -285,14 +285,20 @@
       {{ search ? 'Resultados' : 'Profesionales recomendados' }}
     </h3>
 
+    <div *ngIf="!loading && loadError" class="empty-state" role="alert">
+      <h3>No pudimos cargar los profesionales</h3>
+      <p>Revisa tu conexión e inténtalo de nuevo.</p>
+      <ion-button size="small" (click)="loadProfessionals()">Reintentar</ion-button>
+    </div>
+
     <p
-      *ngIf="!loading"
+      *ngIf="!loading && !loadError"
       class="results-count"
     >
       Se encontraron {{ totalProfessionals }} profesionales
     </p>
 
-    <div *ngIf="!loading && totalProfessionals === 0" class="empty-state">
+    <div *ngIf="!loading && !loadError && totalProfessionals === 0" class="empty-state">
       <h3>No se encontraron profesionales</h3>
       <p>Prueba con otro nombre, profesión o especialidad.</p>
     </div>

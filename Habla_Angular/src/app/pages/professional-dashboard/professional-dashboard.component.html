@@ -99,7 +99,7 @@
       </button>
 
       <h3 id="professional-avatar-modal-title">Editar imagen</h3>
-      <p>Elige un avatar o sube una fotografia profesional.</p>
+      <p>Elige un avatar o sube una fotografía profesional.</p>
 
       <div class="avatar-preview">
         <img
@@ -126,7 +126,7 @@
           size="small"
           (click)="fileInput.click()"
         >
-          Subir fotografia
+          Subir fotografía
         </ion-button>
 
         <ion-button
@@ -150,7 +150,7 @@
   <ion-card class="centered-card">
     <ion-card-content>
       <h2 class="section-title">
-        Mi perfil publico
+        Mi perfil público
       </h2>
 
       <p class="public-profile-helper">
@@ -163,7 +163,7 @@
 
       <ng-template #publicProfilePending>
         <div class="public-profile-link muted">
-          Guarda tu perfil para generar tu enlace publico.
+          Guarda tu perfil para generar tu enlace público.
         </div>
       </ng-template>
 
@@ -214,7 +214,7 @@
             <p>
               {{ $any(this).isPlanActive
                 ? 'Tu Plan Conecta está activo. Puedes gestionar solicitudes y responder pacientes.'
-                : 'Tu perfil puede aparecer en busquedas, pero para gestionar solicitudes y responder pacientes debes activar tu Plan Conecta.' }}
+                : 'Tu perfil puede aparecer en búsquedas, pero para gestionar solicitudes y responder pacientes debes activar tu Plan Conecta.' }}
             </p>
 
             <p *ngIf="$any(this).isPlanActive && $any(this).getPlanEndDateLabel()">
@@ -225,7 +225,7 @@
 
         <div class="document-actions" *ngIf="!$any(this).isPlanActive">
           <p class="documents-empty">
-            Plan Conecta estara disponible cuando el flujo de suscripcion este listo para produccion.
+            Plan Conecta estará disponible cuando el flujo de suscripción este listo para producción.
           </p>
         </div>
 
@@ -312,7 +312,7 @@
         *ngIf="loaded && $any(this).appointmentRequests.length === 0"
         class="documents-empty"
       >
-        Aun no tienes solicitudes de pacientes.
+        Aún no tienes solicitudes de pacientes.
       </div>
 
       <div
@@ -341,7 +341,7 @@
           </p>
 
           <p class="documents-empty">
-            La activacion del Plan Conecta estara disponible cuando el flujo de suscripcion este listo para produccion.
+            La activacion del Plan Conecta estará disponible cuando el flujo de suscripción este listo para producción.
           </p>
         </ng-container>
 
@@ -393,7 +393,7 @@
         </h2>
 
         <span class="document-badge">
-          Modulo separado
+          Módulo separado
         </span>
       </div>
 
@@ -415,7 +415,7 @@
       </section>
 
       <p class="documents-empty">
-        El detalle de boletas, filtros, reenvios, cargas y sincronizacion ahora vive en el modulo dedicado.
+        El detalle de boletas, filtros, reenvíos, cargas y sincronización ahora vive en el módulo dedicado.
       </p>
 
       <div class="document-actions">
@@ -437,292 +437,8 @@
     </ion-card-content>
   </ion-card>
 
-  <section *ngIf="false" class="documents-summary">
-    <div class="metric-card">
-      <span>Documentos pendientes</span>
-      <strong>{{ $any(this).dashboardView.pendingDocumentsCount }}</strong>
-    </div>
 
-    <div class="metric-card">
-      <span>Documentos enviados</span>
-      <strong>{{ $any(this).dashboardView.sentDocumentsCount }}</strong>
-    </div>
 
-    <div class="metric-card">
-      <span>Emitidos este mes</span>
-      <strong>{{ $any(this).dashboardView.emittedThisMonthCount }}</strong>
-    </div>
-  </section>
-
-  <ion-card *ngIf="false">
-
-    <ion-card-content>
-
-      <h2 class="section-title">
-        Documentos Pendientes
-      </h2>
-
-      <div
-        *ngIf="loaded && pendingTaxDocuments.length === 0"
-        class="documents-empty"
-      >
-        No tienes documentos pendientes.
-      </div>
-
-      <div
-        *ngFor="let document of pendingTaxDocuments"
-        class="document-card"
-      >
-
-        <div class="document-main">
-
-          <div>
-            <h3>
-              {{ $any(document).view?.customerName }}
-            </h3>
-
-            <p>
-              {{ $any(document).view?.appointmentDate | date:'dd/MM/yyyy HH:mm' }}
-            </p>
-          </div>
-
-          <span class="document-badge">
-            {{ getDocumentStatusLabel(document.status) }}
-          </span>
-
-        </div>
-
-        <div class="document-meta">
-          <span>
-            {{ document.currency }}
-            {{ (document.amount || 0) | number:'1.0-0' }}
-          </span>
-
-          <span>
-            Solicitado {{ document.createdAt | date:'dd/MM/yyyy' }}
-          </span>
-
-          <span>
-            {{ $any(document).view?.typeLabel }}
-          </span>
-        </div>
-
-        <div
-          *ngIf="$any(document).customerTax"
-          class="tax-request-data"
-        >
-          <strong>Datos para emitir</strong>
-          <span>Nombre: {{ $any(document).customerTax?.name || 'No informado' }}</span>
-          <span>Documento: {{ $any(document).customerTax?.taxId || 'No informado' }}</span>
-          <span>Dirección: {{ $any(document).customerTax?.address || 'No informada' }}</span>
-          <span>Teléfono: {{ $any(document).customerTax?.phone || 'No informado' }}</span>
-          <span *ngIf="$any(document).customerTax?.comment">
-            Comentario: {{ $any(document).customerTax.comment }}
-          </span>
-        </div>
-
-        <div class="document-upload">
-          <input
-            type="file"
-            #taxDocumentInput
-            accept=".pdf,image/jpeg,image/jpg,image/png"
-            (change)="$any(this).onTaxDocumentFileSelected(document.id, $event)"
-            style="display: none;"
-          />
-
-          <ion-button
-            fill="outline"
-            size="small"
-            (click)="taxDocumentInput.click()"
-          >
-            Seleccionar archivo
-          </ion-button>
-
-          <span
-            *ngIf="$any(this).getSelectedDocumentFileName(document.id)"
-            class="selected-file-name"
-          >
-            {{ $any(this).getSelectedDocumentFileName(document.id) }}
-          </span>
-
-          <ion-button
-            size="small"
-            [disabled]="!$any(this).getSelectedDocumentFileName(document.id) || $any(this).isUploadingDocument(document.id)"
-            (click)="$any(this).uploadTaxDocument(document.id)"
-          >
-            {{ $any(this).isUploadingDocument(document.id) ? 'Subiendo...' : 'Subir documento' }}
-          </ion-button>
-
-          <a
-            *ngIf="$any(document).pdfUrl"
-            class="document-link"
-            [href]="$any(document).pdfUrl"
-            target="_blank"
-            rel="noopener"
-          >
-            Ver documento
-          </a>
-
-          <a
-            *ngIf="$any(document).xmlUrl"
-            class="document-link"
-            [href]="$any(document).xmlUrl"
-            target="_blank"
-            rel="noopener"
-          >
-            Ver XML
-          </a>
-
-          <ion-button
-            *ngIf="$any(profile).documentAutomationEnabled"
-            fill="outline"
-            size="small"
-            [disabled]="$any(this).isDocumentActionRunning(document.id)"
-            (click)="$any(this).issueLibreDteDocument(document.id)"
-          >
-            Preparar emisión automática
-          </ion-button>
-
-          <ion-button
-            *ngIf="$any(profile).documentAutomationEnabled && $any(document).provider === 'LIBREDTE'"
-            fill="outline"
-            size="small"
-            [disabled]="$any(this).isDocumentActionRunning(document.id)"
-            (click)="$any(this).syncProviderStatus(document.id)"
-          >
-            Sincronizar estado
-          </ion-button>
-
-          <ion-button
-            fill="outline"
-            size="small"
-            [disabled]="$any(this).isDocumentActionRunning(document.id)"
-            (click)="$any(this).markDocumentGenerated(document.id)"
-          >
-            Marcar generado
-          </ion-button>
-
-          <ion-button
-            fill="outline"
-            size="small"
-            [disabled]="$any(this).isDocumentActionRunning(document.id)"
-            (click)="$any(this).markDocumentSent(document.id)"
-          >
-            Marcar enviado
-          </ion-button>
-        </div>
-
-      </div>
-
-    </ion-card-content>
-
-  </ion-card>
-
-  <ion-card *ngIf="false">
-
-    <ion-card-content>
-
-      <div class="documents-title-row">
-        <h2 class="section-title">
-          Documentos Emitidos
-        </h2>
-      </div>
-
-      <div class="documents-filters">
-        <button
-          *ngFor="let filter of $any(this).documentFilters"
-          type="button"
-          [class.active]="$any(this).selectedDocumentFilter === filter.value"
-          (click)="$any(this).setDocumentFilter(filter.value)"
-        >
-          {{ filter.label }}
-        </button>
-      </div>
-
-      <div
-        *ngIf="loaded && $any(this).dashboardView.filteredTaxDocuments.length === 0"
-        class="documents-empty"
-      >
-        No hay documentos para este filtro.
-      </div>
-
-      <div
-        *ngFor="let document of $any(this).dashboardView.filteredTaxDocuments"
-        class="document-card"
-      >
-
-        <div class="document-main">
-          <div>
-            <h3>{{ document.fileName || 'Documento sin archivo' }}</h3>
-            <p>{{ $any(document).view?.customerName }}</p>
-          </div>
-
-          <span class="document-badge">
-            {{ getDocumentStatusLabel(document.status) }}
-          </span>
-        </div>
-
-        <div class="document-meta">
-          <span>
-            Tipo: {{ $any(document).view?.typeLabel }}
-          </span>
-
-          <span>
-            Emision:
-            {{ $any(document).view?.issueDate ? ($any(document).view.issueDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}
-          </span>
-
-          <span>
-            Envío:
-            {{ $any(document).view?.sentDate ? ($any(document).view.sentDate | date:'dd/MM/yyyy HH:mm') : 'Pendiente' }}
-          </span>
-        </div>
-
-        <div class="document-actions">
-          <a
-            *ngIf="$any(document).pdfUrl"
-            class="document-link"
-            [href]="$any(document).pdfUrl"
-            target="_blank"
-            rel="noopener"
-          >
-            Ver documento
-          </a>
-
-          <ion-button
-            fill="outline"
-            size="small"
-            [disabled]="$any(this).isDocumentActionRunning(document.id)"
-            (click)="$any(this).markDocumentGenerated(document.id)"
-          >
-            Marcar generado
-          </ion-button>
-
-          <ion-button
-            fill="outline"
-            size="small"
-            [disabled]="$any(this).isDocumentActionRunning(document.id)"
-            (click)="$any(this).markDocumentSent(document.id)"
-          >
-            Marcar enviado
-          </ion-button>
-
-          <ion-button
-            *ngIf="document.emailSent"
-            fill="outline"
-            size="small"
-            [disabled]="$any(this).isDocumentActionRunning(document.id)"
-            (click)="$any(this).resendDocumentEmail(document.id)"
-          >
-            Reenviar correo
-          </ion-button>
-        </div>
-
-      </div>
-
-    </ion-card-content>
-
-  </ion-card>
 
   <!-- PERFIL -->
   <ion-card id="professional-profile-form">
@@ -751,7 +467,7 @@
         </ion-label>
 
         <ion-input
-          placeholder="Ej: Psicologia, nutricion, estetica..."
+          placeholder="Ej: Psicología, nutrición, estética..."
           maxlength="80"
           [(ngModel)]="profile.specialty">
         </ion-input>
@@ -788,299 +504,6 @@
         <p class="field-rule">
           Tus horarios disponibles se definen en esta zona horaria. Cada paciente los ve convertidos a su hora local.
         </p>
-      </div>
-
-    </ion-card-content>
-
-  </ion-card>
-
-  <!-- CONFIGURACION SII DIRECTO -->
-  <ion-card *ngIf="false">
-
-    <ion-card-content>
-
-      <div class="documents-title-row">
-        <h2 class="section-title">
-          Configuración avanzada SII
-        </h2>
-
-        <span
-          class="document-badge"
-          [class.success]="$any(this).taxProviderCredential?.configured"
-        >
-          {{ $any(this).taxProviderCredential?.configured ? 'Configurado' : 'No configurado' }}
-        </span>
-      </div>
-
-      <p class="schedule-help">
-        Esta sección es solo para profesionales con empresa que quieran preparar Boleta Electrónica automática con SII.
-        El certificado digital y su clave se guardan cifrados y no se vuelven a mostrar.
-      </p>
-
-      <div>
-        <a
-          class="document-card"
-          href="https://www.certchile.cl/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <div class="document-main">
-            <div>
-              <h3>Comprar certificado digital</h3>
-              <p>CertChile suele tener opciones económicas. Revisa el valor vigente antes de comprar.</p>
-            </div>
-            <span class="document-badge">i</span>
-          </div>
-        </a>
-
-        <details class="document-card">
-          <summary style="cursor:pointer; list-style:none;">
-            <div class="document-main">
-              <div>
-                <h3>Cómo obtener el archivo de folios SII</h3>
-                <p>Paso a paso para descargar el XML de folios autorizados.</p>
-              </div>
-              <span class="document-badge">i</span>
-            </div>
-          </summary>
-
-          <ol class="field-rule">
-            <li>Ingresa a sii.cl con el RUT empresa.</li>
-            <li>Ve a Servicios online y luego a Factura electrónica.</li>
-            <li>Busca Solicitud de folios o Timbraje electrónico.</li>
-            <li>Selecciona {{ $any(profile).taxExempt === false ? 'Boleta Electrónica (DTE 39, afecta a IVA)' : 'Boleta Exenta Electrónica (DTE 41)' }}, según el tipo de boleta elegido arriba.</li>
-            <li>Solicita los folios y descarga el archivo XML autorizado.</li>
-            <li>Sube ese XML en Conecta como archivo de folios SII.</li>
-          </ol>
-
-          <a
-            class="document-link"
-            href="https://www.sii.cl/factura_electronica/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Ir al portal de Factura Electrónica SII
-          </a>
-        </details>
-      </div>
-
-      <div class="tax-profile-grid">
-        <ion-item class="profile-field" lines="none">
-          <ion-label position="stacked">
-            RUT empresa
-          </ion-label>
-
-          <ion-input
-            maxlength="20"
-            placeholder="Ej: 12.345.678-9"
-            [ngModel]="$any(this).taxProviderRut"
-            (ngModelChange)="$any(this).taxProviderRut = $event">
-          </ion-input>
-        </ion-item>
-
-        <div *ngIf="false" class="choice-field">
-          <p class="subsection-title">Ambiente SII</p>
-          <div class="mode-selector">
-            <label>
-              <input
-                type="radio"
-                name="taxProviderEnvironment"
-                value="PRODUCTION"
-                [ngModel]="$any(this).taxProviderEnvironment"
-                (ngModelChange)="$any(this).taxProviderEnvironment = $event"
-              />
-              Producción
-            </label>
-
-            <label>
-              <input
-                type="radio"
-                name="taxProviderEnvironment"
-                value="CERTIFICATION"
-                [ngModel]="$any(this).taxProviderEnvironment"
-                (ngModelChange)="$any(this).taxProviderEnvironment = $event"
-              />
-              Certificación
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <div class="document-upload">
-        <input
-          type="file"
-          #siiCertificateInput
-          accept=".pfx,.p12"
-          (change)="$any(this).onTaxProviderCertificateSelected($event)"
-          hidden
-        />
-
-        <ion-button
-          fill="outline"
-          size="small"
-          (click)="siiCertificateInput.click()"
-        >
-          Seleccionar certificado digital
-        </ion-button>
-
-        <span class="selected-file-name">
-          {{ $any(this).taxProviderCertificateFile?.name || $any(this).taxProviderCredential?.certificateFileName || 'Archivo .pfx o .p12' }}
-        </span>
-      </div>
-
-      <ion-item class="profile-field" lines="none">
-        <ion-label position="stacked">
-          Clave del certificado
-        </ion-label>
-
-        <ion-input
-          type="password"
-          maxlength="200"
-          autocomplete="off"
-          placeholder="Clave del archivo .pfx/.p12"
-          [ngModel]="$any(this).taxProviderCertificatePassword"
-          (ngModelChange)="$any(this).taxProviderCertificatePassword = $event">
-        </ion-input>
-      </ion-item>
-
-      <p class="field-rule">
-        Estado: {{ $any(this).taxProviderCredential?.configured ? 'certificado guardado de forma segura' : 'sin certificado configurado' }}.
-        <ng-container *ngIf="$any(this).taxProviderCredential?.certificateUploadedAt">
-          Subido el {{ $any(this).taxProviderCredential?.certificateUploadedAt | date:'dd/MM/yyyy HH:mm' }}.
-        </ng-container>
-        <ng-container *ngIf="$any(this).taxProviderCredential?.lastValidatedAt">
-          Validado el {{ $any(this).taxProviderCredential?.lastValidatedAt | date:'dd/MM/yyyy HH:mm' }}.
-        </ng-container>
-      </p>
-
-      <p
-        *ngIf="$any(this).taxProviderMessage"
-        class="public-profile-message"
-      >
-        {{ $any(this).taxProviderMessage }}
-      </p>
-
-      <div class="document-actions">
-        <ion-button
-          size="small"
-          [disabled]="$any(this).taxProviderSaving || $any(this).taxProviderTesting"
-          (click)="$any(this).saveTaxProviderCredential()"
-        >
-          {{ $any(this).taxProviderSaving ? 'Guardando...' : 'Guardar configuración SII' }}
-        </ion-button>
-
-        <ion-button
-          fill="outline"
-          size="small"
-          [disabled]="!$any(this).taxProviderCredential?.configured || $any(this).taxProviderSaving || $any(this).taxProviderTesting"
-          (click)="$any(this).testTaxProviderAuthentication()"
-        >
-          {{ $any(this).taxProviderTesting ? 'Validando...' : 'Probar conexión SII' }}
-        </ion-button>
-
-        <ion-button
-          fill="outline"
-          size="small"
-          color="medium"
-          [disabled]="!$any(this).taxProviderCredential?.configured || $any(this).taxProviderSaving || $any(this).taxProviderTesting"
-          (click)="$any(this).deleteTaxProviderCredential()"
-        >
-          Eliminar configuración
-        </ion-button>
-      </div>
-
-      <div class="documents-title-row">
-        <h3 class="subsection-title">
-          Folios autorizados
-        </h3>
-
-        <span class="document-badge">
-          {{ $any(this).taxFolioRanges.length }} rangos
-        </span>
-      </div>
-
-      <p class="field-rule">
-        Carga el archivo de folios autorizado por SII para que Conecta pueda reservar folios al preparar boletas electrónicas.
-      </p>
-
-      <div class="document-upload">
-        <input
-          type="file"
-          #siiCafInput
-          accept=".xml"
-          (change)="$any(this).onTaxFolioCafSelected($event)"
-          hidden
-        />
-
-        <ion-button
-          fill="outline"
-          size="small"
-          (click)="siiCafInput.click()"
-        >
-          Seleccionar archivo de folios
-        </ion-button>
-
-        <span class="selected-file-name">
-          {{ $any(this).taxFolioCafFile?.name || 'Archivo .xml' }}
-        </span>
-
-        <ion-button
-          size="small"
-          [disabled]="!$any(this).taxFolioCafFile || $any(this).taxFolioSaving"
-          (click)="$any(this).saveTaxFolioRange()"
-        >
-          {{ $any(this).taxFolioSaving ? 'Guardando...' : 'Guardar folios' }}
-        </ion-button>
-      </div>
-
-      <p
-        *ngIf="$any(this).taxFolioMessage"
-        class="public-profile-message"
-      >
-        {{ $any(this).taxFolioMessage }}
-      </p>
-
-      <div
-        *ngIf="$any(this).taxFolioRanges.length === 0"
-        class="documents-empty"
-      >
-        Aún no tienes folios autorizados cargados.
-      </div>
-
-      <div
-        *ngFor="let range of $any(this).taxFolioRanges"
-        class="document-card"
-      >
-        <div class="document-main">
-          <div>
-            <h3>Boleta electrónica</h3>
-            <p>
-              Folios {{ range.startFolio }} al {{ range.endFolio }}
-            </p>
-          </div>
-
-          <span class="document-badge">
-            {{ range.status === 'ACTIVE' ? 'Activo' : 'Inactivo' }}
-          </span>
-        </div>
-
-        <div class="document-meta">
-          <span>Disponibles: {{ range.availableFolios }}</span>
-          <span>Siguiente: {{ range.nextFolio }}</span>
-          <span>Archivo: {{ range.cafFileName || 'Sin nombre' }}</span>
-        </div>
-
-        <div class="document-actions">
-          <ion-button
-            fill="outline"
-            size="small"
-            color="medium"
-            [disabled]="$any(this).taxFolioSaving"
-            (click)="$any(this).deleteTaxFolioRange(range)"
-          >
-            Eliminar folios
-          </ion-button>
-        </div>
       </div>
 
     </ion-card-content>
@@ -1490,7 +913,7 @@
         </div>
 
         <p class="field-rule">
-          Carga el archivo XML de folios autorizado por SII para que Conecta pueda preparar boletas electronicas.
+          Carga el archivo XML de folios autorizado por SII para que Conecta pueda preparar boletas electrónicas.
         </p>
 
         <div class="document-upload">
@@ -1534,7 +957,7 @@
           *ngIf="$any(this).taxFolioRanges.length === 0"
           class="documents-empty"
         >
-          Aun no tienes folios autorizados cargados.
+          Aún no tienes folios autorizados cargados.
         </div>
 
         <div
@@ -1632,7 +1055,7 @@
         </div>
 
         <p *ngIf="$any(this).isVideoProvider('CONNECTA_AUTO')" class="helper-text">
-          Las videollamadas seran generadas automáticamente por Conecta cuando la cita sea confirmada.
+          Las videollamadas serán generadas automáticamente por Conecta cuando la cita sea confirmada.
         </p>
 
         <div *ngIf="$any(this).isVideoProvider('GOOGLE_MEET')" class="provider-action">
@@ -1906,6 +1329,7 @@
 
         <ion-input
           maxlength="60"
+          inputmode="tel"
           placeholder="Ej: 123456789"
           [(ngModel)]="profile.accountNumber">
         </ion-input>
@@ -2038,82 +1462,6 @@
   </ion-card>
 
   <!-- HORARIOS -->
-  <ion-card *ngIf="false">
-
-    <ion-card-content>
-
-      <h2 class="section-title">
-        Horarios disponibles
-      </h2>
-    <p style="margin-bottom:16px;color:#6B7280;font-size:13px;">
-  La duración y el descanso entre sesiones se configuran en "Configuración de Sesión".
-</p>
-<ion-item>
-  <ion-label>
-    Modo de agenda
-  </ion-label>
-
-  <select [(ngModel)]="scheduleMode">
-    <option value="automatic">
-      Automático
-    </option>
-
-    <option value="custom">
-      Personalizado
-    </option>
-  </select>
-</ion-item>
-      <ng-container *ngIf="scheduleMode === 'automatic'">
-
-<div
-  *ngFor="let item of availability"
-  class="day-card"
->
-
-        <h3>{{ item.day }}</h3>
-
-<ion-item>
-  <ion-label>
-    Disponible
-  </ion-label>
-
-  <input
-    type="checkbox"
-    [(ngModel)]="item.enabled"
-  />
-</ion-item>
-
-<div *ngIf="item.enabled">
-
-  <div class="schedule-row">
-
-    <div class="schedule-field">
-      <label>Inicio</label>
-
-      <input
-        type="time"
-        [(ngModel)]="item.start"
-      />
-    </div>
-
-    <div class="schedule-field">
-      <label>Término</label>
-
-      <input
-        type="time"
-        [(ngModel)]="item.end"
-      />
-    </div>
-
-  </div>
-
-</div>
-
-</div>
-</ng-container>
-    </ion-card-content>
-
-  </ion-card>
 
   <ion-card class="centered-fields-card schedule-card">
     <ion-card-content>
@@ -2204,7 +1552,7 @@
                 [(ngModel)]="item.scheduleMode"
                 (ngModelChange)="onScheduleModeChange(item, $event)"
               />
-              Horarios especificos
+              Horarios específicos
             </label>
           </div>
 
@@ -2220,7 +1568,7 @@
               </div>
 
               <div class="schedule-field">
-                <label>Termino</label>
+                <label>Término</label>
 
                 <input
                   type="time"
@@ -2247,7 +1595,7 @@
               </div>
 
               <div class="schedule-field">
-                <label>Termino</label>
+                <label>Término</label>
 
                 <input
                   type="time"

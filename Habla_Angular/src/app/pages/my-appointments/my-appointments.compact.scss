@@ -57,7 +57,7 @@ ion-content::part(scroll) {
 .filtros ion-button {
   --border-radius: 999px;
   --box-shadow: none;
-  height: 34px;
+  height: 40px;
   min-width: 86px;
   font-size: 12px;
   font-weight: 900;
@@ -143,7 +143,7 @@ ion-content::part(scroll) {
   border-radius: 999px;
   background: #f4e3ff;
   color: #a100ff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -206,7 +206,7 @@ ion-content::part(scroll) {
 .appointment-modality-row span,
 .documento-toggle span {
   color: #6b7280;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -256,7 +256,7 @@ ion-content::part(scroll) {
 
 .appointment-details-toggle i {
   font-style: normal;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .documento-toggle {
@@ -304,14 +304,14 @@ ion-button {
 }
 
 ion-button[size="small"] {
-  min-height: 36px;
+  min-height: 44px;
   font-size: 12px;
 }
 
 .btn-main::part(native),
 .btn-sec::part(native),
 .btn-principal::part(native) {
-  min-height: 36px;
+  min-height: 44px;
   padding-inline: 10px;
   border-radius: 999px;
 }
@@ -385,8 +385,8 @@ ion-button[size="small"] {
   position: absolute;
   top: 10px;
   right: 10px;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border: 0;
   border-radius: 999px;
   background: #f4e3ff;
@@ -477,7 +477,7 @@ ion-button[size="small"] {
 .penalty-actions button small {
   max-width: 230px;
   color: #6b7280;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -575,7 +575,7 @@ ion-button[size="small"] {
 
 .payment-data-row span {
   color: #6b7280;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -594,8 +594,8 @@ ion-button[size="small"] {
 }
 
 .payment-copy {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   border: 0;
@@ -643,10 +643,95 @@ ion-button[size="small"] {
   }
 
   .payment-data-row span {
-    font-size: 9px;
+    font-size: 12px;
   }
 
   .payment-data-row strong {
     font-size: 12px;
+  }
+}
+
+// ---- Ventana de pago: monto, aviso sin datos y siguiente paso ----
+.payment-amount {
+  display: grid;
+  gap: 2px;
+  margin: 6px 0 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--app-primary, #c000ff) 8%, #fff);
+  text-align: center;
+
+  span {
+    color: var(--app-muted, #6b7280);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  strong {
+    color: var(--app-primary, #c000ff);
+    font-size: 26px;
+    font-weight: 900;
+  }
+}
+
+.payment-missing {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 12px;
+  border: 1px solid #fca5a5;
+  border-radius: 14px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.payment-chat {
+  justify-self: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--app-primary, #c000ff);
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.payment-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.payment-next-step {
+  margin: 8px 0 0;
+  color: var(--app-muted, #6b7280);
+  font-size: 13px;
+  text-align: center;
+}
+
+.load-error {
+  margin: 20px auto;
+  text-align: center;
+
+  p {
+    margin: 0 0 10px;
+    color: #991b1b;
+    font-weight: 700;
+  }
+
+  button {
+    min-height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--app-primary, #c000ff);
+    color: #fff;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
   }
 }

@@ -1,5 +1,20 @@
 import { Component, Input } from '@angular/core';
-import { IonicModule, ModalController, AlertController } from '@ionic/angular';
+import {
+  AlertController,
+  IonButton,
+  IonButtons,
+  IonCard,
+  IonCardContent,
+  IonCardHeader,
+  IonCardTitle,
+  IonContent,
+  IonDatetime,
+  IonHeader,
+  IonTextarea,
+  IonTitle,
+  IonToolbar,
+  ModalController,
+} from '@ionic/angular/standalone';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
@@ -9,7 +24,7 @@ import { zonedDateTimeToIso } from '../../utils/timezone.util';
 @Component({
   selector: 'app-reschedule-modal',
   standalone: true,
-  imports: [IonicModule, CommonModule, FormsModule],
+  imports: [IonButton, IonButtons, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonContent, IonDatetime, IonHeader, IonTextarea, IonTitle, IonToolbar, CommonModule, FormsModule],
   templateUrl: './reschedule-modal.component.html',
   styleUrls: ['./reschedule-modal.component.scss'],
 })

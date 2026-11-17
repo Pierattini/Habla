@@ -1,14 +1,26 @@
+import { addIcons } from 'ionicons';
+import { chatbubbleEllipsesOutline, cloudOfflineOutline } from 'ionicons/icons';
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import {
+  IonAvatar,
+  IonBadge,
+  IonButton,
+  IonContent,
+  IonIcon,
+  IonItem,
+  IonLabel,
+  IonList,
+} from '@ionic/angular/standalone';
 import { RouterLink } from '@angular/router';
 import { MessagesService } from '../../services/messages.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { finalize, timeout } from 'rxjs';
 
 @Component({
   selector: 'app-messages',
   standalone: true,
-  imports: [CommonModule, IonicModule, RouterLink],
+  imports: [CommonModule, IonAvatar, IonBadge, IonButton, IonContent, IonIcon, IonItem, IonLabel, IonList, RouterLink],
   templateUrl: './messages.component.html',
   styleUrls: ['./messages.component.scss'],
 })
@@ -18,13 +30,16 @@ export class MessagesComponent {
   public loaded: boolean = false;
   public requestedProfessionalId: string | null = null;
   public conversationNotFound: boolean = false;
+  public loadError: boolean = false;
 
   constructor(
     private messagesService: MessagesService,
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    addIcons({ chatbubbleEllipsesOutline, cloudOfflineOutline });
+  }
 
   ionViewWillEnter() {
     const professionalId =
@@ -41,9 +56,17 @@ export class MessagesComponent {
     if (this.loading) return;
 
     this.loading = true;
+    this.loadError = false;
     this.conversationNotFound = false;
 
-    this.messagesService.getConversations().subscribe({
+    // Con timeout la pantalla no queda "cargando" para siempre si la petición se cuelga.
+    this.messagesService.getConversations().pipe(
+      timeout(20_000),
+      finalize(() => {
+        this.loading = false;
+        this.cdr.detectChanges();
+      }),
+    ).subscribe({
       next: (data) => {
         this.conversations = data ?? [];
 
@@ -76,6 +99,7 @@ export class MessagesComponent {
         console.error(err);
         this.loading = false;
         this.loaded = true;
+        this.loadError = true;
         this.cdr.detectChanges();
       }
     });

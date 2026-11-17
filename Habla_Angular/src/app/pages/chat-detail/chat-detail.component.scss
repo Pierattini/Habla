@@ -45,7 +45,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 38px;
+  min-height: 44px;
   padding: 0 14px;
   border: 0;
   border-radius: 999px;
@@ -390,4 +390,49 @@ ion-footer ion-toolbar {
 
 .file-box ion-icon {
   color: var(--app-primary);
+}
+
+// ---- Estado de envío ----
+.message-status {
+  display: block;
+  margin-top: 4px;
+  opacity: 0.7;
+  font-size: 12px;
+}
+
+.message-failed {
+  border: 1px solid #fca5a5;
+}
+
+.message-retry {
+  display: block;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.chat-error,
+.chat-uploading {
+  margin: 8px auto;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.chat-error {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.chat-uploading {
+  color: var(--app-muted);
 }

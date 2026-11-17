@@ -34,6 +34,18 @@ export class ProfessionalServiceFormComponent implements OnChanges {
   @Input() service: ProfessionalService | null = null;
   @Input() saving = false;
   @Input() defaultCurrency = 'CLP';
+
+  // Precio con separador de miles ("45.000"). Un campo numérico tomaba "45.000" como 45.
+  formatPrice(value: number | null): string {
+    return value === null || value === undefined || String(value) === ''
+      ? ''
+      : Number(value).toLocaleString('es-CL');
+  }
+
+  setPrice(value: string): void {
+    const digits = String(value ?? '').replace(/[^\d]/g, '');
+    this.draft.priceAmount = digits ? Number(digits) : null;
+  }
   @Output() submitted = new EventEmitter<CreateProfessionalServicePayload>();
   @Output() cancelled = new EventEmitter<void>();
 

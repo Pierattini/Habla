@@ -632,8 +632,13 @@
 
 
 <ng-template #sinCitas>
+  <div class="load-error" role="alert" *ngIf="$any(this).loaded && $any(this).loadError">
+    <p>No pudimos cargar tus citas. Revisa tu conexión.</p>
+    <button type="button" (click)="$any(this).loadAppointments()">Reintentar</button>
+  </div>
+
   <p
-    *ngIf="$any(this).loaded"
+    *ngIf="$any(this).loaded && !$any(this).loadError"
     style="text-align:center; margin-top:20px;"
   >
     No tienes citas
@@ -815,6 +820,18 @@
     </div>
 
     <h2 id="payment-modal-title">Datos para transferir</h2>
+
+    <div class="payment-amount" *ngIf="$any(this).paymentAmountLabel($any(this).paymentModalAppointment)">
+      <span>Monto a transferir</span>
+      <strong>{{ $any(this).paymentAmountLabel($any(this).paymentModalAppointment) }}</strong>
+    </div>
+
+    <div class="payment-missing" role="alert" *ngIf="!$any(this).hasPaymentData()">
+      El profesional aún no registró sus datos bancarios. Escríbele por el chat para coordinar el pago.
+      <button type="button" class="payment-chat" (click)="$any(this).openChatFromPaymentModal()">
+        Abrir chat
+      </button>
+    </div>
     <p class="payment-intro">
       Transfiere al profesional con estos datos. Luego presiona
       <strong>Ya transferí</strong> para avisar que el pago fue realizado.
@@ -907,10 +924,14 @@
     <button
       type="button"
       class="payment-confirm"
+      [disabled]="!$any(this).hasPaymentData()"
       (click)="$any(this).confirmPaymentFromModal()"
     >
       Ya transferí
     </button>
+    <p class="payment-next-step" *ngIf="$any(this).hasPaymentData()">
+      El profesional revisará tu transferencia y te avisaremos cuando la confirme.
+    </p>
 
     <button
       type="button"
@@ -951,18 +972,19 @@
       <h2 id="penalty-modal-title">Cancelar cita con penalización</h2>
       <p>
         Esta cita ya fue confirmada y la hora quedó reservada para ti.
-        Si cancelas ahora se aplicará la penalización del 50%.
+        Si cancelas ahora se aplicará la penalización del 50%<ng-container *ngIf="$any(this).penaltyAmountLabel()">
+        ({{ $any(this).penaltyAmountLabel() }})</ng-container>.
       </p>
 
       <div class="penalty-actions">
         <button type="button" class="secondary" (click)="$any(this).closePenaltyModal()">
-          <strong>Volver</strong>
-          <small>No cancelar la cita.</small>
+          <strong>Mantener mi cita</strong>
+          <small>No se cancela y no pagas nada extra.</small>
         </button>
 
         <button type="button" class="danger-action" (click)="$any(this).confirmPenaltyCancellation()">
-          <strong>Cancelar con penalización</strong>
-          <small>Se retendrá el 50% por cancelar tarde.</small>
+          <strong>Cancelar y pagar 50%</strong>
+          <small>Se retendrá {{ $any(this).penaltyAmountLabel() || 'el 50%' }} por cancelar tarde.</small>
         </button>
       </div>
     </ng-container>
