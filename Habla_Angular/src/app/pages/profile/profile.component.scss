@@ -742,3 +742,35 @@ ion-button[color="tertiary"] {
     text-align: center;
   }
 }
+
+// ---- Preferencias de búsqueda centradas ----
+.customer-preferences-card {
+  text-align: center;
+
+  // Título al centro y el contador (1/9) a la derecha.
+  .preferences-header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: start;
+
+    > div {
+      grid-column: 2;
+    }
+
+    > strong {
+      grid-column: 3;
+      justify-self: end;
+    }
+  }
+
+  .selected-interest-chips,
+  .interest-grid,
+  .mode-grid {
+    justify-content: center;
+  }
+
+  // Lo que se escribe en los campos queda alineado normal.
+  input {
+    text-align: left;
+  }
+}

@@ -600,3 +600,8 @@ ion-button {
     justify-self: end;
   }
 }
+
+// Tarjetas de categorías: ícono y nombre centrados.
+.category-grid button {
+  text-align: center;
+}
