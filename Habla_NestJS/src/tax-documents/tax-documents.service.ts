@@ -371,6 +371,97 @@ export class TaxDocumentsService {
     }));
   }
 
+  // Una fila por cliente (por RUT, o por correo si no tiene RUT), con los datos de su última boleta
+  // y las fechas de sesión ya facturadas (para avisar si se repite una boleta del mismo día).
+  async getProfessionalCustomers(user: TaxDocumentUser) {
+    if (user.role !== Role.PROFESSIONAL) {
+      throw new ForbiddenException('Solo un profesional puede ver sus clientes.');
+    }
+
+    const documents = await this.prisma.taxDocument.findMany({
+      where: { appointment: { professionalId: user.id } },
+      select: {
+        customerTaxId: true,
+        customerTaxName: true,
+        customerTaxEmail: true,
+        customerTaxAddress: true,
+        customerTaxCity: true,
+        amount: true,
+        createdAt: true,
+        appointment: {
+          select: {
+            date: true,
+            serviceNameSnapshot: true,
+            guestCustomerName: true,
+            customer: { select: { name: true, email: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 3000,
+    });
+
+    const chileDate = (date: Date) =>
+      date.toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+    const genericRut = '666666666';
+    const customers = new Map<string, any>();
+
+    for (const doc of documents) {
+      const name =
+        doc.customerTaxName?.trim() ||
+        doc.appointment.customer?.name?.trim() ||
+        doc.appointment.guestCustomerName?.trim() ||
+        '';
+      const email = (
+        doc.customerTaxEmail ||
+        doc.appointment.customer?.email ||
+        ''
+      ).trim().toLowerCase();
+      const taxId = doc.customerTaxId?.trim() || '';
+      const rutKey = taxId.replace(/[^\dkK]/g, '').toUpperCase();
+      const key =
+        rutKey && rutKey !== genericRut
+          ? `rut:${rutKey}`
+          : email
+            ? `email:${email}`
+            : name
+              ? `name:${name.toLowerCase()}`
+              : '';
+      if (!key) continue;
+
+      const sessionDate = chileDate(doc.appointment.date);
+      const existing = customers.get(key);
+      if (existing) {
+        existing.count += 1;
+        if (!existing.sessionDates.includes(sessionDate)) {
+          existing.sessionDates.push(sessionDate);
+        }
+        continue;
+      }
+
+      // La descripción se guarda con la fecha al final ("... 13/10/2026"): se quita para reutilizarla.
+      const description = (doc.appointment.serviceNameSnapshot || '')
+        .replace(/\s*-?\s*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\s*$/, '')
+        .trim();
+
+      customers.set(key, {
+        key,
+        name,
+        email,
+        taxId: rutKey === genericRut ? '' : taxId,
+        address: doc.customerTaxAddress || '',
+        city: doc.customerTaxCity || '',
+        lastAmount: doc.amount,
+        lastDescription: description,
+        lastSessionDate: sessionDate,
+        count: 1,
+        sessionDates: [sessionDate],
+      });
+    }
+
+    return [...customers.values()];
+  }
+
   async getAdminSummary() {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);

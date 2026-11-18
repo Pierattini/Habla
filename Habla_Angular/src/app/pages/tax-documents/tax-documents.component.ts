@@ -6,6 +6,7 @@ import { finalize, Observable, timeout } from 'rxjs';
 import { IonButton, IonContent } from '@ionic/angular/standalone';
 import { API_URL } from '../../core/config/api.config';
 import {
+  BoletaCustomer,
   DashboardTaxDocument,
   TaxDocument,
   TaxDocumentsService,
@@ -60,8 +61,11 @@ export class TaxDocumentsComponent {
 
   ionViewWillEnter(): void {
     // "Emitir boleta manual" del Panel Pro llega con ?manual=1 y abre el formulario.
-    if (this.route.snapshot.queryParamMap.get('manual') === '1') {
+    const manualParam = this.route.snapshot.queryParamMap.get('manual');
+    if (manualParam === '1' || manualParam === 'repeat') {
       if (!this.manualFormOpen) this.toggleManualForm();
+      // "Repetir boleta a un cliente": abre la lista de clientes anteriores.
+      if (manualParam === 'repeat') this.openCustomerPicker();
       void this.router.navigate([], {
         relativeTo: this.route,
         queryParams: {},
@@ -107,7 +111,119 @@ export class TaxDocumentsComponent {
     if (!this.manualFormOpen) {
       this.manual = this.emptyManualForm();
       this.manualMessage = '';
+      this.manualConfirming = false;
+      this.selectedCustomer = null;
+      this.customerPickerOpen = false;
     }
+  }
+
+  // ---- Repetir boleta a un cliente anterior ----
+  customerPickerOpen = false;
+  customers: BoletaCustomer[] = [];
+  customersLoading = false;
+  customersError = '';
+  customerSearch = '';
+  selectedCustomer: BoletaCustomer | null = null;
+  // Paso de revisión antes de emitir (una boleta real solo se anula en sii.cl).
+  manualConfirming = false;
+
+  openCustomerPicker(): void {
+    this.customerPickerOpen = true;
+    this.customerSearch = '';
+    this.loadCustomers();
+  }
+
+  closeCustomerPicker(): void {
+    this.customerPickerOpen = false;
+  }
+
+  loadCustomers(): void {
+    this.customersLoading = true;
+    this.customersError = '';
+    this.taxDocumentsService.getProfessionalCustomers().pipe(
+      timeout(20_000),
+      finalize(() => (this.customersLoading = false)),
+    ).subscribe({
+      next: (customers) => (this.customers = customers || []),
+      error: () => (this.customersError = 'No pudimos cargar tus clientes. Revisa tu conexión.'),
+    });
+  }
+
+  get filteredCustomers(): BoletaCustomer[] {
+    const query = this.normalize(this.customerSearch);
+    if (!query) return this.customers;
+    const rutQuery = query.replace(/[^\dk]/g, '');
+    return this.customers.filter((c) =>
+      this.normalize(c.name).includes(query) ||
+      c.email.includes(query) ||
+      (/\d/.test(rutQuery) &&c.taxId.toLowerCase().replace(/[^\dk]/g, '').includes(rutQuery)),
+    );
+  }
+
+  // Llena la boleta con los datos del cliente: fecha de hoy y la descripción y monto de su última boleta.
+  selectCustomer(customer: BoletaCustomer): void {
+    this.selectedCustomer = customer;
+    this.manual = {
+      customerName: customer.name,
+      customerEmail: customer.email,
+      customerTaxId: customer.taxId,
+      customerAddress: customer.address,
+      customerCity: customer.city,
+      amount: customer.lastAmount ? this.formatAmount(customer.lastAmount) : '',
+      description: customer.lastDescription || this.emptyManualForm().description,
+      sessionDate: this.todayInChile(),
+    };
+    this.manualMessage = '';
+    this.manualConfirming = false;
+    this.customerPickerOpen = false;
+  }
+
+  formatCustomerDate(date: string): string {
+    const [y, m, d] = (date || '').split('-');
+    return d ? `${d}-${m}-${y}` : '';
+  }
+
+  // Formato chileno sin alterar el monto (45000 -> "45.000").
+  formatAmount(value: unknown): string {
+    const amount = Math.round(Number(String(value ?? '').replace(/[^\d]/g, '')));
+    return amount > 0 ? new Intl.NumberFormat('es-CL').format(amount) : '0';
+  }
+
+  // Aviso si ese cliente ya tiene una boleta con la misma fecha de sesión.
+  get duplicateDateWarning(): boolean {
+    const m = this.manual;
+    const rut = m.customerTaxId.replace(/[^\dkK]/g, '').toUpperCase();
+    const email = m.customerEmail.trim().toLowerCase();
+    return this.customers.some((c) =>
+      ((rut && c.taxId.replace(/[^\dkK]/g, '').toUpperCase() === rut) || (email && c.email === email)) &&
+      c.sessionDates.includes(m.sessionDate),
+    );
+  }
+
+  private todayInChile(): string {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+  }
+
+  private normalize(value: string): string {
+    return (value || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  }
+
+  // Primer paso: valida y muestra el resumen para confirmar.
+  reviewManualBoleta(): void {
+    const m = this.manual;
+    const amount = Number(String(m.amount ?? '').replace(/[^\d]/g, ''));
+    if (!m.customerName.trim() || !m.customerEmail.trim() || !m.sessionDate || !(amount > 0) || !m.description.trim()) {
+      this.manualMessage = 'Completa nombre, correo, monto, descripción y fecha de la sesión.';
+      return;
+    }
+    this.manualMessage = '';
+    // Para el aviso de boleta repetida se necesitan los clientes anteriores.
+    if (!this.customers.length && !this.customersLoading) this.loadCustomers();
+    this.manualConfirming = true;
+  }
+
+  get manualAmountLabel(): string {
+    return this.formatAmount(this.manual.amount);
   }
 
   private emptyManualForm() {
@@ -155,10 +271,14 @@ export class TaxDocumentsComponent {
         this.manualMessage = `Boleta de la sesión del ${d}/${mo}/${y} enviada a emitir. Puedes ingresar la siguiente fecha.`;
         // Se mantienen paciente, monto y descripción para emitir varias seguidas.
         m.sessionDate = '';
+        this.manualConfirming = false;
         this.loadDocuments(true, true);
+        // Actualiza las fechas ya facturadas para el aviso de boleta repetida.
+        this.loadCustomers();
       },
       error: (err: any) => {
         const reason = err?.error?.message;
+        this.manualConfirming = false;
         this.manualMessage = Array.isArray(reason)
           ? `No se pudo emitir: ${reason.join(', ')}`
           : reason || 'No se pudo emitir la boleta.';

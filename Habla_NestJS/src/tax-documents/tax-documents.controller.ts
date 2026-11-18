@@ -105,6 +105,14 @@ export class TaxDocumentsController {
     return this.taxDocumentsService.getPendingDocumentsByProfessional(req.user);
   }
 
+  // Clientes a los que el profesional ya les emitió boleta, para repetir una boleta.
+  @Get('professional/customers')
+  @UseGuards(RolesGuard)
+  @Roles(Role.PROFESSIONAL)
+  getProfessionalCustomers(@Request() req: AuthRequest) {
+    return this.taxDocumentsService.getProfessionalCustomers(req.user);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Get('admin/summary')

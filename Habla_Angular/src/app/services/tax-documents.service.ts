@@ -141,6 +141,21 @@ export interface DashboardTaxDocument {
   view?: TaxDocumentView;
 }
 
+export interface BoletaCustomer {
+  key: string;
+  name: string;
+  email: string;
+  taxId: string;
+  address: string;
+  city: string;
+  lastAmount: number | null;
+  lastDescription: string;
+  lastSessionDate: string;
+  count: number;
+  // Fechas de sesión (YYYY-MM-DD) que ya tienen boleta.
+  sessionDates: string[];
+}
+
 export interface ProfessionalTaxDocumentQuery {
   search?: string;
   status?: string;
@@ -253,6 +268,13 @@ export class TaxDocumentsService {
     return this.http.post<TaxDocument>(
       `${this.api}/tax-documents/professional/manual-boleta`,
       data
+    );
+  }
+
+  // Clientes a los que ya se les emitió boleta (para repetir una boleta con sus datos).
+  getProfessionalCustomers() {
+    return this.http.get<BoletaCustomer[]>(
+      `${this.api}/tax-documents/professional/customers`
     );
   }
 

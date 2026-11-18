@@ -2129,6 +2129,13 @@ private prepareProfileImage(file: File): Promise<string> {
     });
   }
 
+  // Abre la boleta manual con la lista de clientes anteriores para repetirles una boleta.
+  goToRepeatBoleta(): void {
+    this.router.navigate(['/tabs/tax-documents'], {
+      queryParams: { manual: 'repeat' },
+    });
+  }
+
   setDocumentFilter(filter: string): void {
     this.selectedDocumentFilter = filter;
     this.updateDashboardView();

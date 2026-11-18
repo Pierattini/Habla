@@ -55,6 +55,65 @@
       </button>
       <p class="field-hint">Para sesiones que no se agendaron por Conecta (por ejemplo, sesiones ya realizadas). Se emite al SII y se envía al correo del paciente.</p>
 
+      <button
+        type="button"
+        class="repeat-customer-button"
+        *ngIf="!customerPickerOpen"
+        (click)="openCustomerPicker()"
+      >
+        Repetir boleta a un cliente anterior
+      </button>
+
+      <!-- Lista de clientes a los que ya se les emitió boleta -->
+      <div class="customer-picker" *ngIf="customerPickerOpen">
+        <div class="customer-picker-header">
+          <strong>Elige un cliente</strong>
+          <button type="button" class="customer-picker-close" (click)="closeCustomerPicker()" aria-label="Cerrar lista de clientes">
+            Cerrar
+          </button>
+        </div>
+
+        <input
+          type="search"
+          class="customer-search"
+          [(ngModel)]="customerSearch"
+          placeholder="Buscar por nombre, RUT o correo"
+          aria-label="Buscar cliente por nombre, RUT o correo"
+        />
+
+        <p class="field-hint" *ngIf="customersLoading">Cargando clientes...</p>
+        <div class="customer-picker-error" role="alert" *ngIf="customersError && !customersLoading">
+          {{ customersError }}
+          <button type="button" (click)="loadCustomers()">Reintentar</button>
+        </div>
+        <p class="field-hint" *ngIf="!customersLoading && !customersError && !customers.length">
+          Aún no has emitido boletas. Cuando emitas la primera, el cliente aparecerá aquí.
+        </p>
+        <p class="field-hint" *ngIf="!customersLoading && customers.length && !filteredCustomers.length">
+          No encontramos clientes con "{{ customerSearch }}".
+        </p>
+
+        <ul class="customer-list" *ngIf="!customersLoading && filteredCustomers.length">
+          <li *ngFor="let customer of filteredCustomers">
+            <button type="button" class="customer-row" (click)="selectCustomer(customer)">
+              <span class="customer-name">{{ customer.name || 'Sin nombre' }}</span>
+              <span class="customer-meta">
+                {{ customer.taxId || 'Sin RUT' }} · {{ customer.email || 'Sin correo' }}
+              </span>
+              <span class="customer-meta">
+                Última: {{ formatCustomerDate(customer.lastSessionDate) }}
+                <ng-container *ngIf="customer.lastAmount"> · ${{ formatAmount(customer.lastAmount) }}</ng-container>
+                · {{ customer.count }} {{ customer.count === 1 ? 'boleta' : 'boletas' }}
+              </span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <p class="selected-customer-hint" *ngIf="selectedCustomer && !customerPickerOpen">
+        Datos de <strong>{{ selectedCustomer.name }}</strong> cargados. Revisa la fecha, la descripción y el monto antes de emitir.
+      </p>
+
       <div style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;">
         <label>
           <span>Nombre del paciente</span>
@@ -88,10 +147,33 @@
           <span>Fecha de la sesión</span>
           <input type="date" [(ngModel)]="manual.sessionDate" />
         </label>
-        <button type="button" class="clear-button" [disabled]="manualSaving" (click)="createManualBoleta()">
-          {{ manualSaving ? 'Emitiendo...' : 'Emitir boleta' }}
+        <button type="button" class="clear-button" *ngIf="!manualConfirming" (click)="reviewManualBoleta()">
+          Revisar y emitir
         </button>
         <p *ngIf="manualMessage" class="field-hint">{{ manualMessage }}</p>
+      </div>
+
+      <!-- Resumen antes de emitir: una boleta real solo se puede anular en sii.cl -->
+      <div class="manual-confirm" *ngIf="manualConfirming" role="alertdialog" aria-label="Confirmar boleta">
+        <p class="manual-confirm-warning" *ngIf="duplicateDateWarning">
+          ⚠️ Ya le emitiste una boleta a esta persona con fecha {{ formatCustomerDate(manual.sessionDate) }}. ¿Seguro que quieres emitir otra?
+        </p>
+        <p>
+          Boleta a <strong>{{ manual.customerName }}</strong>
+          <ng-container *ngIf="manual.customerTaxId"> ({{ manual.customerTaxId }})</ng-container>
+          por <strong>${{ manualAmountLabel }}</strong>, sesión del
+          <strong>{{ formatCustomerDate(manual.sessionDate) }}</strong>.
+        </p>
+        <p class="field-hint">"{{ manual.description }}" · se enviará a {{ manual.customerEmail }}</p>
+        <p class="field-hint">Una vez emitida, solo se puede anular en sii.cl.</p>
+        <div class="manual-confirm-actions">
+          <button type="button" class="clear-button" [disabled]="manualSaving" (click)="manualConfirming = false">
+            Volver
+          </button>
+          <button type="button" class="confirm-button" [disabled]="manualSaving" (click)="createManualBoleta()">
+            {{ manualSaving ? 'Emitiendo...' : 'Confirmar y emitir' }}
+          </button>
+        </div>
       </div>
     </section>
 
