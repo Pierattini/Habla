@@ -124,6 +124,8 @@ export class SiiDirectIssuerService {
             sentAt: issuedAt.toISOString(),
             resolutionNumber: profile.resolutionNumber,
             resolutionDate: profile.resolutionDate,
+            // RUT personal de quien firma: se imprime como "Ref. vendedor" en el PDF.
+            sellerRut: profile.signerRut,
             signedXml: signedBoleta,
           },
         },

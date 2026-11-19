@@ -1247,10 +1247,7 @@ export class TaxDocumentsService {
 
     if (!siiDirect?.signedXml) return document;
 
-    const pdf = await buildBoletaPdf(siiDirect.signedXml, {
-      number: siiDirect.resolutionNumber,
-      date: siiDirect.resolutionDate,
-    });
+    const pdf = await this.renderSiiBoletaPdf(document.id, siiDirect);
     const fileBase = `boleta-${document.folio}`;
     const [pdfUpload, xmlUpload] = await Promise.all([
       this.cloudinaryService.uploadTaxDocumentBuffer(
@@ -1654,7 +1651,38 @@ export class TaxDocumentsService {
     }
   }
 
+  // PDF de una boleta emitida directo al SII. La "Ref. vendedor" es el RUT personal de la
+  // profesional (quien firma); en boletas antiguas se toma de su configuración SII actual.
+  private async renderSiiBoletaPdf(documentId: string, siiDirect: Record<string, any>) {
+    let sellerRut: string | null = siiDirect.sellerRut || null;
+
+    if (!sellerRut) {
+      const owner = await this.prisma.taxDocument.findUnique({
+        where: { id: documentId },
+        select: { appointment: { select: { professionalId: true } } },
+      });
+      const credential = owner
+        ? await this.prisma.professionalTaxProviderCredential.findFirst({
+            where: {
+              professionalId: owner.appointment.professionalId,
+              provider: TaxProvider.SII,
+            },
+            select: { signerRut: true },
+          })
+        : null;
+      sellerRut = credential?.signerRut || null;
+    }
+
+    return buildBoletaPdf(
+      siiDirect.signedXml,
+      { number: siiDirect.resolutionNumber, date: siiDirect.resolutionDate },
+      // En Conecta los pagos se hacen por transferencia bancaria.
+      { sellerRut, paymentMethod: 'Transferencia Electrónica' },
+    );
+  }
+
   private async buildDocumentPdfFile(document: {
+    id: string;
     folio: string | null;
     fileName: string | null;
     pdfUrl: string | null;
@@ -1665,10 +1693,7 @@ export class TaxDocumentsService {
 
     if (siiDirect?.signedXml) {
       return {
-        buffer: await buildBoletaPdf(siiDirect.signedXml, {
-          number: siiDirect.resolutionNumber,
-          date: siiDirect.resolutionDate,
-        }),
+        buffer: await this.renderSiiBoletaPdf(document.id, siiDirect),
         fileName: `boleta-${document.folio}.pdf`,
       };
     }
