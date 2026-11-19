@@ -14,17 +14,40 @@ ion-content {
   padding-bottom: 104px;
 }
 
+// Volver a la izquierda y el título centrado en la tarjeta (columnas laterales iguales).
 .tax-documents-header {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 1fr auto 1fr;
   gap: 14px;
   align-items: start;
+  text-align: center;
   margin-bottom: 18px;
   padding: 22px;
   border: 1px solid color-mix(in srgb, var(--app-primary) 12%, transparent);
   border-radius: var(--app-radius-xl);
   background: var(--app-surface);
   box-shadow: var(--app-shadow-soft);
+}
+
+.tax-documents-header .back-button {
+  justify-self: start;
+}
+
+.tax-documents-header > div {
+  grid-column: 2;
+  max-width: 560px;
+}
+
+// En el teléfono no cabe al lado: Volver arriba a la izquierda y el texto centrado debajo.
+@media (max-width: 640px) {
+  .tax-documents-header {
+    grid-template-columns: 1fr;
+  }
+
+  .tax-documents-header > div {
+    grid-column: 1;
+    justify-self: center;
+  }
 }
 
 .back-button {
