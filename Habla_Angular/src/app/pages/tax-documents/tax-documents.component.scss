@@ -176,6 +176,7 @@ ion-content {
 }
 
 .documents-toolbar strong {
+  margin-right: 6px;
   color: var(--app-primary);
   font-size: 22px;
   font-weight: 900;
@@ -496,4 +497,23 @@ ion-content {
   justify-content: center;
   gap: 10px;
   margin-top: 6px;
+}
+
+// Informe del mes: mes, botón y explicación centrados.
+.report-panel {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  text-align: center;
+
+  label {
+    display: grid;
+    justify-items: center;
+  }
+
+  .field-hint {
+    flex-basis: 100%;
+    margin: 0;
+  }
 }
