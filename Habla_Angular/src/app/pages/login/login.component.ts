@@ -152,24 +152,57 @@ export class LoginComponent implements OnInit {
     }
   }
 
+  // Volteo 3D de la tarjeta al cambiar entre "Crear cuenta", "Iniciar sesión" y "Olvidé mi contraseña":
+  // gira hasta quedar de canto, ahí cambia el contenido, y termina de girar mostrando la otra cara.
+  public flipDirection: 'left' | 'right' | null = null;
+
+  private flipCard(target: OnboardingMode, direction: 'left' | 'right', apply: () => void): void {
+    if (this.mode === target || this.flipDirection) return;
+
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+    if (reduceMotion || this.mode === 'intro') {
+      apply();
+      return;
+    }
+
+    this.flipDirection = direction;
+    setTimeout(() => {
+      apply();
+      this.cdr.detectChanges();
+    }, 240);
+    setTimeout(() => {
+      this.flipDirection = null;
+      this.cdr.detectChanges();
+    }, 520);
+  }
+
   public showLogin(): void {
-    this.mode = 'login';
-    this.errorMessage = '';
-    this.successMessage = '';
+    this.flipCard('login', 'left', () => {
+      this.mode = 'login';
+      this.errorMessage = '';
+      this.successMessage = '';
+    });
   }
 
   public showRegister(): void {
-    this.mode = 'register';
-    this.registerStep = 1;
-    this.errorMessage = '';
-    this.successMessage = '';
+    this.flipCard('register', 'right', () => {
+      this.mode = 'register';
+      this.registerStep = 1;
+      this.errorMessage = '';
+      this.successMessage = '';
+    });
   }
 
   public showForgotPassword(): void {
-    this.mode = 'forgot';
-    this.errorMessage = '';
-    this.successMessage = '';
-    this.resetEmail = this.email;
+    this.flipCard('forgot', 'left', () => {
+      this.mode = 'forgot';
+      this.errorMessage = '';
+      this.successMessage = '';
+      this.resetEmail = this.email;
+    });
   }
 
   public onCountryChange(): void {

@@ -829,3 +829,50 @@
     gap: 12px;
   }
 }
+
+// ---- Volteo 3D de la tarjeta (crear cuenta / iniciar sesión) ----
+.onboarding-shell.flip-left {
+  animation: login-flip-left 0.52s both;
+}
+
+.onboarding-shell.flip-right {
+  animation: login-flip-right 0.52s both;
+}
+
+@keyframes login-flip-left {
+  0% {
+    transform: perspective(1400px) rotateY(0deg);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  46% {
+    transform: perspective(1400px) rotateY(90deg);
+    box-shadow: none;
+  }
+  47% {
+    transform: perspective(1400px) rotateY(-90deg);
+    box-shadow: none;
+    animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1);
+  }
+  100% {
+    transform: perspective(1400px) rotateY(0deg);
+  }
+}
+
+@keyframes login-flip-right {
+  0% {
+    transform: perspective(1400px) rotateY(0deg);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  46% {
+    transform: perspective(1400px) rotateY(-90deg);
+    box-shadow: none;
+  }
+  47% {
+    transform: perspective(1400px) rotateY(90deg);
+    box-shadow: none;
+    animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1);
+  }
+  100% {
+    transform: perspective(1400px) rotateY(0deg);
+  }
+}

@@ -6,7 +6,12 @@
   }
 
   @if ($any(this).mode !== 'intro') {
-    <section class="onboarding-shell" aria-label="Acceso Conecta">
+    <section
+      class="onboarding-shell"
+      [class.flip-left]="$any(this).flipDirection === 'left'"
+      [class.flip-right]="$any(this).flipDirection === 'right'"
+      aria-label="Acceso Conecta"
+    >
       <div class="brand-row">
         <div class="brand-mark small">
           <img src="assets/soloimagen.png" alt="Conecta" />
