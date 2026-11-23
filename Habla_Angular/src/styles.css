@@ -692,3 +692,154 @@ ion-modal.payment-data-modal::part(content) {
 ion-content::part(scroll) {
   scrollbar-gutter: stable both-edges;
 }
+
+/* =====================================================================
+   Efectos visuales (Fase 1): respuesta al tocar, tarjetas que se elevan,
+   brillo en campos y entradas suaves. Mismos colores de siempre.
+   Se usan las propiedades `scale` y `translate` (no `transform`) para no
+   pisar posiciones que ya usan transform. Si el teléfono pide "reducir
+   movimiento", nada de esto se aplica.
+   ===================================================================== */
+@media (prefers-reduced-motion: no-preference) {
+  /* 1. Botones que se hunden un poco al apretarlos */
+  button,
+  ion-button,
+  ion-chip,
+  ion-tab-button,
+  [role="button"],
+  a.button,
+  .quick-card,
+  .professional-card,
+  .category-grid button {
+    transition:
+      scale 0.14s ease,
+      translate 0.22s ease,
+      box-shadow 0.22s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      opacity 0.2s ease;
+  }
+
+  button:not(:disabled):active,
+  ion-button:not([disabled]):active,
+  ion-chip:active,
+  ion-tab-button:active,
+  [role="button"]:active,
+  a.button:active,
+  .quick-card:active,
+  .professional-card:active {
+    scale: 0.97;
+  }
+
+  /* 2. Tarjetas que se elevan al pasar el mouse (solo computador) */
+  @media (hover: hover) and (pointer: fine) {
+    .quick-card:hover,
+    .professional-card:hover,
+    .metric-card:hover,
+    .option-card:hover,
+    .role-card:hover,
+    .service-card:hover,
+    .card-cita:hover,
+    .document-card:hover,
+    .document-row:hover,
+    .customer-row:hover,
+    .category-grid button:hover {
+      translate: 0 -3px;
+      box-shadow: 0 14px 28px color-mix(in srgb, var(--app-primary, #c000ff) 14%, transparent);
+    }
+
+    .metric-card,
+    .option-card,
+    .role-card,
+    .service-card,
+    .card-cita,
+    .document-card,
+    .document-row,
+    .customer-row {
+      transition:
+        translate 0.22s ease,
+        box-shadow 0.22s ease,
+        border-color 0.2s ease;
+    }
+  }
+
+  /* 3. Brillo suave alrededor del campo donde se escribe */
+  input,
+  textarea,
+  select {
+    transition:
+      box-shadow 0.2s ease,
+      border-color 0.2s ease,
+      background-color 0.2s ease;
+  }
+
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+    border-color: var(--app-primary, #c000ff);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--app-primary, #c000ff) 16%, transparent);
+  }
+
+  /* 4. Entrada en cascada: los bloques de cada pantalla aparecen subiendo, uno tras otro.
+        Solo la primera vez que se abre la pantalla (Ionic las mantiene en memoria). */
+  ion-content > ion-card,
+  ion-content > :not(ion-refresher, ion-fab, ion-infinite-scroll) > :not(ion-spinner, ion-refresher, ion-fab, ion-infinite-scroll, ng-template, [class*="backdrop"], [class*="modal"]) {
+    animation: conecta-rise 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  }
+
+  ion-content > ion-card:nth-child(2),
+  ion-content > * > :nth-child(2) { animation-delay: 0.05s; }
+  ion-content > ion-card:nth-child(3),
+  ion-content > * > :nth-child(3) { animation-delay: 0.1s; }
+  ion-content > ion-card:nth-child(4),
+  ion-content > * > :nth-child(4) { animation-delay: 0.15s; }
+  ion-content > ion-card:nth-child(5),
+  ion-content > * > :nth-child(5) { animation-delay: 0.2s; }
+  ion-content > ion-card:nth-child(n + 6),
+  ion-content > * > :nth-child(n + 6) { animation-delay: 0.25s; }
+
+  /* 5. Ventanas emergentes: el fondo se desenfoca y la ventana crece desde el centro */
+  .payment-modal-backdrop,
+  .penalty-modal-backdrop,
+  .review-modal-backdrop,
+  .avatar-modal-backdrop,
+  .calendar-modal-backdrop,
+  .confirm-modal-backdrop,
+  .registration-prompt-backdrop,
+  .message-backdrop,
+  .conecta-message-backdrop,
+  .conecta-feedback-backdrop {
+    animation: conecta-fade 0.2s ease-out backwards;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .penalty-modal,
+  .review-modal,
+  .avatar-modal,
+  .calendar-modal,
+  .confirm-modal {
+    animation: conecta-pop 0.26s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards;
+  }
+}
+
+@keyframes conecta-rise {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+
+@keyframes conecta-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes conecta-pop {
+  from {
+    opacity: 0;
+    scale: 0.92;
+  }
+}
