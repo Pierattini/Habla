@@ -843,3 +843,90 @@ ion-content::part(scroll) {
     scale: 0.92;
   }
 }
+
+/* =====================================================================
+   Relieve 3D: las secciones "salen" de la pantalla como piezas suaves.
+   Luz desde arriba a la izquierda (brillo blanco) y sombra suave abajo a
+   la derecha con un toque del morado de la app. Los campos de texto se
+   ven levemente hundidos. Se usa !important solo en box-shadow para que
+   todas las tarjetas compartan el mismo relieve.
+   ===================================================================== */
+:root {
+  --conecta-relief:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    -6px -6px 16px rgba(255, 255, 255, 0.8),
+    8px 10px 24px color-mix(in srgb, var(--app-primary, #c000ff) 9%, rgba(31, 41, 55, 0.08)),
+    2px 3px 6px rgba(31, 41, 55, 0.05);
+  --conecta-relief-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    -8px -8px 20px rgba(255, 255, 255, 0.85),
+    12px 16px 32px color-mix(in srgb, var(--app-primary, #c000ff) 14%, rgba(31, 41, 55, 0.1)),
+    3px 4px 8px rgba(31, 41, 55, 0.06);
+  --conecta-sunken:
+    inset 2px 2px 5px rgba(31, 41, 55, 0.06),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+}
+
+ion-card,
+.centered-card,
+.centered-fields-card,
+.metric-card,
+.summary-card,
+.option-card,
+.role-card,
+.service-card,
+.card-cita,
+.document-card,
+.document-row,
+.professional-card,
+.quick-card,
+.completion-card,
+.profile-completion-card,
+.customer-preferences-card,
+.filters-panel,
+.tax-documents-header,
+.support-card,
+.welcome-card,
+.modules-card,
+.meeting-card,
+.table-card,
+.ticket-card,
+.empty-state-card,
+.onboarding-shell,
+.customer-picker,
+.category-grid button {
+  box-shadow: var(--conecta-relief) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .metric-card:hover,
+  .option-card:hover,
+  .role-card:hover,
+  .service-card:hover,
+  .card-cita:hover,
+  .document-card:hover,
+  .document-row:hover,
+  .professional-card:hover,
+  .quick-card:hover,
+  .customer-row:hover,
+  .category-grid button:hover {
+    box-shadow: var(--conecta-relief-hover) !important;
+  }
+}
+
+/* Campos hundidos (las pantallas que ya definen su propia sombra la mantienen) */
+input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"], .native-input, .searchbar-input),
+textarea:not(.native-textarea),
+select {
+  box-shadow: var(--conecta-sunken);
+}
+
+/* El brillo al escribir se suma al efecto hundido (si no, el hundido lo taparía). */
+input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"], .native-input, .searchbar-input):focus-visible,
+textarea:not(.native-textarea):focus-visible,
+select:focus-visible {
+  border-color: var(--app-primary, #c000ff);
+  box-shadow:
+    var(--conecta-sunken),
+    0 0 0 4px color-mix(in srgb, var(--app-primary, #c000ff) 16%, transparent);
+}

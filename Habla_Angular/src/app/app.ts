@@ -4,6 +4,7 @@ import { App as CapacitorApp } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { PushNotificationService } from './services/push-notification.service';
+import { enableCardTilt } from './core/ui/card-tilt';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +15,7 @@ import { PushNotificationService } from './services/push-notification.service';
 })
 export class App implements OnDestroy {
   private deepLinkListener?: PluginListenerHandle;
+  private disableCardTilt = enableCardTilt();
 
   constructor(
     private pushNotifications: PushNotificationService,
@@ -28,6 +30,7 @@ export class App implements OnDestroy {
 
   ngOnDestroy(): void {
     void this.deepLinkListener?.remove();
+    this.disableCardTilt();
   }
 
   private async initializeDeepLinks(): Promise<void> {
