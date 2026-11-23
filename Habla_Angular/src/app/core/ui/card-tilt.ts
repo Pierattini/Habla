@@ -13,7 +13,7 @@ const TILT_SELECTOR = [
 ].join(',');
 
 // Grados máximos de inclinación: sutil, para que se sienta elegante y no maree.
-const MAX_TILT_DEG = 5;
+const MAX_TILT_DEG = 7;
 
 export function enableCardTilt(): () => void {
   if (typeof window === 'undefined' || !window.matchMedia) return () => {};

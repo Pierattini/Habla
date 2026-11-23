@@ -853,18 +853,20 @@ ion-content::part(scroll) {
    ===================================================================== */
 :root {
   --conecta-relief:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    -6px -6px 16px rgba(255, 255, 255, 0.8),
-    8px 10px 24px color-mix(in srgb, var(--app-primary, #c000ff) 9%, rgba(31, 41, 55, 0.08)),
-    2px 3px 6px rgba(31, 41, 55, 0.05);
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -2px 0 rgba(31, 41, 55, 0.04),
+    -10px -10px 22px rgba(255, 255, 255, 0.95),
+    14px 16px 34px color-mix(in srgb, var(--app-primary, #c000ff) 16%, rgba(31, 41, 55, 0.12)),
+    4px 6px 10px rgba(31, 41, 55, 0.08);
   --conecta-relief-hover:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    -8px -8px 20px rgba(255, 255, 255, 0.85),
-    12px 16px 32px color-mix(in srgb, var(--app-primary, #c000ff) 14%, rgba(31, 41, 55, 0.1)),
-    3px 4px 8px rgba(31, 41, 55, 0.06);
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -2px 0 rgba(31, 41, 55, 0.04),
+    -12px -12px 26px rgba(255, 255, 255, 1),
+    20px 24px 44px color-mix(in srgb, var(--app-primary, #c000ff) 22%, rgba(31, 41, 55, 0.14)),
+    6px 8px 14px rgba(31, 41, 55, 0.1);
   --conecta-sunken:
-    inset 2px 2px 5px rgba(31, 41, 55, 0.06),
-    inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+    inset 3px 3px 7px rgba(31, 41, 55, 0.1),
+    inset -3px -3px 7px rgba(255, 255, 255, 1);
 }
 
 ion-card,
